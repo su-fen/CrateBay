@@ -2,7 +2,6 @@ import { useState, useEffect } from "react"
 import { messages } from "./i18n/messages"
 import { I } from "./icons"
 import { useContainers } from "./hooks/useContainers"
-import { useVms } from "./hooks/useVms"
 import { useImageSearch } from "./hooks/useImageSearch"
 import { useToast } from "./hooks/useToast"
 import { useModal } from "./hooks/useModal"
@@ -11,7 +10,6 @@ import { EmptyState } from "./components/EmptyState"
 import { Dashboard } from "./pages/Dashboard"
 import { Containers } from "./pages/Containers"
 import { Images } from "./pages/Images"
-import { Vms } from "./pages/Vms"
 import { Settings } from "./pages/Settings"
 import type { NavPage, Theme } from "./types"
 import "./App.css"
@@ -30,7 +28,6 @@ function App() {
   const { toast, showToast } = useToast()
   const modal = useModal(t)
   const containers = useContainers()
-  const vms = useVms()
   const images = useImageSearch()
 
   const copyText = async (text: string) => {
@@ -41,8 +38,8 @@ function App() {
   const navItems: { page: NavPage; icon: React.ReactNode; count?: number; soon?: boolean }[] = [
     { page: "dashboard", icon: I.dashboard },
     { page: "containers", icon: I.box, count: containers.containers.length },
-    { page: "vms", icon: I.server },
     { page: "images", icon: I.layers },
+    { page: "vms", icon: I.server, soon: true },
   ]
 
   const pageNames: Record<NavPage, string> = {
@@ -57,8 +54,8 @@ function App() {
           <Dashboard
             containers={containers.containers}
             running={containers.running}
-            vmsCount={vms.vms.length}
-            vmsRunningCount={vms.vms.filter(v => v.state === "running").length}
+            vmsCount={0}
+            vmsRunningCount={0}
             imgResultsCount={images.imgResults.length}
             connected={containers.connected}
             onNavigate={setActivePage}
@@ -79,6 +76,11 @@ function App() {
             onOpenTextModal={modal.openTextModal}
             onOpenPackageModal={modal.openPackageModal}
             onFetch={containers.fetchContainers}
+            onRun={async (image: string, name: string, cpus: number | "", mem: number | "", pull: boolean) => {
+              const result = await images.doRunDirect(image, name, cpus, mem, pull, containers.fetchContainers)
+              if (result) showToast(t("containerCreated"))
+              return result
+            }}
             t={t}
           />
         )
@@ -106,34 +108,16 @@ function App() {
                 showToast(t("done"))
               }
             }}
-            onClear={images.clearResults}
             onCopy={copyText}
             t={t}
           />
         )
       case "vms":
         return (
-          <Vms
-            {...vms}
-            onFetchVms={vms.fetchVms}
-            onVmAction={vms.vmAction}
-            onCreateVm={async () => {
-              const ok = await vms.createVm()
-              if (ok) showToast(t("done"))
-            }}
-            onLoginCmd={async (vm) => {
-              const cmd = await vms.getLoginCmd(vm)
-              if (cmd) modal.openTextModal(t("loginCommand"), cmd, cmd)
-            }}
-            onAddMount={async () => {
-              const ok = await vms.addMount()
-              if (ok) showToast(t("done"))
-            }}
-            onRemoveMount={async (vmId, tag) => {
-              const ok = await vms.removeMount(vmId, tag)
-              if (ok) showToast(t("done"))
-            }}
-            t={t}
+          <EmptyState
+            icon={I.server}
+            title={t("comingSoon")}
+            description={t("vmComingSoonDesc")}
           />
         )
       case "settings":

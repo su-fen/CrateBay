@@ -1083,6 +1083,7 @@ fn parse_bearer_auth_params(header_value: &str) -> Option<HashMap<String, String
 pub fn run() {
     cargobay_core::logging::init();
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .manage(AppState {
             hv: cargobay_core::create_hypervisor(),
             grpc_addr: grpc_addr(),

@@ -10,6 +10,12 @@
 
 ### 新增
 
+- UI 设计系统规范（`docs/DESIGN_SYSTEM.md`）— 统一设计令牌、按钮/输入框/弹窗规范。
+- 容器页新增"创建容器"按钮，支持直接输入镜像名创建容器。
+- 镜像导入弹窗：原生文件选择对话框，用于选择 `.tar` 归档文件（通过 `tauri-plugin-dialog`）。
+- 导航顺序调整：镜像排在虚拟机之前。
+- 虚拟机页暂时封存为"即将推出"— 代码保留但不激活。
+- 路线图文档（`docs/ROADMAP.md`）— 后续版本规划。
 - CLI：镜像搜索（`cargobay image search`）与 tag 列表（`cargobay image tags`）。
 - CLI：镜像导入/上传（`cargobay image load` / `cargobay image push`）与基于容器打包镜像（`cargobay image pack-container`）。
 - CLI：创建并运行容器时支持可选 CPU/内存限制（`cargobay docker run --cpus/--memory`）与可选拉取镜像（`--pull`）。
@@ -25,6 +31,9 @@
 
 ### 变更
 
+- GUI：统一按钮高度（默认 32px、小号 28px）、输入框高度（32px）、图标 stroke-width（2）。
+- GUI：Images 工具栏简化 — 移除 limit 输入框和清空按钮。
+- GUI：`.btn.small` → `.btn.sm`、`.btn.tiny` → `.btn.xs`，移除 `.input.small`。
 - GUI：将 1164 行的 App.tsx 重构为 17 个模块化文件 — types、icons、5 个自定义 Hook、3 个共享组件、5 个页面组件。
 - GUI：重新设计 Settings 页面 — 响应式宽度、分组图标、自定义 Toggle Switch。
 - GUI：重新设计错误展示 — 结构化 ErrorBanner（图标/标题/操作按钮）、可关闭的 ErrorInline。

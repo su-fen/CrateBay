@@ -5,7 +5,6 @@ import type { ImageSearchResult, RunContainerResult } from "../types"
 export function useImageSearch() {
   const [imgQuery, setImgQuery] = useState("")
   const [imgSource, setImgSource] = useState("all")
-  const [imgLimit, setImgLimit] = useState(20)
   const [imgResults, setImgResults] = useState<ImageSearchResult[]>([])
   const [imgSearching, setImgSearching] = useState(false)
   const [imgError, setImgError] = useState("")
@@ -30,7 +29,7 @@ export function useImageSearch() {
     setRunResult(null)
     try {
       const result = await invoke<ImageSearchResult[]>("image_search", {
-        query: imgQuery, source: imgSource, limit: imgLimit,
+        query: imgQuery, source: imgSource, limit: 20,
       })
       setImgResults(result)
     } catch (e) {
@@ -38,7 +37,7 @@ export function useImageSearch() {
     } finally {
       setImgSearching(false)
     }
-  }, [imgQuery, imgSource, imgLimit])
+  }, [imgQuery, imgSource])
 
   const doTags = useCallback(async (reference: string) => {
     setImgTagsLoading(true)
@@ -76,6 +75,30 @@ export function useImageSearch() {
       setRunLoading(false)
     }
   }, [runImage, runName, runCpus, runMem, runPull])
+
+  const doRunDirect = useCallback(async (
+    image: string, name: string, cpus: number | "", mem: number | "", pull: boolean,
+    fetchContainers: () => Promise<void>,
+  ) => {
+    setRunLoading(true)
+    setImgError("")
+    try {
+      const result = await invoke<RunContainerResult>("docker_run", {
+        image,
+        name: name.trim() ? name.trim() : null,
+        cpus: cpus === "" ? null : cpus,
+        memory_mb: mem === "" ? null : mem,
+        pull,
+      })
+      await fetchContainers()
+      return result
+    } catch (e) {
+      setImgError(String(e))
+      return null
+    } finally {
+      setRunLoading(false)
+    }
+  }, [])
 
   const doLoad = useCallback(async () => {
     if (!loadPath.trim()) return null
@@ -117,7 +140,6 @@ export function useImageSearch() {
   return {
     imgQuery, setImgQuery,
     imgSource, setImgSource,
-    imgLimit, setImgLimit,
     imgResults, imgSearching, imgError, setImgError,
     imgTags, imgTagsRef, imgTagsLoading,
     runImage, setRunImage, runName, setRunName,
@@ -125,6 +147,6 @@ export function useImageSearch() {
     runPull, setRunPull, runLoading, runResult, setRunResult,
     loadPath, setLoadPath, loadLoading,
     pushRef, setPushRef, pushLoading,
-    doSearch, doTags, doRun, doLoad, doPush, clearResults,
+    doSearch, doTags, doRun, doRunDirect, doLoad, doPush, clearResults,
   }
 }

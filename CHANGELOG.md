@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- UI Design System specification (`docs/DESIGN_SYSTEM.md`) — unified design tokens, button/input/modal specs.
+- Containers page: "Run Container" button with run modal for directly creating containers by image name.
+- Images import modal: native file picker dialog for selecting `.tar` archives (via `tauri-plugin-dialog`).
+- Navigation reordered: Images now appears before VMs.
+- VM page temporarily sealed as "Coming Soon" — code preserved but not active.
+- Roadmap document (`docs/ROADMAP.md`) — future version plans.
 - CLI: image search (`cargobay image search`) and tag listing (`cargobay image tags`).
 - CLI: image import/push (`cargobay image load` / `cargobay image push`) and container snapshot packaging (`cargobay image pack-container`).
 - CLI: run containers with optional CPU/memory limits (`cargobay docker run --cpus/--memory`) and optional pull (`--pull`).
@@ -26,6 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- GUI: unified button heights (32px default, 28px small), input heights (32px), icon stroke-width (2).
+- GUI: Images toolbar simplified — removed limit input and Clear button.
+- GUI: `.btn.small` → `.btn.sm`, `.btn.tiny` → `.btn.xs`, removed `.input.small`.
 - GUI: refactor monolithic App.tsx (1164 lines) into 17 modular files — types, icons, 5 custom hooks, 3 shared components, 5 page components.
 - GUI: redesign Settings page with responsive width, section icons, and custom toggle switches.
 - GUI: redesign error displays — structured ErrorBanner with icon/title/action, ErrorInline with dismiss button.
