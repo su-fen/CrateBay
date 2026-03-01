@@ -24,6 +24,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI: fix Clippy/rustfmt failures (VZ explicit auto-deref, async env lock in tests, Docker port type formatting).
 - GUI: group containers by name prefix (collapsible), and make `tauri dev` resilient to `localhost` DNS issues / double logger initialization.
 
+### Changed
+
+- GUI: refactor monolithic App.tsx (1164 lines) into 17 modular files — types, icons, 5 custom hooks, 3 shared components, 5 page components.
+- GUI: redesign Settings page with responsive width, section icons, and custom toggle switches.
+- GUI: redesign error displays — structured ErrorBanner with icon/title/action, ErrorInline with dismiss button.
+- GUI: improve panel components with icon titles, hover effects, and visual hierarchy.
+- GUI: fix Images page search results table overflow with flexible `minmax()` columns.
+- GUI: optimize VMs page information architecture — VM list moved above create form.
+- GUI: replace all hardcoded theme colors with CSS custom properties (`--purple-hover`, `--red-dim`).
+
 ## [0.1.0] - 2026-02-28
 
 ### Added

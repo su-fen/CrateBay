@@ -115,6 +115,7 @@ export const messages: Record<string, Record<string, string>> = {
     themeDesc: "Switch between dark and light mode",
     dark: "Dark",
     light: "Light",
+    connectionError: "Connection Error",
   },
   zh: {
     appName: "CargoBay",
@@ -224,6 +225,7 @@ export const messages: Record<string, Record<string, string>> = {
     themeDesc: "切换深色/浅色模式",
     dark: "深色",
     light: "浅色",
+    connectionError: "连接错误",
   },
 }
 
