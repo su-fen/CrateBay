@@ -79,6 +79,7 @@ export function useImageSearch() {
   const doRunDirect = useCallback(async (
     image: string, name: string, cpus: number | "", mem: number | "", pull: boolean,
     fetchContainers: () => Promise<void>,
+    env?: string[],
   ) => {
     setRunLoading(true)
     setImgError("")
@@ -89,6 +90,7 @@ export function useImageSearch() {
         cpus: cpus === "" ? null : cpus,
         memory_mb: mem === "" ? null : mem,
         pull,
+        env: env && env.length > 0 ? env : null,
       })
       await fetchContainers()
       return result

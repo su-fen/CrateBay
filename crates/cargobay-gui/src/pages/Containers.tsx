@@ -4,7 +4,7 @@ import { I } from "../icons"
 import { ErrorBanner } from "../components/ErrorDisplay"
 import { EmptyState } from "../components/EmptyState"
 import { MiniStats } from "../components/StatsBar"
-import type { ContainerInfo, ContainerGroup, RunContainerResult, ContainerStats } from "../types"
+import type { ContainerInfo, ContainerGroup, RunContainerResult, ContainerStats, EnvVar } from "../types"
 
 interface ExecEntry {
   command: string
@@ -24,7 +24,7 @@ interface ContainersProps {
   onOpenTextModal: (title: string, body: string, copyText?: string) => void
   onOpenPackageModal: (container: string, defaultTag: string) => void
   onFetch: () => void
-  onRun: (image: string, name: string, cpus: number | "", mem: number | "", pull: boolean) => Promise<RunContainerResult | null>
+  onRun: (image: string, name: string, cpus: number | "", mem: number | "", pull: boolean, env?: string[]) => Promise<RunContainerResult | null>
   t: (key: string) => string
 }
 
@@ -42,6 +42,7 @@ export function Containers({
   const [runLoading, setRunLoading] = useState(false)
   const [runResult, setRunResult] = useState<RunContainerResult | null>(null)
   const [runError, setRunError] = useState("")
+  const [runEnvVars, setRunEnvVars] = useState<{ key: string; value: string }[]>([])
 
   // Log viewer state
   const [showLogModal, setShowLogModal] = useState(false)
@@ -64,6 +65,13 @@ export function Containers({
 
   // Container stats state
   const [containerStats, setContainerStats] = useState<Record<string, ContainerStats>>({})
+
+  // Env viewer state
+  const [showEnvModal, setShowEnvModal] = useState(false)
+  const [envContainerName, setEnvContainerName] = useState("")
+  const [envVars, setEnvVars] = useState<EnvVar[]>([])
+  const [envLoading, setEnvLoading] = useState(false)
+  const [envError, setEnvError] = useState("")
 
   const fetchStatsForRunning = useCallback(async () => {
     // Collect running container IDs from all groups
@@ -140,7 +148,10 @@ export function Containers({
     setRunLoading(true)
     setRunError("")
     try {
-      const result = await onRun(runImage, runName, runCpus, runMem, runPull)
+      const envStrings = runEnvVars
+        .filter(e => e.key.trim())
+        .map(e => `${e.key}=${e.value}`)
+      const result = await onRun(runImage, runName, runCpus, runMem, runPull, envStrings.length > 0 ? envStrings : undefined)
       if (result) setRunResult(result)
     } catch (e) {
       setRunError(String(e))
@@ -157,7 +168,25 @@ export function Containers({
     setRunPull(true)
     setRunResult(null)
     setRunError("")
+    setRunEnvVars([])
     setShowRunModal(true)
+  }
+
+  const openEnvModal = async (c: ContainerInfo) => {
+    setEnvContainerName(c.name || c.id)
+    setEnvVars([])
+    setEnvError("")
+    setEnvLoading(true)
+    setShowEnvModal(true)
+    try {
+      const target = c.name || c.id
+      const vars = await invoke<EnvVar[]>("container_env", { id: target })
+      setEnvVars(vars)
+    } catch (e) {
+      setEnvError(String(e))
+    } finally {
+      setEnvLoading(false)
+    }
   }
 
   const fetchLogs = async (containerId: string, tail: string, timestamps: boolean) => {
@@ -247,6 +276,14 @@ export function Containers({
               title={t("viewLogs")}
             >
               {I.fileText}
+            </button>
+            <button
+              className="action-btn"
+              disabled={acting === c.id}
+              onClick={() => openEnvModal(c)}
+              title={t("viewEnvVars")}
+            >
+              {I.settings}
             </button>
             {isRunning && (
               <button
@@ -361,7 +398,7 @@ export function Containers({
             <div className="modal-head">
               <div className="modal-title">{t("runContainer")}</div>
               <div className="modal-actions">
-                <button className="icon-btn" onClick={() => setShowRunModal(false)} title={t("close")}>×</button>
+                <button className="icon-btn" onClick={() => setShowRunModal(false)} title={t("close")}>&times;</button>
               </div>
             </div>
             <div className="modal-body">
@@ -388,6 +425,51 @@ export function Containers({
                   <input type="checkbox" checked={runPull} onChange={e => setRunPull(e.target.checked)} />
                   <span>{t("pullBeforeRun")}</span>
                 </div>
+                <div className="row">
+                  <label>{t("envVars")}</label>
+                  <div className="hint" style={{ marginBottom: 6, fontSize: 11, color: "var(--text3)" }}>{t("envVarsHint")}</div>
+                  {runEnvVars.map((env, i) => (
+                    <div key={i} style={{ display: "flex", gap: 6, marginBottom: 4, alignItems: "center" }}>
+                      <input
+                        className="input"
+                        style={{ flex: 1 }}
+                        value={env.key}
+                        onChange={e => {
+                          const updated = [...runEnvVars]
+                          updated[i] = { ...updated[i], key: e.target.value }
+                          setRunEnvVars(updated)
+                        }}
+                        placeholder={t("envKey")}
+                      />
+                      <span style={{ color: "var(--text3)" }}>=</span>
+                      <input
+                        className="input"
+                        style={{ flex: 1 }}
+                        value={env.value}
+                        onChange={e => {
+                          const updated = [...runEnvVars]
+                          updated[i] = { ...updated[i], value: e.target.value }
+                          setRunEnvVars(updated)
+                        }}
+                        placeholder={t("envValue")}
+                      />
+                      <button
+                        className="btn xs"
+                        onClick={() => setRunEnvVars(runEnvVars.filter((_, j) => j !== i))}
+                        title={t("removeEnvVar")}
+                      >
+                        {I.trash}
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    className="btn xs"
+                    onClick={() => setRunEnvVars([...runEnvVars, { key: "", value: "" }])}
+                    style={{ marginTop: 4 }}
+                  >
+                    <span className="icon">{I.plus}</span>{t("addEnvVar")}
+                  </button>
+                </div>
               </div>
               {runError && <div className="hint" style={{ color: "var(--red)", marginTop: 8 }}>{runError}</div>}
               {runResult && (
@@ -412,6 +494,52 @@ export function Containers({
         </div>
       )}
 
+      {/* Env Viewer Modal */}
+      {showEnvModal && (
+        <div className="modal-backdrop" onClick={() => setShowEnvModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 640 }}>
+            <div className="modal-head">
+              <div className="modal-title">{t("envVars")} — {envContainerName}</div>
+              <div className="modal-actions">
+                <button className="icon-btn" onClick={() => setShowEnvModal(false)} title={t("close")}>&times;</button>
+              </div>
+            </div>
+            <div className="modal-body" style={{ padding: "10px 14px" }}>
+              {envError && <div className="hint" style={{ color: "var(--red)", marginBottom: 8 }}>{envError}</div>}
+              {envLoading ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: 20, justifyContent: "center", color: "var(--text2)" }}>
+                  <div className="spinner" />{t("loading")}
+                </div>
+              ) : envVars.length === 0 ? (
+                <div style={{ padding: 20, textAlign: "center", color: "var(--text3)" }}>{t("noEnvVars")}</div>
+              ) : (
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                    <thead>
+                      <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                        <th style={{ textAlign: "left", padding: "6px 10px", color: "var(--text2)", fontWeight: 700 }}>{t("envKey")}</th>
+                        <th style={{ textAlign: "left", padding: "6px 10px", color: "var(--text2)", fontWeight: 700 }}>{t("envValue")}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {envVars.map((ev, i) => (
+                        <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
+                          <td style={{ padding: "5px 10px", fontFamily: "monospace", fontWeight: 600, wordBreak: "break-all" }}>{ev.key}</td>
+                          <td style={{ padding: "5px 10px", fontFamily: "monospace", wordBreak: "break-all" }}>{ev.value}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="btn" onClick={() => setShowEnvModal(false)}>{t("close")}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Log Viewer Modal */}
       {showLogModal && (
         <div className="modal-backdrop" onClick={() => setShowLogModal(false)}>
@@ -419,7 +547,7 @@ export function Containers({
             <div className="modal-head">
               <div className="modal-title">{t("logs")} — {logContainerName}</div>
               <div className="modal-actions">
-                <button className="icon-btn" onClick={() => setShowLogModal(false)} title={t("close")}>×</button>
+                <button className="icon-btn" onClick={() => setShowLogModal(false)} title={t("close")}>&times;</button>
               </div>
             </div>
             <div className="modal-body" style={{ padding: "10px 14px" }}>
@@ -491,7 +619,7 @@ export function Containers({
               <div className="modal-title">{t("terminal")} — {execContainer.name || execContainer.id}</div>
               <div className="modal-actions">
                 <button className="btn xs" onClick={() => { setExecHistory([]); }} title={t("clear")}>{t("clear")}</button>
-                <button className="icon-btn" onClick={() => setExecContainer(null)} title={t("close")}>×</button>
+                <button className="icon-btn" onClick={() => setExecContainer(null)} title={t("close")}>&times;</button>
               </div>
             </div>
             <div className="exec-modal-body">

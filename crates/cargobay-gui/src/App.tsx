@@ -84,8 +84,8 @@ function App() {
             onOpenTextModal={modal.openTextModal}
             onOpenPackageModal={modal.openPackageModal}
             onFetch={containers.fetchContainers}
-            onRun={async (image: string, name: string, cpus: number | "", mem: number | "", pull: boolean) => {
-              const result = await images.doRunDirect(image, name, cpus, mem, pull, containers.fetchContainers)
+            onRun={async (image: string, name: string, cpus: number | "", mem: number | "", pull: boolean, env?: string[]) => {
+              const result = await images.doRunDirect(image, name, cpus, mem, pull, containers.fetchContainers, env)
               if (result) showToast(t("containerCreated"))
               return result
             }}
