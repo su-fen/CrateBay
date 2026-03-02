@@ -89,7 +89,9 @@ jobs:
         run: cargo clippy ${{ matrix.clippy-args }}
 
       - name: Tests
-        run: cargo test ${{ matrix.test-args }}
+        run: cargo test ${{ matrix.test-args }} -- --test-threads=1
+        env:
+          RUST_BACKTRACE: 1
 
       # cargobay-vz: only build & test on macOS (Virtualization.framework)
       - name: Build cargobay-vz
