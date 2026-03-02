@@ -30,6 +30,13 @@
       "csp": null
     }
   },
+  "plugins": {
+    "updater": {
+      "endpoints": ["https://github.com/coder-hhx/CargoBay/releases/latest/download/latest.json"],
+      "dialog": false,
+      "pubkey": ""
+    }
+  },
   "bundle": {
     "active": true,
     "targets": "all",
