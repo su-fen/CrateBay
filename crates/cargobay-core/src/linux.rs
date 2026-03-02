@@ -509,7 +509,7 @@ impl LinuxHypervisor {
     /// Set up initial CPU state for x86_64 long mode boot.
     #[cfg(target_arch = "x86_64")]
     fn setup_vcpu_regs(vcpu: &VcpuFd) -> Result<(), HypervisorError> {
-        use kvm_bindings::kvm_sregs;
+        use kvm_bindings::kvm_regs;
 
         // Set up special registers for long mode.
         let mut sregs = vcpu

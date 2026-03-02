@@ -184,8 +184,8 @@ fn parse_shared_dir(spec: &str) -> Result<ffi::SharedDirFFI, String> {
     let tag = &spec[..first_colon];
     let rest = &spec[first_colon + 1..];
 
-    let (host_path, read_only) = if rest.ends_with(":ro") {
-        (&rest[..rest.len() - 3], true)
+    let (host_path, read_only) = if let Some(stripped) = rest.strip_suffix(":ro") {
+        (stripped, true)
     } else {
         (rest, false)
     };
