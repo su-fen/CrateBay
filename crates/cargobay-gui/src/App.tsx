@@ -13,7 +13,7 @@ import { UpdateChecker } from "./components/UpdateChecker"
 import { Dashboard } from "./pages/Dashboard"
 import { Containers } from "./pages/Containers"
 import { Images } from "./pages/Images"
-import { Vms } from "./pages/VMs"
+import { Vms } from "./pages/Vms"
 import { Volumes } from "./pages/Volumes"
 import { Settings } from "./pages/Settings"
 import { Kubernetes } from "./pages/Kubernetes"
@@ -186,7 +186,7 @@ function App() {
               const ok = await vmHook.createVm()
               if (ok) showToast(t("vmCreated"))
             }}
-            onLoginCmd={async (vm) => {
+            onLoginCmd={async (vm: { id: string; name: string }) => {
               const cmd = await vmHook.getLoginCmd(vm)
               if (cmd) modal.openTextModal(t("loginCommand"), cmd, cmd)
             }}
@@ -197,11 +197,11 @@ function App() {
             setSelectedOsImage={vmHook.setSelectedOsImage}
             downloadingImage={vmHook.downloadingImage}
             downloadProgress={vmHook.downloadProgress}
-            onDownloadOsImage={async (imageId) => {
+            onDownloadOsImage={async (imageId: string) => {
               const ok = await vmHook.downloadOsImage(imageId)
               if (ok) showToast(t("osImageDownloaded"))
             }}
-            onDeleteOsImage={async (imageId) => {
+            onDeleteOsImage={async (imageId: string) => {
               const ok = await vmHook.deleteOsImage(imageId)
               if (ok) showToast(t("osImageDeleted"))
             }}
