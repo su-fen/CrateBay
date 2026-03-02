@@ -375,4 +375,39 @@ impl VmService for VmServiceImpl {
 
         Ok(Response::new(proto::ListPortForwardsResponse { forwards }))
     }
+
+    async fn get_vm_stats(
+        &self,
+        request: Request<proto::GetVmStatsRequest>,
+    ) -> Result<Response<proto::GetVmStatsResponse>, Status> {
+        let req = request.into_inner();
+        let vm_id = self.resolve_vm_id(&req.vm_id)?;
+
+        // Check the VM exists and is running
+        let vms = self
+            .hv
+            .list_vms()
+            .map_err(|e| Self::status_from_error("list_vms", e))?;
+        let Some(vm) = vms.into_iter().find(|v| v.id == vm_id) else {
+            return Err(Status::not_found(format!("VM not found: {}", vm_id)));
+        };
+
+        if vm.state != VmState::Running {
+            return Ok(Response::new(proto::GetVmStatsResponse {
+                vm_id,
+                cpu_percent: 0.0,
+                memory_usage_mb: 0,
+                disk_usage_gb: 0,
+            }));
+        }
+
+        // For now return stub stats for the VM (real implementation would
+        // read from the vz runner process stats).
+        Ok(Response::new(proto::GetVmStatsResponse {
+            vm_id,
+            cpu_percent: 0.0,
+            memory_usage_mb: 0,
+                        disk_usage_gb: vm.disk_gb,
+        }))
+    }
 }

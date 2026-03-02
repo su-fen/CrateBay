@@ -1,6 +1,6 @@
 use bollard::container::{
     Config, CreateContainerOptions, ListContainersOptions, LogsOptions, RemoveContainerOptions,
-    StartContainerOptions, StopContainerOptions,
+    StartContainerOptions, StatsOptions, StopContainerOptions,
 };
 use bollard::exec::{CreateExecOptions, StartExecResults};
 use bollard::image::CreateImageOptions;
@@ -469,6 +469,82 @@ fn container_exec_interactive_cmd(container_id: String) -> String {
     } else {
         format!("docker exec -it {} /bin/sh", container_id)
     }
+}
+
+#[derive(Debug, Serialize)]
+pub struct ContainerStats {
+    cpu_percent: f64,
+    memory_usage_mb: f64,
+    memory_limit_mb: f64,
+    memory_percent: f64,
+    network_rx_bytes: u64,
+    network_tx_bytes: u64,
+}
+
+#[tauri::command]
+async fn container_stats(id: String) -> Result<ContainerStats, String> {
+    let docker = connect_docker()?;
+
+    let opts = StatsOptions {
+        stream: false,
+        one_shot: true,
+    };
+
+    let mut stream = docker.stats(&id, Some(opts));
+    let stats = stream
+        .try_next()
+        .await
+        .map_err(|e| format!("Failed to get stats for {}: {}", id, e))?
+        .ok_or_else(|| format!("No stats returned for container {}", id))?;
+
+    // Calculate CPU percent
+    let cpu_percent = {
+        let cpu_delta = stats.cpu_stats.cpu_usage.total_usage as f64
+            - stats.precpu_stats.cpu_usage.total_usage as f64;
+        let system_delta = stats.cpu_stats.system_cpu_usage.unwrap_or(0) as f64
+            - stats.precpu_stats.system_cpu_usage.unwrap_or(0) as f64;
+        let num_cpus = stats
+            .cpu_stats
+            .online_cpus
+            .unwrap_or(1) as f64;
+
+        if system_delta > 0.0 && cpu_delta >= 0.0 {
+            (cpu_delta / system_delta) * num_cpus * 100.0
+        } else {
+            0.0
+        }
+    };
+
+    // Memory usage
+    let memory_usage = stats.memory_stats.usage.unwrap_or(0);
+    let memory_limit = stats.memory_stats.limit.unwrap_or(0);
+    let memory_usage_mb = memory_usage as f64 / 1024.0 / 1024.0;
+    let memory_limit_mb = memory_limit as f64 / 1024.0 / 1024.0;
+    let memory_percent = if memory_limit > 0 {
+        (memory_usage as f64 / memory_limit as f64) * 100.0
+    } else {
+        0.0
+    };
+
+    // Network stats
+    let (network_rx_bytes, network_tx_bytes) = stats
+        .networks
+        .as_ref()
+        .map(|nets| {
+            nets.values().fold((0u64, 0u64), |(rx, tx), net| {
+                (rx + net.rx_bytes, tx + net.tx_bytes)
+            })
+        })
+        .unwrap_or((0, 0));
+
+    Ok(ContainerStats {
+        cpu_percent,
+        memory_usage_mb,
+        memory_limit_mb,
+        memory_percent,
+        network_rx_bytes,
+        network_tx_bytes,
+    })
 }
 
 #[derive(Debug, Serialize)]
@@ -1141,6 +1217,43 @@ async fn vm_port_forward_list(
         .collect())
 }
 
+#[derive(Debug, Serialize)]
+pub struct VmStatsDto {
+    cpu_percent: f64,
+    memory_usage_mb: u64,
+    disk_usage_gb: u64,
+}
+
+#[tauri::command]
+async fn vm_stats(state: State<'_, AppState>, id: String) -> Result<VmStatsDto, String> {
+    if let Ok(mut client) = connect_vm_service(&state.grpc_addr).await {
+        let resp = client
+            .get_vm_stats(proto::GetVmStatsRequest { vm_id: id })
+            .await
+            .map_err(|e| e.to_string())?
+            .into_inner();
+
+        return Ok(VmStatsDto {
+            cpu_percent: resp.cpu_percent,
+            memory_usage_mb: resp.memory_usage_mb,
+            disk_usage_gb: resp.disk_usage_gb,
+        });
+    }
+
+    // Fallback: stub stats for local hypervisor
+    let vms = state.hv.list_vms().map_err(|e| e.to_string())?;
+    let vm = vms
+        .into_iter()
+        .find(|v| v.id == id || v.name == id)
+        .ok_or_else(|| format!("VM not found: {}", id))?;
+
+    Ok(VmStatsDto {
+        cpu_percent: 0.0,
+        memory_usage_mb: 0,
+        disk_usage_gb: vm.disk_gb,
+    })
+}
+
 async fn docker_pull_image(docker: &Docker, reference: &str) -> Result<(), String> {
     let (from_image, tag) = split_image_reference(reference);
     let opts = CreateImageOptions {
@@ -1623,6 +1736,7 @@ pub fn run() {
             container_logs,
             container_exec,
             container_exec_interactive_cmd,
+            container_stats,
             image_search,
             image_tags,
             image_load,
@@ -1644,7 +1758,8 @@ pub fn run() {
             vm_mount_list,
             vm_port_forward_add,
             vm_port_forward_remove,
-            vm_port_forward_list
+            vm_port_forward_list,
+            vm_stats
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

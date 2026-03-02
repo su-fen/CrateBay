@@ -59,6 +59,7 @@ function App() {
             running={containers.running}
             vmsCount={vmHook.vms.length}
             vmsRunningCount={vmHook.running.length}
+            runningVms={vmHook.running}
             imgResultsCount={images.imgResults.length}
             connected={containers.connected}
             onNavigate={setActivePage}

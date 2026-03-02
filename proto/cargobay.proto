@@ -15,6 +15,7 @@ service VMService {
   rpc AddPortForward(AddPortForwardRequest) returns (AddPortForwardResponse);
   rpc RemovePortForward(RemovePortForwardRequest) returns (RemovePortForwardResponse);
   rpc ListPortForwards(ListPortForwardsRequest) returns (ListPortForwardsResponse);
+  rpc GetVMStats(GetVMStatsRequest) returns (GetVMStatsResponse);
 }
 
 message CreateVMRequest {
@@ -146,4 +147,15 @@ message ListPortForwardsRequest {
 
 message ListPortForwardsResponse {
   repeated PortForwardEntry forwards = 1;
+}
+
+message GetVMStatsRequest {
+  string vm_id = 1;
+}
+
+message GetVMStatsResponse {
+  string vm_id = 1;
+  double cpu_percent = 2;
+  uint64 memory_usage_mb = 3;
+  uint64 disk_usage_gb = 4;
 }

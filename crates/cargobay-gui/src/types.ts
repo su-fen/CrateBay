@@ -77,3 +77,18 @@ export interface ContainerGroup {
   runningCount: number
   stoppedCount: number
 }
+
+export interface ContainerStats {
+  cpu_percent: number
+  memory_usage_mb: number
+  memory_limit_mb: number
+  memory_percent: number
+  network_rx_bytes: number
+  network_tx_bytes: number
+}
+
+export interface VmStats {
+  cpu_percent: number
+  memory_usage_mb: number
+  disk_usage_gb: number
+}

@@ -1846,6 +1846,127 @@
   .input-action-row .input { min-width: 100%; }
 }
 
+/* === Resource stats bars === */
+.stats-bar-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.stats-bar-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.stats-bar-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  min-width: 28px;
+}
+
+.stats-bar-track {
+  width: 60px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--surface2);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.stats-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease, background 0.4s ease;
+  min-width: 0;
+}
+
+.stats-bar-value {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text2);
+  white-space: nowrap;
+  min-width: 36px;
+  font-family: 'Fira Code', 'SF Mono', ui-monospace, monospace;
+}
+
+/* Container card with stats layout */
+.container-card-with-stats {
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+}
+
+.container-card-with-stats .container-card-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.container-card:not(.container-card-with-stats) .container-card-main {
+  display: contents;
+}
+
+.container-card-stats {
+  padding: 6px 14px 10px;
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface2) 50%, transparent);
+  border-radius: 0 0 10px 10px;
+}
+
+/* VM item stats */
+.vm-item-stats {
+  margin-top: 6px;
+}
+
+/* Dashboard resources panel */
+.dash-resources-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 8px;
+}
+
+.dash-resources-panel .section-title {
+  margin-bottom: 12px;
+  margin-top: 0;
+}
+
+.dash-resources-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dash-resources-bars .stats-bar-item {
+  gap: 10px;
+}
+
+.dash-resources-bars .stats-bar-label {
+  min-width: 50px;
+}
+
+.dash-resources-bars .stats-bar-track {
+  width: 100%;
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+}
+
+.dash-resources-bars .stats-bar-value {
+  min-width: 60px;
+  text-align: right;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

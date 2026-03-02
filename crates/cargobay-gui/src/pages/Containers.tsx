@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { invoke } from "@tauri-apps/api/core"
 import { I } from "../icons"
 import { ErrorBanner } from "../components/ErrorDisplay"
 import { EmptyState } from "../components/EmptyState"
-import type { ContainerInfo, ContainerGroup, RunContainerResult } from "../types"
+import { MiniStats } from "../components/StatsBar"
+import type { ContainerInfo, ContainerGroup, RunContainerResult, ContainerStats } from "../types"
 
 interface ExecEntry {
   command: string
@@ -60,6 +61,43 @@ export function Containers({
   const [execRunning, setExecRunning] = useState(false)
   const [execInteractiveCmd, setExecInteractiveCmd] = useState("")
   const execOutputRef = useRef<HTMLDivElement>(null)
+
+  // Container stats state
+  const [containerStats, setContainerStats] = useState<Record<string, ContainerStats>>({})
+
+  const fetchStatsForRunning = useCallback(async () => {
+    // Collect running container IDs from all groups
+    const runningIds: string[] = []
+    for (const g of groups) {
+      for (const c of g.containers) {
+        if (c.state === "running") {
+          runningIds.push(c.id)
+        }
+      }
+    }
+    if (runningIds.length === 0) {
+      setContainerStats({})
+      return
+    }
+    const results: Record<string, ContainerStats> = {}
+    await Promise.allSettled(
+      runningIds.map(async (id) => {
+        try {
+          const stats = await invoke<ContainerStats>("container_stats", { id })
+          results[id] = stats
+        } catch {
+          // silently ignore stats errors for individual containers
+        }
+      })
+    )
+    setContainerStats(results)
+  }, [groups])
+
+  useEffect(() => {
+    fetchStatsForRunning()
+    const iv = setInterval(fetchStatsForRunning, 5000)
+    return () => clearInterval(iv)
+  }, [fetchStatsForRunning])
 
   useEffect(() => {
     if (execOutputRef.current) {
@@ -176,67 +214,78 @@ export function Containers({
     const name = c.name || c.id
     const meta = isRunning ? (c.ports || c.id) : c.id
     const childClass = opts?.child ? " container-child" : ""
+    const stats = isRunning ? containerStats[c.id] : undefined
     return (
-      <div className={`container-card${childClass}`} key={c.id}>
-        <div className={`card-icon${isRunning ? "" : " stopped"}`}>{I.box}</div>
-        <div className="card-body">
-          <div className="card-name">{name}</div>
-          <div className="card-meta">{c.image} · {meta}</div>
-        </div>
-        <div className="card-status">
-          <span className={`dot ${isRunning ? "running" : "stopped"}`} />
-          <span>{c.status}</span>
-        </div>
-        <div className="card-actions">
-          <button
-            className="action-btn"
-            disabled={acting === c.id}
-            onClick={async () => {
-              const target = c.name || c.id
-              const cmd = await invoke<string>("container_login_cmd", { container: target, shell: "/bin/sh" })
-              onOpenTextModal(t("loginCommand"), cmd, cmd)
-            }}
-            title={t("loginCommand")}
-          >
-            {I.terminal}
-          </button>
-          <button
-            className="action-btn"
-            disabled={acting === c.id}
-            onClick={() => openLogModal(c)}
-            title={t("viewLogs")}
-          >
-            {I.fileText}
-          </button>
-          {isRunning && (
+      <div className={`container-card${childClass}${isRunning ? " container-card-with-stats" : ""}`} key={c.id}>
+        <div className="container-card-main">
+          <div className={`card-icon${isRunning ? "" : " stopped"}`}>{I.box}</div>
+          <div className="card-body">
+            <div className="card-name">{name}</div>
+            <div className="card-meta">{c.image} · {meta}</div>
+          </div>
+          <div className="card-status">
+            <span className={`dot ${isRunning ? "running" : "stopped"}`} />
+            <span>{c.status}</span>
+          </div>
+          <div className="card-actions">
             <button
               className="action-btn"
               disabled={acting === c.id}
-              onClick={() => openExecModal(c)}
-              title={t("execCommand")}
+              onClick={async () => {
+                const target = c.name || c.id
+                const cmd = await invoke<string>("container_login_cmd", { container: target, shell: "/bin/sh" })
+                onOpenTextModal(t("loginCommand"), cmd, cmd)
+              }}
+              title={t("loginCommand")}
             >
-              {I.command}
+              {I.terminal}
             </button>
-          )}
-          {isRunning ? (
-            <button className="action-btn" disabled={acting === c.id} onClick={() => onContainerAction("stop_container", c.id)} title={t("stop")}>{I.stop}</button>
-          ) : (
-            <button className="action-btn" disabled={acting === c.id} onClick={() => onContainerAction("start_container", c.id)} title={t("start")}>{I.play}</button>
-          )}
-          <button
-            className="action-btn"
-            disabled={acting === c.id}
-            onClick={() => {
-              const target = c.name || c.id
-              const defaultTag = `${(c.image || "image").split(":")[0]}-snapshot:latest`
-              onOpenPackageModal(target, defaultTag)
-            }}
-            title={t("packageImage")}
-          >
-            {I.layers}
-          </button>
-          <button className="action-btn danger" disabled={acting === c.id} onClick={() => onContainerAction("remove_container", c.id)} title={t("delete")}>{I.trash}</button>
+            <button
+              className="action-btn"
+              disabled={acting === c.id}
+              onClick={() => openLogModal(c)}
+              title={t("viewLogs")}
+            >
+              {I.fileText}
+            </button>
+            {isRunning && (
+              <button
+                className="action-btn"
+                disabled={acting === c.id}
+                onClick={() => openExecModal(c)}
+                title={t("execCommand")}
+              >
+                {I.command}
+              </button>
+            )}
+            {isRunning ? (
+              <button className="action-btn" disabled={acting === c.id} onClick={() => onContainerAction("stop_container", c.id)} title={t("stop")}>{I.stop}</button>
+            ) : (
+              <button className="action-btn" disabled={acting === c.id} onClick={() => onContainerAction("start_container", c.id)} title={t("start")}>{I.play}</button>
+            )}
+            <button
+              className="action-btn"
+              disabled={acting === c.id}
+              onClick={() => {
+                const target = c.name || c.id
+                const defaultTag = `${(c.image || "image").split(":")[0]}-snapshot:latest`
+                onOpenPackageModal(target, defaultTag)
+              }}
+              title={t("packageImage")}
+            >
+              {I.layers}
+            </button>
+            <button className="action-btn danger" disabled={acting === c.id} onClick={() => onContainerAction("remove_container", c.id)} title={t("delete")}>{I.trash}</button>
+          </div>
         </div>
+        {isRunning && stats && (
+          <div className="container-card-stats">
+            <MiniStats items={[
+              { label: t("cpuUsage"), value: stats.cpu_percent, max: 100, suffix: "%" },
+              { label: t("memoryUsage"), value: stats.memory_usage_mb, max: stats.memory_limit_mb, suffix: " MB" },
+            ]} />
+          </div>
+        )}
       </div>
     )
   }

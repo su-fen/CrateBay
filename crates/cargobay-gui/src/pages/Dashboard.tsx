@@ -1,21 +1,106 @@
+import { useState, useEffect, useCallback } from "react"
+import { invoke } from "@tauri-apps/api/core"
 import { I } from "../icons"
-import type { ContainerInfo } from "../types"
+import { StatsBar } from "../components/StatsBar"
+import type { ContainerInfo, ContainerStats, VmStats, VmInfoDto } from "../types"
 
 interface DashboardProps {
   containers: ContainerInfo[]
   running: ContainerInfo[]
   vmsCount: number
   vmsRunningCount: number
+  runningVms: VmInfoDto[]
   imgResultsCount: number
   connected: boolean
   onNavigate: (page: "containers" | "vms" | "images") => void
   t: (key: string) => string
 }
 
+interface TotalResources {
+  totalCpuPercent: number
+  totalMemoryUsageMb: number
+  totalMemoryLimitMb: number
+}
+
 export function Dashboard({
-  containers, running, vmsCount, vmsRunningCount,
+  containers, running, vmsCount, vmsRunningCount, runningVms,
   imgResultsCount, connected, onNavigate, t,
 }: DashboardProps) {
+  const [totals, setTotals] = useState<TotalResources>({
+    totalCpuPercent: 0,
+    totalMemoryUsageMb: 0,
+    totalMemoryLimitMb: 0,
+  })
+
+  const fetchTotals = useCallback(async () => {
+    let totalCpu = 0
+    let totalMemUsage = 0
+    let totalMemLimit = 0
+
+    // Fetch container stats
+    const containerPromises = running.map(async (c) => {
+      try {
+        const stats = await invoke<ContainerStats>("container_stats", { id: c.id })
+        return stats
+      } catch {
+        return null
+      }
+    })
+
+    // Fetch VM stats
+    const vmPromises = runningVms.map(async (vm) => {
+      try {
+        const stats = await invoke<VmStats>("vm_stats", { id: vm.id })
+        return stats
+      } catch {
+        return null
+      }
+    })
+
+    const [containerResults, vmResults] = await Promise.all([
+      Promise.allSettled(containerPromises),
+      Promise.allSettled(vmPromises),
+    ])
+
+    for (const result of containerResults) {
+      if (result.status === "fulfilled" && result.value) {
+        totalCpu += result.value.cpu_percent
+        totalMemUsage += result.value.memory_usage_mb
+        totalMemLimit += result.value.memory_limit_mb
+      }
+    }
+
+    for (const result of vmResults) {
+      if (result.status === "fulfilled" && result.value) {
+        totalCpu += result.value.cpu_percent
+        totalMemUsage += result.value.memory_usage_mb
+      }
+    }
+
+    // Add VM memory limits from VM configs
+    for (const vm of runningVms) {
+      totalMemLimit += vm.memory_mb
+    }
+
+    setTotals({
+      totalCpuPercent: totalCpu,
+      totalMemoryUsageMb: totalMemUsage,
+      totalMemoryLimitMb: totalMemLimit,
+    })
+  }, [running, runningVms])
+
+  useEffect(() => {
+    if (running.length > 0 || runningVms.length > 0) {
+      fetchTotals()
+      const iv = setInterval(fetchTotals, 5000)
+      return () => clearInterval(iv)
+    } else {
+      setTotals({ totalCpuPercent: 0, totalMemoryUsageMb: 0, totalMemoryLimitMb: 0 })
+    }
+  }, [fetchTotals, running.length, runningVms.length])
+
+  const hasRunning = running.length > 0 || runningVms.length > 0
+
   return (
     <div className="dashboard">
       <div className="dash-cards">
@@ -61,6 +146,26 @@ export function Dashboard({
           </div>
         </div>
       </div>
+
+      {hasRunning && (
+        <div className="dash-resources-panel">
+          <div className="section-title">{t("totalResources")}</div>
+          <div className="dash-resources-bars">
+            <StatsBar
+              label={t("cpuUsage")}
+              value={totals.totalCpuPercent}
+              max={100}
+              suffix="%"
+            />
+            <StatsBar
+              label={t("memoryUsage")}
+              value={totals.totalMemoryUsageMb}
+              max={totals.totalMemoryLimitMb || 1}
+              suffix=" MB"
+            />
+          </div>
+        </div>
+      )}
 
       {running.length > 0 && <>
         <div className="section-title">{t("running")} ({running.length})</div>

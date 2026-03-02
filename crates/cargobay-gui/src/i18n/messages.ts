@@ -163,6 +163,14 @@ export const messages: Record<string, Record<string, string>> = {
     osImageArch: "Arch",
     osImageVersion: "Version",
     osImageProgress: "Download progress",
+    // Resource monitoring
+    cpuUsage: "CPU",
+    memoryUsage: "Memory",
+    diskUsage: "Disk",
+    networkRx: "Net RX",
+    networkTx: "Net TX",
+    stats: "Stats",
+    totalResources: "Total Resources",
   },
   zh: {
     appName: "CargoBay",
@@ -320,6 +328,14 @@ export const messages: Record<string, Record<string, string>> = {
     osImageArch: "架构",
     osImageVersion: "版本",
     osImageProgress: "下载进度",
+    // Resource monitoring
+    cpuUsage: "CPU",
+    memoryUsage: "内存",
+    diskUsage: "磁盘",
+    networkRx: "网络接收",
+    networkTx: "网络发送",
+    stats: "资源监控",
+    totalResources: "总资源使用",
   },
 }
 

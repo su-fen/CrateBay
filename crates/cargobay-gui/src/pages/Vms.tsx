@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { invoke } from "@tauri-apps/api/core"
 import { I } from "../icons"
 import { ErrorInline } from "../components/ErrorDisplay"
-import type { VmInfoDto, OsImageDto, OsImageDownloadProgressDto } from "../types"
+import { MiniStats } from "../components/StatsBar"
+import type { VmInfoDto, OsImageDto, OsImageDownloadProgressDto, VmStats } from "../types"
 
 function formatBytes(bytes: number): string {
   if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`
@@ -184,6 +185,35 @@ export function Vms({
     }
   }
 
+  // VM stats state
+  const [vmStatsMap, setVmStatsMap] = useState<Record<string, VmStats>>({})
+
+  const fetchVmStats = useCallback(async () => {
+    const runningVms = vms.filter(v => v.state === "running")
+    if (runningVms.length === 0) {
+      setVmStatsMap({})
+      return
+    }
+    const results: Record<string, VmStats> = {}
+    await Promise.allSettled(
+      runningVms.map(async (vm) => {
+        try {
+          const stats = await invoke<VmStats>("vm_stats", { id: vm.id })
+          results[vm.id] = stats
+        } catch {
+          // silently ignore stats errors
+        }
+      })
+    )
+    setVmStatsMap(results)
+  }, [vms])
+
+  useEffect(() => {
+    fetchVmStats()
+    const iv = setInterval(fetchVmStats, 5000)
+    return () => clearInterval(iv)
+  }, [fetchVmStats])
+
   const handleCreate = () => {
     onCreateVm()
     setShowCreateModal(false)
@@ -220,6 +250,7 @@ export function Vms({
           {vms.map(vm => {
             const isRunning = vm.state === "running"
             const isExpanded = expandedVmId === vm.id
+            const stats = isRunning ? vmStatsMap[vm.id] : undefined
             return (
               <div key={vm.id} className={`vm-item ${isExpanded ? "vm-item-expanded" : ""} ${isRunning ? "vm-item-running" : ""}`}>
                 <div className="vm-item-row" onClick={() => setExpandedVmId(isExpanded ? null : vm.id)}>
@@ -230,6 +261,15 @@ export function Vms({
                       {vm.cpus} vCPU · {vm.memory_mb} MB · {vm.disk_gb} GB
                       {vm.rosetta_enabled && " · Rosetta"}
                     </div>
+                    {isRunning && stats && (
+                      <div className="vm-item-stats">
+                        <MiniStats items={[
+                          { label: t("cpuUsage"), value: stats.cpu_percent, max: 100, suffix: "%" },
+                          { label: t("memoryUsage"), value: stats.memory_usage_mb, max: vm.memory_mb, suffix: " MB" },
+                          { label: t("diskUsage"), value: stats.disk_usage_gb, max: vm.disk_gb, suffix: " GB" },
+                        ]} />
+                      </div>
+                    )}
                   </div>
                   <div className="vm-item-status">
                     <span className={`dot ${isRunning ? "running" : "stopped"}`} />
