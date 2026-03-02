@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { listen, type UnlistenFn } from "@tauri-apps/api/event"
 import { I } from "../icons"
 import { ErrorBanner } from "../components/ErrorDisplay"
 import { EmptyState } from "../components/EmptyState"
@@ -54,6 +55,12 @@ export function Containers({
   const [logTail, setLogTail] = useState("200")
   const [logTimestamps, setLogTimestamps] = useState(false)
   const logEndRef = useRef<HTMLDivElement>(null)
+
+  // Log streaming (follow) state
+  const [logFollowing, setLogFollowing] = useState(false)
+  const [logStreamEnded, setLogStreamEnded] = useState(false)
+  const logUnlistenRef = useRef<UnlistenFn | null>(null)
+  const logEndUnlistenRef = useRef<UnlistenFn | null>(null)
 
   // Exec terminal state
   const [execContainer, setExecContainer] = useState<ContainerInfo | null>(null)
@@ -207,6 +214,54 @@ export function Containers({
     }
   }
 
+  const stopLogStream = async (containerId?: string) => {
+    if (logUnlistenRef.current) {
+      logUnlistenRef.current()
+      logUnlistenRef.current = null
+    }
+    if (logEndUnlistenRef.current) {
+      logEndUnlistenRef.current()
+      logEndUnlistenRef.current = null
+    }
+    const id = containerId || logContainerId
+    if (id) {
+      try {
+        await invoke("container_logs_stream_stop", { id })
+      } catch {
+        // ignore stop errors
+      }
+    }
+    setLogFollowing(false)
+  }
+
+  const startLogStream = async (containerId: string, timestamps: boolean) => {
+    await stopLogStream(containerId)
+    setLogStreamEnded(false)
+    setLogFollowing(true)
+
+    const unlistenLog = await listen<{ container_id: string; data: string }>("container-log", (event) => {
+      if (event.payload.container_id === containerId) {
+        setLogContent(prev => prev + event.payload.data)
+      }
+    })
+    logUnlistenRef.current = unlistenLog
+
+    const unlistenEnd = await listen<string>("container-log-end", (event) => {
+      if (event.payload === containerId) {
+        setLogStreamEnded(true)
+        setLogFollowing(false)
+      }
+    })
+    logEndUnlistenRef.current = unlistenEnd
+
+    try {
+      await invoke("container_logs_stream", { id: containerId, timestamps })
+    } catch (e) {
+      setLogError(String(e))
+      setLogFollowing(false)
+    }
+  }
+
   const openLogModal = (c: ContainerInfo) => {
     setLogContainerId(c.id)
     setLogContainerName(c.name || c.id)
@@ -214,6 +269,8 @@ export function Containers({
     setLogError("")
     setLogTail("200")
     setLogTimestamps(false)
+    setLogFollowing(false)
+    setLogStreamEnded(false)
     setShowLogModal(true)
     fetchLogs(c.id, "200", false)
   }
@@ -223,6 +280,16 @@ export function Containers({
       logEndRef.current.scrollIntoView({ behavior: "smooth" })
     }
   }, [logContent, showLogModal])
+
+  // Cleanup log stream when modal closes or component unmounts
+  useEffect(() => {
+    if (!showLogModal) {
+      stopLogStream()
+    }
+    return () => {
+      stopLogStream()
+    }
+  }, [showLogModal])
 
   if (loading) {
     return <div className="loading"><div className="spinner" />{t("loadingContainers")}</div>
@@ -545,7 +612,32 @@ export function Containers({
         <div className="modal-backdrop" onClick={() => setShowLogModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 720 }}>
             <div className="modal-head">
-              <div className="modal-title">{t("logs")} — {logContainerName}</div>
+              <div className="modal-title">
+                {t("logs")} — {logContainerName}
+                {logFollowing && (
+                  <span style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                    marginLeft: 10,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: "var(--green, #22c55e)",
+                    background: "rgba(34, 197, 94, 0.1)",
+                    padding: "2px 8px",
+                    borderRadius: 10,
+                  }}>
+                    <span style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      background: "var(--green, #22c55e)",
+                      animation: "pulse 1.5s ease-in-out infinite",
+                    }} />
+                    {t("live")}
+                  </span>
+                )}
+              </div>
               <div className="modal-actions">
                 <button className="icon-btn" onClick={() => setShowLogModal(false)} title={t("close")}>&times;</button>
               </div>
@@ -556,6 +648,7 @@ export function Containers({
                 <select
                   className="select"
                   value={logTail}
+                  disabled={logFollowing}
                   onChange={e => {
                     setLogTail(e.target.value)
                     fetchLogs(logContainerId, e.target.value, logTimestamps)
@@ -570,6 +663,7 @@ export function Containers({
                   <input
                     type="checkbox"
                     checked={logTimestamps}
+                    disabled={logFollowing}
                     onChange={e => {
                       setLogTimestamps(e.target.checked)
                       fetchLogs(logContainerId, logTail, e.target.checked)
@@ -580,14 +674,54 @@ export function Containers({
                 </label>
                 <div style={{ flex: 1 }} />
                 <button
+                  className={`btn sm${logFollowing ? " primary" : ""}`}
+                  onClick={() => {
+                    if (logFollowing) {
+                      stopLogStream()
+                    } else {
+                      startLogStream(logContainerId, logTimestamps)
+                    }
+                  }}
+                >
+                  {logFollowing ? t("stopFollowing") : t("follow")}
+                </button>
+                <button
                   className="btn sm"
-                  disabled={logLoading}
+                  disabled={logLoading || logFollowing}
                   onClick={() => fetchLogs(logContainerId, logTail, logTimestamps)}
                 >
                   <span className="icon">{I.refresh}</span>
                   {t("refreshLogs")}
                 </button>
               </div>
+              {logFollowing && (
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "4px 8px",
+                  marginBottom: 8,
+                  fontSize: 11,
+                  color: "var(--text2)",
+                  background: "var(--bg2, rgba(0,0,0,0.05))",
+                  borderRadius: 4,
+                }}>
+                  <div className="spinner" style={{ width: 12, height: 12 }} />
+                  {t("streamingLogs")}
+                </div>
+              )}
+              {logStreamEnded && !logFollowing && (
+                <div style={{
+                  padding: "4px 8px",
+                  marginBottom: 8,
+                  fontSize: 11,
+                  color: "var(--text3)",
+                  background: "var(--bg2, rgba(0,0,0,0.05))",
+                  borderRadius: 4,
+                }}>
+                  {t("logStreamEnded")}
+                </div>
+              )}
               {logError && <div className="hint" style={{ color: "var(--red)", marginBottom: 8 }}>{logError}</div>}
               <div className="log-viewer">
                 {logLoading && !logContent ? (
