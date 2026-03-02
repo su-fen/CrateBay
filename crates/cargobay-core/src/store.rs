@@ -155,6 +155,93 @@ pub fn log_dir() -> PathBuf {
     }
 }
 
+/// Initialize file-based error logging with rotation.
+///
+/// Sets up a `tracing-subscriber` with a rolling daily file appender that
+/// writes WARN-and-above events into the log directory.  Also performs an
+/// initial cleanup of stale log files.
+///
+/// This is safe to call multiple times; only the first invocation takes effect.
+pub fn init_error_logging() {
+    crate::logging::init();
+}
+
+/// Remove log files older than the configured retention window.
+///
+/// Reads `CARGOBAY_LOG_RETENTION_DAYS` (default 7, clamped 1-365) and
+/// deletes any `cargobay-error.log.*` files in the log directory whose
+/// last-modified timestamp is older than that many days.
+pub fn cleanup_old_logs() {
+    let dir = log_dir();
+    let retention_days = log_retention_days();
+
+    let Ok(entries) = std::fs::read_dir(&dir) else {
+        tracing::warn!(
+            "cleanup_old_logs: could not read log directory {}",
+            dir.display()
+        );
+        return;
+    };
+
+    let retention = std::time::Duration::from_secs(retention_days.saturating_mul(24 * 60 * 60));
+    let now = std::time::SystemTime::now();
+    let cutoff = now
+        .checked_sub(retention)
+        .unwrap_or(std::time::SystemTime::UNIX_EPOCH);
+
+    let mut removed = 0u32;
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
+
+        let file_name = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
+        if !file_name.starts_with("cargobay-error.log.") {
+            continue;
+        }
+
+        let Ok(meta) = entry.metadata() else {
+            continue;
+        };
+        let Ok(modified) = meta.modified() else {
+            continue;
+        };
+        if modified >= cutoff {
+            continue;
+        }
+
+        if std::fs::remove_file(&path).is_ok() {
+            removed += 1;
+            tracing::info!("cleanup_old_logs: removed {}", path.display());
+        } else {
+            tracing::warn!("cleanup_old_logs: failed to remove {}", path.display());
+        }
+    }
+
+    if removed > 0 {
+        tracing::info!(
+            "cleanup_old_logs: removed {} stale log file(s) (retention: {} days)",
+            removed,
+            retention_days
+        );
+    }
+}
+
+fn log_retention_days() -> u64 {
+    const DEFAULT_DAYS: u64 = 7;
+
+    let Ok(raw) = std::env::var("CARGOBAY_LOG_RETENTION_DAYS") else {
+        return DEFAULT_DAYS;
+    };
+
+    let Ok(days) = raw.trim().parse::<u64>() else {
+        return DEFAULT_DAYS;
+    };
+
+    days.clamp(1, 365)
+}
+
 fn write_atomic(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
     let dir = path.parent().unwrap_or_else(|| Path::new("."));
     std::fs::create_dir_all(dir)?;
@@ -333,6 +420,7 @@ mod tests {
                 rosetta_enabled: false,
                 shared_dirs: vec![],
                 port_forwards: vec![],
+                os_image: None,
             },
             VmInfo {
                 id: "stub-3".into(),
@@ -344,6 +432,7 @@ mod tests {
                 rosetta_enabled: false,
                 shared_dirs: vec![],
                 port_forwards: vec![],
+                os_image: None,
             },
         ];
         assert_eq!(next_id_for_prefix(&vms, "stub-"), 4);
@@ -361,6 +450,7 @@ mod tests {
             rosetta_enabled: false,
             shared_dirs: vec![],
             port_forwards: vec![],
+            os_image: None,
         }];
         assert_eq!(next_id_for_prefix(&vms, "stub-"), 1);
     }
@@ -395,6 +485,7 @@ mod tests {
             rosetta_enabled: true,
             shared_dirs: vec![],
             port_forwards: vec![],
+            os_image: None,
         }];
 
         store.save_vms(&vms).unwrap();

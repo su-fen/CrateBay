@@ -172,16 +172,30 @@ impl Args {
 #[cfg(target_os = "macos")]
 fn parse_shared_dir(spec: &str) -> Result<ffi::SharedDirFFI, String> {
     // Format: "tag:host_path" or "tag:host_path:ro"
-    let parts: Vec<&str> = spec.splitn(3, ':').collect();
-    if parts.len() < 2 {
+    // Tag is guaranteed to not contain colons (validated by mount_virtiofs).
+    // We split on the first colon to get the tag, then check if the remainder
+    // ends with ":ro" to determine read-only mode.
+    let first_colon = spec.find(':').ok_or_else(|| {
+        format!(
+            "Invalid --share format '{}', expected 'tag:host_path[:ro]'",
+            spec
+        )
+    })?;
+    let tag = &spec[..first_colon];
+    let rest = &spec[first_colon + 1..];
+
+    let (host_path, read_only) = if rest.ends_with(":ro") {
+        (&rest[..rest.len() - 3], true)
+    } else {
+        (rest, false)
+    };
+
+    if tag.is_empty() || host_path.is_empty() {
         return Err(format!(
             "Invalid --share format '{}', expected 'tag:host_path[:ro]'",
             spec
         ));
     }
-    let tag = parts[0];
-    let host_path = parts[1];
-    let read_only = parts.get(2).is_some_and(|s| *s == "ro");
 
     let tag = std::ffi::CString::new(tag).map_err(|e| format!("invalid tag: {}", e))?;
     let host_path =
