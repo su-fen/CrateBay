@@ -38,14 +38,14 @@
 
 ## v1.0.0 — Production Ready (In Progress)
 
-- ⬜ Real VM execution on macOS (Virtualization.framework end-to-end)
-- ⬜ ACPI graceful shutdown
-- ⬜ Real VirtioFS mount implementation
+- ✅ ACPI graceful shutdown (VZ bridge 3-phase: requestStop → poll → force stop)
+- ✅ CI/CD pipeline (GitHub Actions: CI + release builds)
+- ✅ Comprehensive test suite (121 tests across core, CLI, daemon, integration)
+- ✅ Shell completion (bash, zsh, fish, elvish, powershell)
+- ⬜ Real VM execution end-to-end (kernel image download → boot → console)
+- ⬜ Real VirtioFS mount implementation (guest-side mount)
 - ⬜ Linux (KVM) VM backend
 - ⬜ Windows (Hyper-V) VM backend
-- ⬜ CI/CD pipeline (GitHub Actions, cross-platform builds)
-- ⬜ Comprehensive test suite
-- ⬜ Shell completion (bash, zsh, fish)
 - ⬜ Plugin system
-- ⬜ Security audit
+- ⬜ Security audit & hardening
 - ⬜ Performance optimization (<20MB install, <200MB idle RAM, <3s startup)
