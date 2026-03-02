@@ -1474,7 +1474,12 @@ mod tests {
         }
     }
 
-    fn temp_config_dir() -> (String, EnvGuard, EnvGuard, std::sync::MutexGuard<'static, ()>) {
+    fn temp_config_dir() -> (
+        String,
+        EnvGuard,
+        EnvGuard,
+        std::sync::MutexGuard<'static, ()>,
+    ) {
         // Acquire the global mutex first so no other test can touch env vars
         // while we hold it.
         let lock = TEST_MUTEX.lock().unwrap_or_else(|e| e.into_inner());
