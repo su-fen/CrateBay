@@ -52,10 +52,10 @@ OrbStack is great, but it's **closed-source and macOS-only**. Docker Desktop is 
 | **Windows** | Planned | ❌ | ✅ | ✅ | ❌ |
 | **Linux** | Planned | ❌ | ✅ | ✅ | ✅ |
 | **Docker management** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Linux VMs** | In Progress | ✅ | ❌ | ❌ | Indirect |
+| **Linux VMs** | ✅ | ✅ | ❌ | ❌ | Indirect |
 | **Kubernetes** | ✅ (K3s + Dashboard) | ✅ | ✅ | ✅ | ✅ (K3s) |
 | **Auto port forwarding** | Planned | ✅ | ✅ | ❌ | ✅ |
-| **VirtioFS file sharing** | In Progress | ✅ | ✅ | ❌ | ✅ |
+| **VirtioFS file sharing** | ✅ | ✅ | ✅ | ❌ | ✅ |
 | **Tech stack** | Rust | Swift | Go + Electron | Electron + TS | Go |
 
 ## Features
@@ -72,13 +72,13 @@ OrbStack is great, but it's **closed-source and macOS-only**. Docker Desktop is 
 | Import / Push images (docker load/push) | ✅ | ✅ | ✅ | Working |
 | Package image from container (docker commit) | ✅ | ✅ | ✅ | Working |
 | Docker volume management | ✅ | ✅ | ✅ | Working |
-| Lightweight Linux VMs | ✅ Virtualization.framework | ✅ KVM | ✅ Hyper-V | In Progress |
+| Lightweight Linux VMs | ✅ Virtualization.framework | ✅ KVM | ✅ Hyper-V | Working |
 | VM console (serial output) | ✅ | ✅ | ✅ | Working |
 | VM port forwarding | ✅ | ✅ | ✅ | Working |
 | VM resource monitoring | ✅ | ✅ | ✅ | Working |
 | OS image download & management | ✅ | ✅ | ✅ | Working |
-| Rosetta x86_64 translation | ✅ Apple Silicon | — | — | In Progress |
-| VirtioFS file sharing | ✅ | ✅ virtiofsd | ✅ Plan 9/SMB | In Progress |
+| Rosetta x86_64 translation | ✅ Apple Silicon | — | — | Working |
+| VirtioFS file sharing | ✅ | ✅ virtiofsd | ✅ Plan 9/SMB | Working |
 | K3s cluster management | ✅ | ✅ | 📋 | Working (Linux) |
 | Kubernetes dashboard (pods/services/deployments) | ✅ | ✅ | ✅ | Working |
 | Auto-update checker | ✅ | ✅ | ✅ | Working |
@@ -105,7 +105,7 @@ OrbStack is great, but it's **closed-source and macOS-only**. Docker Desktop is 
 
 ## Quick Start
 
-> CargoBay is in early development. Not ready for production use.
+> CargoBay v1.0.0 is now available. Feedback and contributions are welcome!
 
 ```bash
 # Build from source

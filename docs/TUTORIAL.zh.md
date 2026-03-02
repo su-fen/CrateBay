@@ -175,7 +175,7 @@ v0.1 预览版支持：
 - **VirtioFS 挂载列表**（UI 中会记录；真实挂载后续接入）
 - **登录命令**：生成 `ssh user@host -p <port>`（端口需你手动提供）
 
-> 注意：VM 元数据会持久化到“配置”目录下的 `vms.json`，但真正的 VM 运行时后端仍在持续开发中。
+> 注意：VM 元数据会持久化到”配置”目录下的 `vms.json`。VM 运行时后端使用 Virtualization.framework（macOS）、KVM（Linux）或 Hyper-V（Windows）。
 
 ### Images（镜像）
 
@@ -210,7 +210,7 @@ cargobay status
 
 示例输出：
 ```
-CargoBay v0.1.0
+CargoBay v1.0.0
 Platform: macOS aarch64 (Virtualization.framework available)
 Rosetta x86_64: available
 Docker: connected (~/.colima/default/docker.sock)

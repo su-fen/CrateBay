@@ -36,7 +36,7 @@
 - ✅ Auto-update checker (GitHub releases)
 - ✅ Official website (GitHub Pages)
 
-## v1.0.0 — Production Ready (In Progress)
+## v1.0.0 — Production Ready (Done)
 
 - ✅ ACPI graceful shutdown (VZ bridge 3-phase: requestStop → poll → force stop)
 - ✅ CI/CD pipeline (GitHub Actions: CI + release builds)
@@ -46,6 +46,17 @@
 - ✅ Real VirtioFS mount implementation (tag validation, mount tracking, guest hints)
 - ✅ Linux (KVM) VM backend (kvm-ioctls, vCPU, memory, kernel loading, serial console)
 - ✅ Security audit & hardening (input validation, path traversal prevention, log sanitization)
-- ⬜ Windows (Hyper-V) VM backend
-- ⬜ Plugin system
-- ⬜ Performance optimization (<20MB install, <200MB idle RAM, <3s startup)
+- ✅ Windows (Hyper-V) VM backend
+- ✅ Plugin system
+- ✅ Performance optimization (<20MB install, <200MB idle RAM, <3s startup)
+
+## v1.1.0 — Ecosystem & Polish (Planned)
+
+- ⬜ Plugin system enhancements (marketplace, versioning, sandboxed execution)
+- ⬜ Expanded OS image catalog (Fedora, Arch Linux, NixOS, FreeBSD)
+- ⬜ Container compose / multi-container orchestration (docker-compose support)
+- ⬜ Network management UI (custom bridges, DNS, firewall rules)
+- ⬜ Snapshot & restore for VMs
+- ⬜ Remote Docker host connections
+- ⬜ GPU passthrough (macOS Metal, Linux VFIO)
+- ⬜ Telemetry-free analytics dashboard (local-only usage stats)

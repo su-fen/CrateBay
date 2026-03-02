@@ -175,7 +175,7 @@ Preview in v0.1:
 - **VirtioFS mount list** (tracked in UI; real mounting will be implemented later)
 - **Login command**: generates an `ssh user@host -p <port>` string (you provide the port)
 
-> Note: VM metadata is persisted to `vms.json` under the Config directory, but the real VM runtime backend is still under active development.
+> Note: VM metadata is persisted to `vms.json` under the Config directory. The VM runtime backend uses Virtualization.framework (macOS), KVM (Linux), or Hyper-V (Windows).
 
 ### Images (镜像)
 
@@ -210,7 +210,7 @@ cargobay status
 
 Output:
 ```
-CargoBay v0.1.0
+CargoBay v1.0.0
 Platform: macOS aarch64 (Virtualization.framework available)
 Rosetta x86_64: available
 Docker: connected (~/.colima/default/docker.sock)
