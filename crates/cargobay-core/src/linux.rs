@@ -509,7 +509,7 @@ impl LinuxHypervisor {
     /// Set up initial CPU state for x86_64 long mode boot.
     #[cfg(target_arch = "x86_64")]
     fn setup_vcpu_regs(vcpu: &VcpuFd) -> Result<(), HypervisorError> {
-        use kvm_bindings::{kvm_regs, kvm_sregs};
+        use kvm_bindings::kvm_sregs;
 
         // Set up special registers for long mode.
         let mut sregs = vcpu
@@ -677,7 +677,7 @@ impl LinuxHypervisor {
         // Set up TSS (required on x86 before creating vCPUs with in-kernel irqchip).
         #[cfg(target_arch = "x86_64")]
         {
-            vm_fd.set_tss_addr(0xFFFF_D000).map_err(|e| {
+            vm_fd.set_tss_address(0xFFFF_D000).map_err(|e| {
                 HypervisorError::CreateFailed(format!("Failed to set TSS address: {}", e))
             })?;
         }
@@ -724,23 +724,6 @@ impl LinuxHypervisor {
         Self::setup_page_tables(guest_mem, mem_size)?;
 
         // Load kernel if path is provided.
-        let kernel_path = config
-            .kernel_path
-            .as_deref()
-            .or_else(|| {
-                std::env::var("CARGOBAY_KVM_KERNEL")
-                    .ok()
-                    .as_deref()
-                    .map(|_| ())
-            })
-            .and_then(|_| config.kernel_path.as_deref())
-            .or_else(|| {
-                std::env::var("CARGOBAY_KVM_KERNEL")
-                    .ok()
-                    .as_deref()
-                    .map(|s| s)
-            });
-
         // Resolve kernel path: config first, then env var.
         let kernel_path_str: Option<String> = config
             .kernel_path
@@ -818,7 +801,7 @@ impl LinuxHypervisor {
     ) -> Vec<std::thread::JoinHandle<()>> {
         let mut handles = Vec::with_capacity(vcpus.len());
 
-        for (idx, vcpu) in vcpus.into_iter().enumerate() {
+        for (idx, mut vcpu) in vcpus.into_iter().enumerate() {
             let stop = stop_flag.clone();
             let id = vm_id.clone();
             let console_path = vm_console_log_path(&id);
@@ -1073,7 +1056,7 @@ impl Hypervisor for LinuxHypervisor {
 
     fn start_vm(&self, id: &str) -> Result<(), HypervisorError> {
         // Check current state and extract config needed for start.
-        let (config, kernel_path, initrd_path, shared_dirs) = {
+        let (config, _kernel_path, _initrd_path, shared_dirs) = {
             let vms = self.vms.lock().unwrap();
             let entry = vms.get(id).ok_or(HypervisorError::NotFound(id.into()))?;
 
