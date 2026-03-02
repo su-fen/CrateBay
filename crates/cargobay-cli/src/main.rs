@@ -17,6 +17,7 @@ use tonic::transport::Channel;
 
 use cargobay_core::proto;
 use cargobay_core::proto::vm_service_client::VmServiceClient;
+use cargobay_core::validation;
 
 #[derive(Parser)]
 #[command(
@@ -630,6 +631,10 @@ async fn handle_vm(cmd: VmCommands) {
             rosetta,
             os_image,
         } => {
+            if let Err(e) = validation::validate_vm_name(&name) {
+                eprintln!("Error: invalid VM name '{}': {}", name, e);
+                std::process::exit(1);
+            }
             // Resolve image paths if an OS image was specified.
             let (kernel_path, initrd_path, disk_path) = if let Some(ref img_id) = os_image {
                 if !cargobay_core::images::is_image_ready(img_id) {
@@ -707,6 +712,19 @@ async fn handle_vm(cmd: VmCommands) {
             }
         }
         VmCommands::Start { name } => {
+            // Validate unless it looks like an internal ID (e.g. "stub-1").
+            if !name.contains('-')
+                || name
+                    .split('-')
+                    .next_back()
+                    .and_then(|s| s.parse::<u64>().ok())
+                    .is_none()
+            {
+                if let Err(e) = validation::validate_vm_name(&name) {
+                    eprintln!("Error: invalid VM name '{}': {}", name, e);
+                    std::process::exit(1);
+                }
+            }
             if let Some(client) = client.as_mut() {
                 let id = match resolve_vm_id_grpc(client, &name).await {
                     Ok(id) => id,
@@ -742,6 +760,18 @@ async fn handle_vm(cmd: VmCommands) {
             }
         }
         VmCommands::Stop { name } => {
+            if !name.contains('-')
+                || name
+                    .split('-')
+                    .next_back()
+                    .and_then(|s| s.parse::<u64>().ok())
+                    .is_none()
+            {
+                if let Err(e) = validation::validate_vm_name(&name) {
+                    eprintln!("Error: invalid VM name '{}': {}", name, e);
+                    std::process::exit(1);
+                }
+            }
             if let Some(client) = client.as_mut() {
                 let id = match resolve_vm_id_grpc(client, &name).await {
                     Ok(id) => id,
@@ -777,6 +807,18 @@ async fn handle_vm(cmd: VmCommands) {
             }
         }
         VmCommands::Delete { name } => {
+            if !name.contains('-')
+                || name
+                    .split('-')
+                    .next_back()
+                    .and_then(|s| s.parse::<u64>().ok())
+                    .is_none()
+            {
+                if let Err(e) = validation::validate_vm_name(&name) {
+                    eprintln!("Error: invalid VM name '{}': {}", name, e);
+                    std::process::exit(1);
+                }
+            }
             if let Some(client) = client.as_mut() {
                 let id = match resolve_vm_id_grpc(client, &name).await {
                     Ok(id) => id,
@@ -1073,6 +1115,14 @@ async fn handle_mount(cmd: MountCommands) {
             guest_path,
             readonly,
         } => {
+            if let Err(e) = validation::validate_mount_path(&host_path) {
+                eprintln!("Error: invalid host path '{}': {}", host_path, e);
+                std::process::exit(1);
+            }
+            if let Err(e) = validation::validate_mount_path(&guest_path) {
+                eprintln!("Error: invalid guest path '{}': {}", guest_path, e);
+                std::process::exit(1);
+            }
             if let Some(client) = client.as_mut() {
                 let vm_id = match resolve_vm_id_grpc(client, &vm).await {
                     Ok(id) => id,
@@ -1989,6 +2039,14 @@ async fn handle_docker(cmd: DockerCommands) -> Result<(), String> {
             pull,
             env,
         } => {
+            if let Err(e) = validation::validate_image_reference(&image) {
+                return Err(format!("Invalid image reference '{}': {}", image, e));
+            }
+            if let Some(ref n) = name {
+                if let Err(e) = validation::validate_container_name(n) {
+                    return Err(format!("Invalid container name '{}': {}", n, e));
+                }
+            }
             if pull {
                 docker_pull_image(&docker, &image).await?;
             }

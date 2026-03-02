@@ -4,6 +4,7 @@ pub mod k3s;
 pub mod logging;
 pub mod portfwd;
 pub mod store;
+pub mod validation;
 pub mod vm;
 
 #[cfg(target_os = "linux")]
