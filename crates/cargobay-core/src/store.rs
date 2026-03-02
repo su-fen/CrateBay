@@ -141,10 +141,13 @@ pub fn log_dir() -> PathBuf {
 
     #[cfg(target_os = "linux")]
     {
-        return data_dir();
+        data_dir()
     }
 
-    config_dir()
+    #[cfg(not(target_os = "linux"))]
+    {
+        config_dir()
+    }
 }
 
 fn write_atomic(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
