@@ -968,7 +968,7 @@ async fn handle_port(
                             println!("No port forwards configured.");
                             return;
                         }
-                        println!("{:<12} {:<12} {}", "HOST PORT", "GUEST PORT", "PROTOCOL");
+                        println!("{:<12} {:<12} PROTOCOL", "HOST PORT", "GUEST PORT");
                         for pf in forwards {
                             println!("{:<12} {:<12} {}", pf.host_port, pf.guest_port, pf.protocol);
                         }
@@ -993,7 +993,7 @@ async fn handle_port(
                             println!("No port forwards configured.");
                             return;
                         }
-                        println!("{:<12} {:<12} {}", "HOST PORT", "GUEST PORT", "PROTOCOL");
+                        println!("{:<12} {:<12} PROTOCOL", "HOST PORT", "GUEST PORT");
                         for pf in forwards {
                             println!("{:<12} {:<12} {}", pf.host_port, pf.guest_port, pf.protocol);
                         }
@@ -1359,13 +1359,13 @@ async fn handle_image(cmd: ImageCommands) -> Result<(), String> {
             }
 
             println!(
-                "{:<40} {:<14} {:<12} {}",
-                "REPOSITORY:TAG", "IMAGE ID", "SIZE", "CREATED"
+                "{:<40} {:<14} {:<12} CREATED",
+                "REPOSITORY:TAG", "IMAGE ID", "SIZE"
             );
             for img in images {
                 let full_id = img.id.clone();
-                let short_id = if full_id.starts_with("sha256:") {
-                    full_id[7..].chars().take(12).collect::<String>()
+                let short_id = if let Some(stripped) = full_id.strip_prefix("sha256:") {
+                    stripped.chars().take(12).collect::<String>()
                 } else {
                     full_id.chars().take(12).collect::<String>()
                 };
@@ -1387,20 +1387,48 @@ async fn handle_image(cmd: ImageCommands) -> Result<(), String> {
                         let mut y = 1970i64;
                         let mut remaining = days_since_epoch;
                         loop {
-                            let days_in_year = if (y % 4 == 0 && y % 100 != 0) || y % 400 == 0 { 366 } else { 365 };
-                            if remaining < days_in_year { break; }
+                            let days_in_year = if (y % 4 == 0 && y % 100 != 0) || y % 400 == 0 {
+                                366
+                            } else {
+                                365
+                            };
+                            if remaining < days_in_year {
+                                break;
+                            }
                             remaining -= days_in_year;
                             y += 1;
                         }
                         let leap = (y % 4 == 0 && y % 100 != 0) || y % 400 == 0;
-                        let month_days = [31, if leap { 29 } else { 28 }, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+                        let month_days = [
+                            31,
+                            if leap { 29 } else { 28 },
+                            31,
+                            30,
+                            31,
+                            30,
+                            31,
+                            31,
+                            30,
+                            31,
+                            30,
+                            31,
+                        ];
                         let mut m = 0usize;
                         for &md in &month_days {
-                            if remaining < md { break; }
+                            if remaining < md {
+                                break;
+                            }
                             remaining -= md;
                             m += 1;
                         }
-                        format!("{:04}-{:02}-{:02} {:02}:{:02}", y, m + 1, remaining + 1, hours, minutes)
+                        format!(
+                            "{:04}-{:02}-{:02} {:02}:{:02}",
+                            y,
+                            m + 1,
+                            remaining + 1,
+                            hours,
+                            minutes
+                        )
                     } else {
                         "-".to_string()
                     }
@@ -1413,10 +1441,7 @@ async fn handle_image(cmd: ImageCommands) -> Result<(), String> {
                     );
                 } else {
                     for tag in &img.repo_tags {
-                        println!(
-                            "{:<40} {:<14} {:<12} {}",
-                            tag, short_id, size_str, created
-                        );
+                        println!("{:<40} {:<14} {:<12} {}", tag, short_id, size_str, created);
                     }
                 }
             }
@@ -1463,8 +1488,7 @@ async fn handle_image(cmd: ImageCommands) -> Result<(), String> {
                 .inspect_image(&reference)
                 .await
                 .map_err(|e| e.to_string())?;
-            let json = serde_json::to_string_pretty(&detail)
-                .map_err(|e| e.to_string())?;
+            let json = serde_json::to_string_pretty(&detail).map_err(|e| e.to_string())?;
             println!("{}", json);
             Ok(())
         }
@@ -1522,7 +1546,10 @@ async fn handle_image(cmd: ImageCommands) -> Result<(), String> {
         ImageCommands::DownloadOs { name } => {
             let entry = cargobay_core::images::find_image(&name);
             if entry.is_none() {
-                return Err(format!("Unknown OS image: '{}'. Run 'cargobay image list-os' to see available images.", name));
+                return Err(format!(
+                    "Unknown OS image: '{}'. Run 'cargobay image list-os' to see available images.",
+                    name
+                ));
             }
 
             println!("Downloading OS image '{}'...", name);
@@ -2023,10 +2050,7 @@ async fn handle_docker(cmd: DockerCommands) -> Result<(), String> {
                 .await
                 .map_err(|e| format!("Failed to inspect container {}: {}", id, e))?;
 
-            let env_list = inspect
-                .config
-                .and_then(|c| c.env)
-                .unwrap_or_default();
+            let env_list = inspect.config.and_then(|c| c.env).unwrap_or_default();
 
             if env_list.is_empty() {
                 println!("No environment variables set.");
@@ -2123,15 +2147,9 @@ async fn handle_volume(cmd: VolumeCommands) -> Result<(), String> {
                 .await
                 .map_err(|e| e.to_string())?;
             let volumes = resp.volumes.unwrap_or_default();
-            println!(
-                "{:<32} {:<12} {}",
-                "VOLUME NAME", "DRIVER", "MOUNTPOINT"
-            );
+            println!("{:<32} {:<12} MOUNTPOINT", "VOLUME NAME", "DRIVER");
             for v in volumes {
-                println!(
-                    "{:<32} {:<12} {}",
-                    v.name, v.driver, v.mountpoint
-                );
+                println!("{:<32} {:<12} {}", v.name, v.driver, v.mountpoint);
             }
         }
         VolumeCommands::Create { name, driver } => {
@@ -2151,8 +2169,7 @@ async fn handle_volume(cmd: VolumeCommands) -> Result<(), String> {
                 .inspect_volume(&name)
                 .await
                 .map_err(|e| e.to_string())?;
-            let json = serde_json::to_string_pretty(&v)
-                .map_err(|e| e.to_string())?;
+            let json = serde_json::to_string_pretty(&v).map_err(|e| e.to_string())?;
             println!("{}", json);
         }
         VolumeCommands::Remove { name } => {
@@ -2169,17 +2186,14 @@ async fn handle_volume(cmd: VolumeCommands) -> Result<(), String> {
 async fn handle_k3s(cmd: K3sCommands) -> Result<(), String> {
     match cmd {
         K3sCommands::Status => {
-            let status = cargobay_core::k3s::K3sManager::cluster_status()
-                .map_err(|e| e.to_string())?;
+            let status =
+                cargobay_core::k3s::K3sManager::cluster_status().map_err(|e| e.to_string())?;
             println!("K3s Status");
             println!(
                 "  Installed: {}",
                 if status.installed { "yes" } else { "no" }
             );
-            println!(
-                "  Running:   {}",
-                if status.running { "yes" } else { "no" }
-            );
+            println!("  Running:   {}", if status.running { "yes" } else { "no" });
             if !status.version.is_empty() {
                 println!("  Version:   {}", status.version);
             }
@@ -2200,18 +2214,15 @@ async fn handle_k3s(cmd: K3sCommands) -> Result<(), String> {
         }
         K3sCommands::Start => {
             let config = cargobay_core::k3s::K3sConfig::default();
-            cargobay_core::k3s::K3sManager::start_cluster(&config)
-                .map_err(|e| e.to_string())?;
+            cargobay_core::k3s::K3sManager::start_cluster(&config).map_err(|e| e.to_string())?;
             println!("K3s cluster started.");
         }
         K3sCommands::Stop => {
-            cargobay_core::k3s::K3sManager::stop_cluster()
-                .map_err(|e| e.to_string())?;
+            cargobay_core::k3s::K3sManager::stop_cluster().map_err(|e| e.to_string())?;
             println!("K3s cluster stopped.");
         }
         K3sCommands::Uninstall => {
-            cargobay_core::k3s::K3sManager::uninstall()
-                .map_err(|e| e.to_string())?;
+            cargobay_core::k3s::K3sManager::uninstall().map_err(|e| e.to_string())?;
             println!("K3s uninstalled.");
         }
     }

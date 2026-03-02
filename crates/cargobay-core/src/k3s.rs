@@ -72,7 +72,7 @@ impl Default for K3sConfig {
 }
 
 /// Status information for a K3s cluster.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct K3sStatus {
     /// Whether the k3s binary is present on disk.
     pub installed: bool,
@@ -82,17 +82,6 @@ pub struct K3sStatus {
     pub version: String,
     /// Number of nodes in the cluster (0 if not running).
     pub node_count: u32,
-}
-
-impl Default for K3sStatus {
-    fn default() -> Self {
-        Self {
-            installed: false,
-            running: false,
-            version: String::new(),
-            node_count: 0,
-        }
-    }
 }
 
 /// Root directory for K3s binaries and data.
@@ -140,18 +129,18 @@ impl K3sManager {
             // On macOS/Windows, K3s would run inside a CargoBay Linux VM.
             // This is not yet implemented -- return an informational error.
             warn!("K3s install requested on non-Linux platform; K3s runs inside a Linux VM (not yet implemented)");
-            return Err(K3sError::UnsupportedPlatform(
+            Err(K3sError::UnsupportedPlatform(
                 "K3s requires Linux. On macOS/Windows it will run inside a CargoBay VM (coming soon).".into(),
-            ));
+            ))
         }
 
         #[cfg(target_os = "linux")]
         {
             #[cfg(not(feature = "download"))]
             {
-                return Err(K3sError::DownloadFailed(
+                Err(K3sError::DownloadFailed(
                     "Build without 'download' feature; cannot fetch K3s binary.".into(),
-                ));
+                ))
             }
 
             #[cfg(feature = "download")]
@@ -230,7 +219,8 @@ impl K3sManager {
         cmd.stdout(std::process::Stdio::null())
             .stderr(std::process::Stdio::null());
 
-        cmd.spawn().map_err(|e| K3sError::StartFailed(e.to_string()))?;
+        cmd.spawn()
+            .map_err(|e| K3sError::StartFailed(e.to_string()))?;
 
         info!("K3s cluster started");
         Ok(())

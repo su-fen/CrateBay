@@ -78,20 +78,12 @@ pub trait Hypervisor: Send + Sync {
     }
 
     /// Add a port forward rule to a VM (persisted in the VM store).
-    fn add_port_forward(
-        &self,
-        _vm_id: &str,
-        _pf: &PortForward,
-    ) -> Result<(), HypervisorError> {
+    fn add_port_forward(&self, _vm_id: &str, _pf: &PortForward) -> Result<(), HypervisorError> {
         Err(HypervisorError::Unsupported)
     }
 
     /// Remove a port forward rule from a VM.
-    fn remove_port_forward(
-        &self,
-        _vm_id: &str,
-        _host_port: u16,
-    ) -> Result<(), HypervisorError> {
+    fn remove_port_forward(&self, _vm_id: &str, _host_port: u16) -> Result<(), HypervisorError> {
         Err(HypervisorError::Unsupported)
     }
 

@@ -52,7 +52,12 @@ fn macos_build() {
     let swiftc_dir = Path::new(&swiftc_path)
         .parent()
         .expect("no parent for swiftc");
-    let swift_lib_dir = swiftc_dir.parent().unwrap().join("lib").join("swift").join("macosx");
+    let swift_lib_dir = swiftc_dir
+        .parent()
+        .unwrap()
+        .join("lib")
+        .join("swift")
+        .join("macosx");
 
     // Import the C header via a bridging header mechanism:
     // Swift can import C declarations directly using -import-objc-header.
@@ -81,7 +86,11 @@ fn macos_build() {
 
     // Create a static library from the object file.
     let ar_status = Command::new("ar")
-        .args(["rcs", static_lib.to_str().unwrap(), object_file.to_str().unwrap()])
+        .args([
+            "rcs",
+            static_lib.to_str().unwrap(),
+            object_file.to_str().unwrap(),
+        ])
         .status()
         .expect("Failed to invoke ar");
 
@@ -137,10 +146,16 @@ fn target_triple() -> String {
         format!("{}-apple-macosx13.0", arch)
     } else {
         #[cfg(target_arch = "aarch64")]
-        { "arm64-apple-macosx13.0".to_string() }
+        {
+            "arm64-apple-macosx13.0".to_string()
+        }
         #[cfg(target_arch = "x86_64")]
-        { "x86_64-apple-macosx13.0".to_string() }
+        {
+            "x86_64-apple-macosx13.0".to_string()
+        }
         #[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))]
-        { "arm64-apple-macosx13.0".to_string() }
+        {
+            "arm64-apple-macosx13.0".to_string()
+        }
     }
 }

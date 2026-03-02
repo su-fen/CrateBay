@@ -407,7 +407,7 @@ impl VmService for VmServiceImpl {
             vm_id,
             cpu_percent: 0.0,
             memory_usage_mb: 0,
-                        disk_usage_gb: vm.disk_gb,
+            disk_usage_gb: vm.disk_gb,
         }))
     }
 }

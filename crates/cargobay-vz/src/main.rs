@@ -171,7 +171,7 @@ fn parse_shared_dir(spec: &str) -> Result<ffi::SharedDirFFI, String> {
     }
     let tag = parts[0];
     let host_path = parts[1];
-    let read_only = parts.get(2).map_or(false, |s| *s == "ro");
+    let read_only = parts.get(2).is_some_and(|s| *s == "ro");
 
     let tag = std::ffi::CString::new(tag).map_err(|e| format!("invalid tag: {}", e))?;
     let host_path =
@@ -229,10 +229,7 @@ fn run(args: Args) -> Result<(), String> {
 
     // Signal readiness.
     if let Some(path) = args.ready_file.as_ref() {
-        let _ = std::fs::create_dir_all(
-            path.parent()
-                .unwrap_or_else(|| std::path::Path::new(".")),
-        );
+        let _ = std::fs::create_dir_all(path.parent().unwrap_or_else(|| std::path::Path::new(".")));
         std::fs::write(path, b"ready\n")
             .map_err(|e| format!("Failed to write ready file: {}", e))?;
     }

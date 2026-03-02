@@ -60,11 +60,7 @@ extern "C" {
         out_error: *mut *mut c_char,
     ) -> VZVMHandle;
 
-    pub fn vz_stop_vm(
-        handle: VZVMHandle,
-        timeout_secs: f64,
-        out_error: *mut *mut c_char,
-    ) -> i32;
+    pub fn vz_stop_vm(handle: VZVMHandle, timeout_secs: f64, out_error: *mut *mut c_char) -> i32;
 
     pub fn vz_destroy_vm(handle: VZVMHandle, out_error: *mut *mut c_char) -> i32;
 

@@ -373,7 +373,12 @@ impl Hypervisor for WindowsHypervisor {
             let entry = vms
                 .get_mut(vm_id)
                 .ok_or(HypervisorError::NotFound(vm_id.into()))?;
-            if entry.info.port_forwards.iter().any(|p| p.host_port == pf.host_port) {
+            if entry
+                .info
+                .port_forwards
+                .iter()
+                .any(|p| p.host_port == pf.host_port)
+            {
                 return Err(HypervisorError::CreateFailed(format!(
                     "Host port already forwarded: {}",
                     pf.host_port
@@ -384,7 +389,10 @@ impl Hypervisor for WindowsHypervisor {
         if let Err(e) = self.persist() {
             let mut vms = self.vms.lock().unwrap();
             if let Some(entry) = vms.get_mut(vm_id) {
-                entry.info.port_forwards.retain(|p| p.host_port != pf.host_port);
+                entry
+                    .info
+                    .port_forwards
+                    .retain(|p| p.host_port != pf.host_port);
             }
             return Err(e);
         }
@@ -398,7 +406,10 @@ impl Hypervisor for WindowsHypervisor {
                 .get_mut(vm_id)
                 .ok_or(HypervisorError::NotFound(vm_id.into()))?;
             let prev = entry.info.port_forwards.clone();
-            entry.info.port_forwards.retain(|p| p.host_port != host_port);
+            entry
+                .info
+                .port_forwards
+                .retain(|p| p.host_port != host_port);
             prev
         };
         if let Err(e) = self.persist() {

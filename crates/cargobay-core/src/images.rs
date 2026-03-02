@@ -282,10 +282,7 @@ pub fn is_image_ready(image_id: &str) -> bool {
 ///
 /// This function is async and requires a tokio runtime.
 #[cfg(feature = "download")]
-pub async fn download_image<F>(
-    image_id: &str,
-    progress_cb: F,
-) -> Result<ImagePaths, ImageError>
+pub async fn download_image<F>(image_id: &str, progress_cb: F) -> Result<ImagePaths, ImageError>
 where
     F: Fn(&str, u64, u64) + Send + 'static,
 {
@@ -404,9 +401,7 @@ where
 #[cfg(feature = "download")]
 pub fn read_download_progress(image_id: &str) -> DownloadProgress {
     let status = load_image_status(image_id);
-    let entry = builtin_catalog()
-        .into_iter()
-        .find(|e| e.id == image_id);
+    let entry = builtin_catalog().into_iter().find(|e| e.id == image_id);
     let total = entry.as_ref().map(|e| e.size_bytes).unwrap_or(0);
 
     match status {

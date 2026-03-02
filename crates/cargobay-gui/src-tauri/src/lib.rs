@@ -525,10 +525,7 @@ async fn container_logs_stream(
 }
 
 #[tauri::command]
-async fn container_logs_stream_stop(
-    state: State<'_, AppState>,
-    id: String,
-) -> Result<(), String> {
+async fn container_logs_stream_stop(state: State<'_, AppState>, id: String) -> Result<(), String> {
     if let Ok(mut handles) = state.log_stream_handles.lock() {
         if let Some(handle) = handles.remove(&id) {
             handle.abort();
@@ -538,6 +535,7 @@ async fn container_logs_stream_stop(
 }
 
 #[tauri::command]
+async fn container_exec(container_id: String, command: String) -> Result<String, String> {
     let docker = connect_docker()?;
 
     let cmd_parts: Vec<&str> = command.split_whitespace().collect();
@@ -577,7 +575,10 @@ async fn container_logs_stream_stop(
 fn container_exec_interactive_cmd(container_id: String) -> String {
     let docker_host = docker_host_for_cli();
     if let Some(host) = docker_host {
-        format!("DOCKER_HOST={} docker exec -it {} /bin/sh", host, container_id)
+        format!(
+            "DOCKER_HOST={} docker exec -it {} /bin/sh",
+            host, container_id
+        )
     } else {
         format!("docker exec -it {} /bin/sh", container_id)
     }
@@ -598,10 +599,7 @@ async fn container_env(id: String) -> Result<Vec<EnvVar>, String> {
         .await
         .map_err(|e| format!("Failed to inspect container {}: {}", id, e))?;
 
-    let env_list = inspect
-        .config
-        .and_then(|c| c.env)
-        .unwrap_or_default();
+    let env_list = inspect.config.and_then(|c| c.env).unwrap_or_default();
 
     Ok(env_list
         .into_iter()
@@ -653,10 +651,7 @@ async fn container_stats(id: String) -> Result<ContainerStats, String> {
             - stats.precpu_stats.cpu_usage.total_usage as f64;
         let system_delta = stats.cpu_stats.system_cpu_usage.unwrap_or(0) as f64
             - stats.precpu_stats.system_cpu_usage.unwrap_or(0) as f64;
-        let num_cpus = stats
-            .cpu_stats
-            .online_cpus
-            .unwrap_or(1) as f64;
+        let num_cpus = stats.cpu_stats.online_cpus.unwrap_or(1) as f64;
 
         if system_delta > 0.0 && cpu_delta >= 0.0 {
             (cpu_delta / system_delta) * num_cpus * 100.0
@@ -1530,7 +1525,10 @@ async fn image_remove(id: String) -> Result<(), String> {
 #[tauri::command]
 async fn image_tag(source: String, repo: String, tag: String) -> Result<(), String> {
     let docker = connect_docker()?;
-    let opts = TagImageOptions { repo: &repo, tag: &tag };
+    let opts = TagImageOptions {
+        repo: &repo,
+        tag: &tag,
+    };
     docker
         .tag_image(&source, Some(opts))
         .await
@@ -1540,10 +1538,7 @@ async fn image_tag(source: String, repo: String, tag: String) -> Result<(), Stri
 #[tauri::command]
 async fn image_inspect(id: String) -> Result<ImageInspectInfo, String> {
     let docker = connect_docker()?;
-    let detail = docker
-        .inspect_image(&id)
-        .await
-        .map_err(|e| e.to_string())?;
+    let detail = docker.inspect_image(&id).await.map_err(|e| e.to_string())?;
 
     let full_id = detail.id.clone().unwrap_or_default();
     let short_id = if full_id.starts_with("sha256:") {
@@ -1589,8 +1584,7 @@ pub struct K3sStatusDto {
 
 #[tauri::command]
 async fn k3s_status() -> Result<K3sStatusDto, String> {
-    let status = cargobay_core::k3s::K3sManager::cluster_status()
-        .map_err(|e| e.to_string())?;
+    let status = cargobay_core::k3s::K3sManager::cluster_status().map_err(|e| e.to_string())?;
     let kubeconfig = cargobay_core::k3s::K3sManager::kubeconfig_path()
         .to_string_lossy()
         .to_string();
@@ -1613,20 +1607,17 @@ async fn k3s_install() -> Result<(), String> {
 #[tauri::command]
 async fn k3s_start() -> Result<(), String> {
     let config = cargobay_core::k3s::K3sConfig::default();
-    cargobay_core::k3s::K3sManager::start_cluster(&config)
-        .map_err(|e| e.to_string())
+    cargobay_core::k3s::K3sManager::start_cluster(&config).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 async fn k3s_stop() -> Result<(), String> {
-    cargobay_core::k3s::K3sManager::stop_cluster()
-        .map_err(|e| e.to_string())
+    cargobay_core::k3s::K3sManager::stop_cluster().map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 async fn k3s_uninstall() -> Result<(), String> {
-    cargobay_core::k3s::K3sManager::uninstall()
-        .map_err(|e| e.to_string())
+    cargobay_core::k3s::K3sManager::uninstall().map_err(|e| e.to_string())
 }
 
 // ── Kubernetes dashboard commands ────────────────────────────────────
@@ -1682,9 +1673,7 @@ fn run_kubectl(args: &[&str]) -> Result<String, String> {
         cmd.arg(arg);
     }
     cmd.arg("-o").arg("json");
-    let out = cmd
-        .output()
-        .map_err(|e| format!("kubectl failed: {}", e))?;
+    let out = cmd.output().map_err(|e| format!("kubectl failed: {}", e))?;
     if !out.status.success() {
         return Err(String::from_utf8_lossy(&out.stderr).to_string());
     }
@@ -1744,10 +1733,7 @@ async fn k8s_list_pods(namespace: Option<String>) -> Result<Vec<K8sPod>, String>
     let pods: Vec<K8sPod> = items
         .iter()
         .map(|item| {
-            let name = item["metadata"]["name"]
-                .as_str()
-                .unwrap_or("")
-                .to_string();
+            let name = item["metadata"]["name"].as_str().unwrap_or("").to_string();
             let namespace = item["metadata"]["namespace"]
                 .as_str()
                 .unwrap_or("")
@@ -1770,9 +1756,7 @@ async fn k8s_list_pods(namespace: Option<String>) -> Result<Vec<K8sPod>, String>
                 .iter()
                 .map(|c| c["restartCount"].as_u64().unwrap_or(0) as u32)
                 .sum();
-            let creation = item["metadata"]["creationTimestamp"]
-                .as_str()
-                .unwrap_or("");
+            let creation = item["metadata"]["creationTimestamp"].as_str().unwrap_or("");
             let age = k8s_age_from_timestamp(creation);
 
             K8sPod {
@@ -1810,10 +1794,7 @@ async fn k8s_list_services(namespace: Option<String>) -> Result<Vec<K8sService>,
     let services: Vec<K8sService> = items
         .iter()
         .map(|item| {
-            let name = item["metadata"]["name"]
-                .as_str()
-                .unwrap_or("")
-                .to_string();
+            let name = item["metadata"]["name"].as_str().unwrap_or("").to_string();
             let namespace = item["metadata"]["namespace"]
                 .as_str()
                 .unwrap_or("")
@@ -1879,10 +1860,7 @@ async fn k8s_list_deployments(namespace: Option<String>) -> Result<Vec<K8sDeploy
     let deployments: Vec<K8sDeployment> = items
         .iter()
         .map(|item| {
-            let name = item["metadata"]["name"]
-                .as_str()
-                .unwrap_or("")
-                .to_string();
+            let name = item["metadata"]["name"].as_str().unwrap_or("").to_string();
             let namespace = item["metadata"]["namespace"]
                 .as_str()
                 .unwrap_or("")
@@ -1892,9 +1870,7 @@ async fn k8s_list_deployments(namespace: Option<String>) -> Result<Vec<K8sDeploy
             let ready = format!("{}/{}", ready_replicas, replicas);
             let up_to_date = item["status"]["updatedReplicas"].as_u64().unwrap_or(0) as u32;
             let available = item["status"]["availableReplicas"].as_u64().unwrap_or(0) as u32;
-            let creation = item["metadata"]["creationTimestamp"]
-                .as_str()
-                .unwrap_or("");
+            let creation = item["metadata"]["creationTimestamp"].as_str().unwrap_or("");
             let age = k8s_age_from_timestamp(creation);
 
             K8sDeployment {
@@ -1911,7 +1887,11 @@ async fn k8s_list_deployments(namespace: Option<String>) -> Result<Vec<K8sDeploy
 }
 
 #[tauri::command]
-async fn k8s_pod_logs(name: String, namespace: String, tail: Option<u32>) -> Result<String, String> {
+async fn k8s_pod_logs(
+    name: String,
+    namespace: String,
+    tail: Option<u32>,
+) -> Result<String, String> {
     let tail_str = tail.unwrap_or(200).to_string();
     let kubeconfig = k3s_kubeconfig_path();
     let mut cmd = Command::new("kubectl");
@@ -2218,10 +2198,9 @@ fn build_tray_menu(
     let dashboard_item = MenuItemBuilder::with_id("dashboard", "Dashboard").build(app)?;
 
     let containers_label = format!("Containers ({} running)", running_containers);
-    let containers_item =
-        MenuItemBuilder::with_id("containers", containers_label)
-            .enabled(false)
-            .build(app)?;
+    let containers_item = MenuItemBuilder::with_id("containers", containers_label)
+        .enabled(false)
+        .build(app)?;
 
     let vms_label = format!("VMs ({} running)", running_vms);
     let vms_item = MenuItemBuilder::with_id("vms", vms_label)
@@ -2259,22 +2238,14 @@ async fn count_running_containers() -> usize {
     };
     containers
         .iter()
-        .filter(|c| {
-            c.state
-                .as_deref()
-                .map(|s| s == "running")
-                .unwrap_or(false)
-        })
+        .filter(|c| c.state.as_deref().map(|s| s == "running").unwrap_or(false))
         .count()
 }
 
 /// Count VMs with state == "running" via the gRPC daemon (or local hypervisor).
 async fn count_running_vms(app_state: &AppState) -> usize {
     if let Ok(mut client) = connect_vm_service(&app_state.grpc_addr).await {
-        if let Ok(resp) = client
-            .list_v_ms(proto::ListVMsRequest {})
-            .await
-        {
+        if let Ok(resp) = client.list_v_ms(proto::ListVMsRequest {}).await {
             return resp
                 .into_inner()
                 .vms
