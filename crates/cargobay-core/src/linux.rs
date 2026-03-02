@@ -607,7 +607,7 @@ impl LinuxHypervisor {
             );
 
             // PDPT[0] -> 1 GiB huge page at 0, present + writable + huge.
-            let pdpt_entry: u64 = 0x0 | 0x83; // Present + Writable + PageSize (1GiB)
+            let pdpt_entry: u64 = 0x83; // Present + Writable + PageSize (1GiB)
             std::ptr::copy_nonoverlapping(
                 &pdpt_entry.to_le_bytes() as *const u8,
                 guest_mem.add(0xA000),
@@ -615,7 +615,7 @@ impl LinuxHypervisor {
             );
 
             // If guest has more than 1 GiB, add more PDPT entries.
-            let gib_count = (mem_size + (1 << 30) - 1) / (1 << 30);
+            let gib_count = mem_size.div_ceil(1 << 30);
             for i in 1..std::cmp::min(gib_count, 512) {
                 let entry: u64 = ((i as u64) << 30) | 0x83;
                 std::ptr::copy_nonoverlapping(
@@ -821,25 +821,24 @@ impl LinuxHypervisor {
                             Ok(exit) => match exit {
                                 VcpuExit::IoOut(port, data) => {
                                     // Handle serial port output (COM1).
-                                    if port >= SERIAL_PORT_BASE
-                                        && port < SERIAL_PORT_BASE + SERIAL_PORT_SIZE
+                                    if (SERIAL_PORT_BASE..SERIAL_PORT_BASE + SERIAL_PORT_SIZE)
+                                        .contains(&port)
+                                        && port == SERIAL_PORT_BASE
                                     {
-                                        if port == SERIAL_PORT_BASE {
-                                            // THR (Transmit Holding Register).
-                                            if let Some(ref mut writer) = console_writer {
-                                                for &byte in data {
-                                                    writer.write_byte(byte);
-                                                }
+                                        // THR (Transmit Holding Register).
+                                        if let Some(ref mut writer) = console_writer {
+                                            for &byte in data {
+                                                writer.write_byte(byte);
                                             }
                                         }
-                                        // Other serial registers (IER, FCR, LCR, MCR, etc.)
-                                        // are silently consumed.
                                     }
+                                    // Other serial registers (IER, FCR, LCR, MCR, etc.)
+                                    // are silently consumed.
                                 }
                                 VcpuExit::IoIn(port, data) => {
                                     // Handle serial port input.
-                                    if port >= SERIAL_PORT_BASE
-                                        && port < SERIAL_PORT_BASE + SERIAL_PORT_SIZE
+                                    if (SERIAL_PORT_BASE..SERIAL_PORT_BASE + SERIAL_PORT_SIZE)
+                                        .contains(&port)
                                     {
                                         match port - SERIAL_PORT_BASE {
                                             5 => {
