@@ -974,9 +974,11 @@ svg {
 }
 
 .install-methods {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 680px;
+  margin: 0 auto;
 }
 
 .install-card {
@@ -1108,9 +1110,6 @@ svg {
 }
 
 @media (max-width: 900px) {
-  .install-methods {
-    grid-template-columns: 1fr;
-  }
   .hero-stats {
     gap: 24px;
   }
