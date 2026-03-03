@@ -1,8 +1,8 @@
-# CargoBay UI Design System
+# CrateBay UI Design System
 
 > **Version:** 1.0.0 · **Last updated:** 2026-03-02
 
-This document defines the visual language and component specifications for the CargoBay GUI.
+This document defines the visual language and component specifications for the CrateBay GUI.
 
 ## Design Tokens
 

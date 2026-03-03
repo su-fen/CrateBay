@@ -1,8 +1,8 @@
-# CargoBay Usage Tutorial
+# CrateBay Usage Tutorial
 
 > **English** · [中文](TUTORIAL.zh.md)
 >
-> CargoBay is a free, open-source desktop app for Docker containers and lightweight Linux VMs, with a native GUI (Tauri + React) and a Rust-powered CLI.
+> CrateBay is a free, open-source desktop app for Docker containers and lightweight Linux VMs, with a native GUI (Tauri + React) and a Rust-powered CLI.
 
 ---
 
@@ -52,11 +52,11 @@ nvm install 18
 
 ### Docker Runtime
 
-CargoBay works with any Docker-compatible runtime:
+CrateBay works with any Docker-compatible runtime:
 
 - **Colima** (recommended, free) — `brew install colima && colima start`
 - **Docker Desktop** — the standard Docker experience
-- **OrbStack** — CargoBay auto-detects its socket too
+- **OrbStack** — CrateBay auto-detects its socket too
 
 ---
 
@@ -65,11 +65,11 @@ CargoBay works with any Docker-compatible runtime:
 ### Build from Source
 
 ```bash
-git clone https://github.com/coder-hhx/CargoBay.git
-cd CargoBay
+git clone https://github.com/coder-hhx/CrateBay.git
+cd CrateBay
 
 # Install frontend dependencies
-cd crates/cargobay-gui && npm install && cd ../..
+cd crates/cratebay-gui && npm install && cd ../..
 
 # Build everything
 cargo build --release
@@ -78,7 +78,7 @@ cargo build --release
 ### Run the GUI (Development)
 
 ```bash
-cd crates/cargobay-gui
+cd crates/cratebay-gui
 npm run tauri dev
 ```
 
@@ -87,11 +87,11 @@ Hot-reload enabled: `.tsx` changes reload instantly, Rust changes trigger recomp
 ### Production Build
 
 ```bash
-cd crates/cargobay-gui
+cd crates/cratebay-gui
 npm run tauri build
 ```
 
-Output: `crates/cargobay-gui/src-tauri/target/release/bundle/`
+Output: `crates/cratebay-gui/src-tauri/target/release/bundle/`
 
 - macOS: `.dmg` and `.app`
 - Windows: `.msi` and `.exe`
@@ -100,8 +100,8 @@ Output: `crates/cargobay-gui/src-tauri/target/release/bundle/`
 ### CLI Only
 
 ```bash
-cargo build --release --bin cargobay
-# Binary at: target/release/cargobay
+cargo build --release --bin cratebay
+# Binary at: target/release/cratebay
 ```
 
 ---
@@ -154,7 +154,7 @@ The Kubernetes page provides:
 - **Namespace Selector** — Filter by namespace or view all
 - **Pod Logs** — Click to view logs for any pod
 
-> Note: K3s is Linux-only. On macOS/Windows, K3s will run inside a CargoBay Linux VM in a future release.
+> Note: K3s is Linux-only. On macOS/Windows, K3s will run inside a CrateBay Linux VM in a future release.
 
 ### Volumes
 
@@ -209,12 +209,12 @@ Preferences are saved in `localStorage` and persist across sessions.
 ### System Status
 
 ```bash
-cargobay status
+cratebay status
 ```
 
 Output:
 ```
-CargoBay v1.0.0
+CrateBay v1.0.0
 Platform: macOS aarch64 (Virtualization.framework available)
 Rosetta x86_64: available
 Docker: connected (~/.colima/default/docker.sock)
@@ -224,22 +224,22 @@ Docker: connected (~/.colima/default/docker.sock)
 
 ```bash
 # List all containers
-cargobay docker ps
+cratebay docker ps
 
 # Run a new container (optional CPU/memory limits, optional pull)
-cargobay docker run nginx:latest --name web --cpus 2 --memory 512 --pull
+cratebay docker run nginx:latest --name web --cpus 2 --memory 512 --pull
 
 # Start a container
-cargobay docker start <container_id>
+cratebay docker start <container_id>
 
 # Stop a container
-cargobay docker stop <container_id>
+cratebay docker stop <container_id>
 
 # Remove a container (force)
-cargobay docker rm <container_id>
+cratebay docker rm <container_id>
 
 # Print a shell login command for a container
-cargobay docker login-cmd web
+cratebay docker login-cmd web
 ```
 
 ### VM Commands
@@ -247,63 +247,63 @@ cargobay docker login-cmd web
 > Optional: run the daemon for VM management:
 >
 > ```bash
-> cargo run -p cargobay-daemon
+> cargo run -p cratebay-daemon
 > ```
 >
-> The CLI/GUI will use the daemon automatically when it's reachable (via `CARGOBAY_GRPC_ADDR`) and fall back to local mode if not.
+> The CLI/GUI will use the daemon automatically when it's reachable (via `CRATEBAY_GRPC_ADDR`) and fall back to local mode if not.
 >
-> macOS VZ PoC: set `CARGOBAY_VZ_KERNEL` (and optionally `CARGOBAY_VZ_INITRD`) before starting a VM.
+> macOS VZ PoC: set `CRATEBAY_VZ_KERNEL` (and optionally `CRATEBAY_VZ_INITRD`) before starting a VM.
 
 ```bash
 # Create a VM
-cargobay vm create myvm --cpus 4 --memory 4096 --disk 20
+cratebay vm create myvm --cpus 4 --memory 4096 --disk 20
 
 # Create with Rosetta x86 translation (Apple Silicon)
-cargobay vm create myvm --cpus 4 --memory 4096 --rosetta
+cratebay vm create myvm --cpus 4 --memory 4096 --rosetta
 
 # Start / Stop / Delete
-cargobay vm start myvm
-cargobay vm stop myvm
-cargobay vm delete myvm
+cratebay vm start myvm
+cratebay vm stop myvm
+cratebay vm delete myvm
 
 # List all VMs
-cargobay vm list
+cratebay vm list
 
 # Print an SSH login command (requires an SSH endpoint)
-cargobay vm login-cmd myvm --user root --host 127.0.0.1 --port 2222
+cratebay vm login-cmd myvm --user root --host 127.0.0.1 --port 2222
 ```
 
 ### Image Commands
 
 ```bash
 # Search images (Docker Hub / Quay)
-cargobay image search nginx --source all --limit 20
+cratebay image search nginx --source all --limit 20
 
 # List tags for an OCI registry reference (works for ghcr.io/quay.io/private registries)
-cargobay image tags ghcr.io/owner/image --limit 50
+cratebay image tags ghcr.io/owner/image --limit 50
 
 # Import an image archive (.tar)
-cargobay image load ./image.tar
+cratebay image load ./image.tar
 
 # Push an image to a registry
-cargobay image push ghcr.io/owner/image:tag
+cratebay image push ghcr.io/owner/image:tag
 
 # Package an image from an existing container
-cargobay image pack-container web myorg/web:snapshot
+cratebay image pack-container web myorg/web:snapshot
 ```
 
 ### File Sharing (VirtioFS)
 
 ```bash
 # Mount a host directory into a VM
-cargobay mount add \
+cratebay mount add \
   --vm myvm \
   --tag code \
   --host-path ~/code \
   --guest-path /mnt/code
 
 # Mount as read-only
-cargobay mount add \
+cratebay mount add \
   --vm myvm \
   --tag data \
   --host-path ~/data \
@@ -311,48 +311,48 @@ cargobay mount add \
   --readonly
 
 # List mounts
-cargobay mount list --vm myvm
+cratebay mount list --vm myvm
 
 # Remove a mount
-cargobay mount remove --vm myvm --tag code
+cratebay mount remove --vm myvm --tag code
 ```
 
 ### Volume Commands
 
 ```bash
 # List all Docker volumes
-cargobay volume list
+cratebay volume list
 
 # Create a volume
-cargobay volume create mydata
+cratebay volume create mydata
 
 # Inspect a volume
-cargobay volume inspect mydata
+cratebay volume inspect mydata
 
 # Remove a volume
-cargobay volume remove mydata
+cratebay volume remove mydata
 ```
 
 ### K3s Commands
 
 ```bash
 # Check K3s cluster status
-cargobay k3s status
+cratebay k3s status
 
 # Install K3s (Linux only; downloads from GitHub releases)
-cargobay k3s install
+cratebay k3s install
 
 # Start the K3s cluster
-cargobay k3s start
+cratebay k3s start
 
 # Stop the K3s cluster
-cargobay k3s stop
+cratebay k3s stop
 
 # Uninstall K3s (removes binary and data)
-cargobay k3s uninstall
+cratebay k3s uninstall
 ```
 
-> Note: K3s is Linux-only. On macOS/Windows, K3s will run inside a CargoBay Linux VM in a future release.
+> Note: K3s is Linux-only. On macOS/Windows, K3s will run inside a CrateBay Linux VM in a future release.
 
 ### Shell Completions
 
@@ -360,13 +360,13 @@ Generate shell completion scripts for your preferred shell:
 
 ```bash
 # Bash
-cargobay completions bash >> ~/.bashrc
+cratebay completions bash >> ~/.bashrc
 
 # Zsh
-cargobay completions zsh >> ~/.zshrc
+cratebay completions zsh >> ~/.zshrc
 
 # Fish
-cargobay completions fish > ~/.config/fish/completions/cargobay.fish
+cratebay completions fish > ~/.config/fish/completions/cratebay.fish
 ```
 
 After adding completions, restart your shell or source the config file for changes to take effect.
@@ -375,7 +375,7 @@ After adding completions, restart your shell or source the config file for chang
 
 ## 5. Docker Socket Detection
 
-CargoBay auto-detects Docker sockets in this order:
+CrateBay auto-detects Docker sockets in this order:
 
 | Priority | Path | Runtime |
 |----------|------|---------|
@@ -390,7 +390,7 @@ CargoBay auto-detects Docker sockets in this order:
 
 ```bash
 export DOCKER_HOST=unix:///path/to/custom/docker.sock
-cargobay docker ps
+cratebay docker ps
 ```
 
 ---
@@ -403,28 +403,28 @@ cargobay docker ps
 |----------|-------------|
 | `DOCKER_HOST` | Override Docker socket path |
 | `RUST_LOG` | Set log level (`info`, `debug`, `trace`) |
-| `CARGOBAY_GRPC_ADDR` | Daemon gRPC address (default: `127.0.0.1:50051`) |
-| `CARGOBAY_DAEMON_PATH` | Override daemon executable path (GUI auto-start) |
-| `CARGOBAY_CONFIG_DIR` | Override config directory (stores `vms.json`) |
-| `CARGOBAY_DATA_DIR` | Override data directory |
-| `CARGOBAY_LOG_DIR` | Override log directory |
-| `CARGOBAY_LOG_RETENTION_DAYS` | Keep error logs for N days (default: 7) |
-| `CARGOBAY_VZ_RUNNER_PATH` | Override `cargobay-vz` path (macOS VZ PoC) |
-| `CARGOBAY_VZ_KERNEL` | Linux kernel path (macOS VZ PoC) |
-| `CARGOBAY_VZ_INITRD` | Linux initrd path (optional, macOS VZ PoC) |
-| `CARGOBAY_VZ_CMDLINE` | Linux kernel cmdline (default: `console=hvc0`, macOS VZ PoC) |
+| `CRATEBAY_GRPC_ADDR` | Daemon gRPC address (default: `127.0.0.1:50051`) |
+| `CRATEBAY_DAEMON_PATH` | Override daemon executable path (GUI auto-start) |
+| `CRATEBAY_CONFIG_DIR` | Override config directory (stores `vms.json`) |
+| `CRATEBAY_DATA_DIR` | Override data directory |
+| `CRATEBAY_LOG_DIR` | Override log directory |
+| `CRATEBAY_LOG_RETENTION_DAYS` | Keep error logs for N days (default: 7) |
+| `CRATEBAY_VZ_RUNNER_PATH` | Override `cratebay-vz` path (macOS VZ PoC) |
+| `CRATEBAY_VZ_KERNEL` | Linux kernel path (macOS VZ PoC) |
+| `CRATEBAY_VZ_INITRD` | Linux initrd path (optional, macOS VZ PoC) |
+| `CRATEBAY_VZ_CMDLINE` | Linux kernel cmdline (default: `console=hvc0`, macOS VZ PoC) |
 
 ### Data Locations
 
 | Platform | Config | Data | Logs |
 |----------|--------|------|------|
-| macOS | `~/Library/Application Support/com.cargobay.app/` | Same | Same |
-| Linux | `~/.config/cargobay/` | `~/.local/share/cargobay/` | Same |
-| Windows | `%APPDATA%\cargobay\` | Same | Same |
+| macOS | `~/Library/Application Support/com.cratebay.app/` | Same | Same |
+| Linux | `~/.config/cratebay/` | `~/.local/share/cratebay/` | Same |
+| Windows | `%APPDATA%\cratebay\` | Same | Same |
 
 VM metadata is stored at `<config>/vms.json`.
 
-Error logs are written to the Logs directory as `cargobay-error.log.YYYY-MM-DD` and automatically cleaned up (keeps the most recent 7 days by default).
+Error logs are written to the Logs directory as `cratebay-error.log.YYYY-MM-DD` and automatically cleaned up (keeps the most recent 7 days by default).
 
 ---
 

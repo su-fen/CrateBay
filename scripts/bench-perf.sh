@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CargoBay Performance Benchmark
+# CrateBay Performance Benchmark
 # Validates the performance claims in README.md:
 #   1. <20MB install (binary size)
 #   2. <200MB idle RAM
@@ -90,7 +90,7 @@ median() {
 
 echo ""
 echo "======================================================"
-echo " CargoBay Performance Benchmark"
+echo " CrateBay Performance Benchmark"
 echo "======================================================"
 echo ""
 echo "Release dir : $RELEASE_DIR"
@@ -107,7 +107,7 @@ echo "────────────────────────�
 
 MAX_BYTES=$((MAX_BINARY_SIZE_MB * 1048576))
 
-for bin in cargobay cargobay-daemon; do
+for bin in cratebay cratebay-daemon; do
     path="${RELEASE_DIR}/${bin}"
     if [[ ! -f "$path" ]]; then
         printf "  %-20s [$(warn)] binary not found at %s\n" "$bin" "$path"
@@ -137,10 +137,10 @@ echo "────────────────────────�
 echo " 2. Startup Time Check (limit: <${MAX_STARTUP_TIME_S}s, median of ${STARTUP_RUNS} runs)"
 echo "──────────────────────────────────────────────────────"
 
-CLI_BIN="${RELEASE_DIR}/cargobay"
+CLI_BIN="${RELEASE_DIR}/cratebay"
 
 if [[ ! -f "$CLI_BIN" ]]; then
-    printf "  [$(warn)] cargobay binary not found, skipping startup benchmark\n"
+    printf "  [$(warn)] cratebay binary not found, skipping startup benchmark\n"
     record "startup time" "N/A" "<${MAX_STARTUP_TIME_S}s" "SKIP"
     SKIPS=$((SKIPS + 1))
 else
@@ -199,10 +199,10 @@ echo "────────────────────────�
 echo " 3. Idle Memory Check (limit: <${MAX_IDLE_RAM_MB}MB RSS)"
 echo "──────────────────────────────────────────────────────"
 
-DAEMON_BIN="${RELEASE_DIR}/cargobay-daemon"
+DAEMON_BIN="${RELEASE_DIR}/cratebay-daemon"
 
 if [[ ! -f "$DAEMON_BIN" ]]; then
-    printf "  [$(warn)] cargobay-daemon binary not found, skipping memory benchmark\n"
+    printf "  [$(warn)] cratebay-daemon binary not found, skipping memory benchmark\n"
     record "idle RAM" "N/A" "<${MAX_IDLE_RAM_MB}MB" "SKIP"
     SKIPS=$((SKIPS + 1))
 else

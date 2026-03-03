@@ -1,8 +1,8 @@
-# CargoBay 使用教程（中文）
+# CrateBay 使用教程（中文）
 
 > [English](TUTORIAL.md) · **中文**
 >
-> CargoBay 是一款免费开源的 Docker 容器与轻量 Linux 虚拟机桌面工具，提供 Tauri + React 原生桌面 GUI 与 Rust 命令行。
+> CrateBay 是一款免费开源的 Docker 容器与轻量 Linux 虚拟机桌面工具，提供 Tauri + React 原生桌面 GUI 与 Rust 命令行。
 
 ---
 
@@ -52,11 +52,11 @@ nvm install 18
 
 ### Docker 运行时
 
-CargoBay 支持任意 Docker 兼容运行时：
+CrateBay 支持任意 Docker 兼容运行时：
 
 - **Colima**（推荐，免费）— `brew install colima && colima start`
 - **Docker Desktop** — 常见 Docker 体验
-- **OrbStack** — CargoBay 也会自动识别其 socket
+- **OrbStack** — CrateBay 也会自动识别其 socket
 
 ---
 
@@ -65,11 +65,11 @@ CargoBay 支持任意 Docker 兼容运行时：
 ### 从源码构建
 
 ```bash
-git clone https://github.com/coder-hhx/CargoBay.git
-cd CargoBay
+git clone https://github.com/coder-hhx/CrateBay.git
+cd CrateBay
 
 # 安装前端依赖
-cd crates/cargobay-gui && npm install && cd ../..
+cd crates/cratebay-gui && npm install && cd ../..
 
 # 构建
 cargo build --release
@@ -78,7 +78,7 @@ cargo build --release
 ### 运行 GUI（开发模式）
 
 ```bash
-cd crates/cargobay-gui
+cd crates/cratebay-gui
 npm run tauri dev
 ```
 
@@ -87,11 +87,11 @@ npm run tauri dev
 ### 生产构建
 
 ```bash
-cd crates/cargobay-gui
+cd crates/cratebay-gui
 npm run tauri build
 ```
 
-输出目录：`crates/cargobay-gui/src-tauri/target/release/bundle/`
+输出目录：`crates/cratebay-gui/src-tauri/target/release/bundle/`
 
 - macOS：`.dmg` / `.app`
 - Windows：`.msi` / `.exe`
@@ -100,8 +100,8 @@ npm run tauri build
 ### 仅构建 CLI
 
 ```bash
-cargo build --release --bin cargobay
-# 二进制：target/release/cargobay
+cargo build --release --bin cratebay
+# 二进制：target/release/cratebay
 ```
 
 ---
@@ -154,7 +154,7 @@ Kubernetes 页面提供：
 - **命名空间选择器** — 按命名空间筛选或查看全部
 - **Pod 日志** — 点击查看任意 Pod 的日志
 
-> 注意：K3s 仅支持 Linux。macOS/Windows 上将在后续版本中通过 CargoBay Linux VM 运行。
+> 注意：K3s 仅支持 Linux。macOS/Windows 上将在后续版本中通过 CrateBay Linux VM 运行。
 
 ### Volumes（存储卷）
 
@@ -209,12 +209,12 @@ v1.0 已支持：
 ### 系统状态
 
 ```bash
-cargobay status
+cratebay status
 ```
 
 示例输出：
 ```
-CargoBay v1.0.0
+CrateBay v1.0.0
 Platform: macOS aarch64 (Virtualization.framework available)
 Rosetta x86_64: available
 Docker: connected (~/.colima/default/docker.sock)
@@ -224,22 +224,22 @@ Docker: connected (~/.colima/default/docker.sock)
 
 ```bash
 # 列出容器
-cargobay docker ps
+cratebay docker ps
 
 # 运行一个新容器（可选 CPU/内存限制，可选拉取镜像）
-cargobay docker run nginx:latest --name web --cpus 2 --memory 512 --pull
+cratebay docker run nginx:latest --name web --cpus 2 --memory 512 --pull
 
 # 启动容器
-cargobay docker start <container_id>
+cratebay docker start <container_id>
 
 # 停止容器
-cargobay docker stop <container_id>
+cratebay docker stop <container_id>
 
 # 删除容器（强制）
-cargobay docker rm <container_id>
+cratebay docker rm <container_id>
 
 # 输出容器登录命令（shell）
-cargobay docker login-cmd web
+cratebay docker login-cmd web
 ```
 
 ### VM 命令
@@ -247,63 +247,63 @@ cargobay docker login-cmd web
 > 可选：先启动 daemon 来管理 VM：
 >
 > ```bash
-> cargo run -p cargobay-daemon
+> cargo run -p cratebay-daemon
 > ```
 >
-> CLI/GUI 在可连接到 daemon 时会自动通过 gRPC 调用（可用 `CARGOBAY_GRPC_ADDR` 配置地址）；不可用时会自动回退到本地模式。
+> CLI/GUI 在可连接到 daemon 时会自动通过 gRPC 调用（可用 `CRATEBAY_GRPC_ADDR` 配置地址）；不可用时会自动回退到本地模式。
 >
-> macOS VZ PoC：启动 VM 前需要设置 `CARGOBAY_VZ_KERNEL`（可选 `CARGOBAY_VZ_INITRD`）。
+> macOS VZ PoC：启动 VM 前需要设置 `CRATEBAY_VZ_KERNEL`（可选 `CRATEBAY_VZ_INITRD`）。
 
 ```bash
 # 创建 VM（可自定义 CPU 核数与内存）
-cargobay vm create myvm --cpus 4 --memory 4096 --disk 20
+cratebay vm create myvm --cpus 4 --memory 4096 --disk 20
 
 # Apple Silicon 上启用 Rosetta x86 翻译
-cargobay vm create myvm --cpus 4 --memory 4096 --rosetta
+cratebay vm create myvm --cpus 4 --memory 4096 --rosetta
 
 # 启动 / 停止 / 删除
-cargobay vm start myvm
-cargobay vm stop myvm
-cargobay vm delete myvm
+cratebay vm start myvm
+cratebay vm stop myvm
+cratebay vm delete myvm
 
 # 列出全部 VM
-cargobay vm list
+cratebay vm list
 
 # 输出 VM 登录命令（SSH，需要你提供端口）
-cargobay vm login-cmd myvm --user root --host 127.0.0.1 --port 2222
+cratebay vm login-cmd myvm --user root --host 127.0.0.1 --port 2222
 ```
 
 ### 镜像命令
 
 ```bash
 # 搜索镜像（Docker Hub / Quay）
-cargobay image search nginx --source all --limit 20
+cratebay image search nginx --source all --limit 20
 
 # 列出某个 OCI 镜像仓库的 tags（支持 ghcr.io/quay.io/私有仓库等）
-cargobay image tags ghcr.io/owner/image --limit 50
+cratebay image tags ghcr.io/owner/image --limit 50
 
 # 导入镜像归档（.tar）
-cargobay image load ./image.tar
+cratebay image load ./image.tar
 
 # 上传镜像到仓库
-cargobay image push ghcr.io/owner/image:tag
+cratebay image push ghcr.io/owner/image:tag
 
 # 基于已有容器打包镜像
-cargobay image pack-container web myorg/web:snapshot
+cratebay image pack-container web myorg/web:snapshot
 ```
 
 ### 文件共享（VirtioFS）
 
 ```bash
 # 把宿主机目录挂载到 VM 内
-cargobay mount add \
+cratebay mount add \
   --vm myvm \
   --tag code \
   --host-path ~/code \
   --guest-path /mnt/code
 
 # 只读挂载
-cargobay mount add \
+cratebay mount add \
   --vm myvm \
   --tag data \
   --host-path ~/data \
@@ -311,48 +311,48 @@ cargobay mount add \
   --readonly
 
 # 查看挂载
-cargobay mount list --vm myvm
+cratebay mount list --vm myvm
 
 # 移除挂载
-cargobay mount remove --vm myvm --tag code
+cratebay mount remove --vm myvm --tag code
 ```
 
 ### 存储卷命令
 
 ```bash
 # 列出所有 Docker 存储卷
-cargobay volume list
+cratebay volume list
 
 # 创建存储卷
-cargobay volume create mydata
+cratebay volume create mydata
 
 # 查看存储卷详情
-cargobay volume inspect mydata
+cratebay volume inspect mydata
 
 # 删除存储卷
-cargobay volume remove mydata
+cratebay volume remove mydata
 ```
 
 ### K3s 命令
 
 ```bash
 # 查看 K3s 集群状态
-cargobay k3s status
+cratebay k3s status
 
 # 安装 K3s（仅 Linux；从 GitHub releases 下载）
-cargobay k3s install
+cratebay k3s install
 
 # 启动 K3s 集群
-cargobay k3s start
+cratebay k3s start
 
 # 停止 K3s 集群
-cargobay k3s stop
+cratebay k3s stop
 
 # 卸载 K3s（删除二进制和数据）
-cargobay k3s uninstall
+cratebay k3s uninstall
 ```
 
-> 注意：K3s 仅支持 Linux。macOS/Windows 上将在后续版本中通过 CargoBay Linux VM 运行。
+> 注意：K3s 仅支持 Linux。macOS/Windows 上将在后续版本中通过 CrateBay Linux VM 运行。
 
 ### Shell 自动补全
 
@@ -360,13 +360,13 @@ cargobay k3s uninstall
 
 ```bash
 # Bash
-cargobay completions bash >> ~/.bashrc
+cratebay completions bash >> ~/.bashrc
 
 # Zsh
-cargobay completions zsh >> ~/.zshrc
+cratebay completions zsh >> ~/.zshrc
 
 # Fish
-cargobay completions fish > ~/.config/fish/completions/cargobay.fish
+cratebay completions fish > ~/.config/fish/completions/cratebay.fish
 ```
 
 添加补全后，重新启动 Shell 或 source 配置文件即可生效。
@@ -375,7 +375,7 @@ cargobay completions fish > ~/.config/fish/completions/cargobay.fish
 
 ## 5. Docker Socket 自动识别
 
-CargoBay 会按以下顺序自动识别 Docker socket：
+CrateBay 会按以下顺序自动识别 Docker socket：
 
 | 优先级 | 路径 | 运行时 |
 |----------|------|---------|
@@ -390,7 +390,7 @@ CargoBay 会按以下顺序自动识别 Docker socket：
 
 ```bash
 export DOCKER_HOST=unix:///path/to/custom/docker.sock
-cargobay docker ps
+cratebay docker ps
 ```
 
 ---
@@ -403,28 +403,28 @@ cargobay docker ps
 |----------|-------------|
 | `DOCKER_HOST` | 覆盖 Docker socket 路径 |
 | `RUST_LOG` | 日志级别（`info` / `debug` / `trace`） |
-| `CARGOBAY_GRPC_ADDR` | Daemon gRPC 地址（默认：`127.0.0.1:50051`） |
-| `CARGOBAY_DAEMON_PATH` | 覆盖 daemon 可执行文件路径（GUI 自动拉起） |
-| `CARGOBAY_CONFIG_DIR` | 覆盖配置目录（保存 `vms.json`） |
-| `CARGOBAY_DATA_DIR` | 覆盖数据目录 |
-| `CARGOBAY_LOG_DIR` | 覆盖日志目录 |
-| `CARGOBAY_LOG_RETENTION_DAYS` | 错误日志保留天数（默认：7） |
-| `CARGOBAY_VZ_RUNNER_PATH` | 覆盖 `cargobay-vz` 路径（macOS VZ PoC） |
-| `CARGOBAY_VZ_KERNEL` | Linux kernel 路径（macOS VZ PoC） |
-| `CARGOBAY_VZ_INITRD` | Linux initrd 路径（可选，macOS VZ PoC） |
-| `CARGOBAY_VZ_CMDLINE` | Linux kernel 启动参数（默认：`console=hvc0`，macOS VZ PoC） |
+| `CRATEBAY_GRPC_ADDR` | Daemon gRPC 地址（默认：`127.0.0.1:50051`） |
+| `CRATEBAY_DAEMON_PATH` | 覆盖 daemon 可执行文件路径（GUI 自动拉起） |
+| `CRATEBAY_CONFIG_DIR` | 覆盖配置目录（保存 `vms.json`） |
+| `CRATEBAY_DATA_DIR` | 覆盖数据目录 |
+| `CRATEBAY_LOG_DIR` | 覆盖日志目录 |
+| `CRATEBAY_LOG_RETENTION_DAYS` | 错误日志保留天数（默认：7） |
+| `CRATEBAY_VZ_RUNNER_PATH` | 覆盖 `cratebay-vz` 路径（macOS VZ PoC） |
+| `CRATEBAY_VZ_KERNEL` | Linux kernel 路径（macOS VZ PoC） |
+| `CRATEBAY_VZ_INITRD` | Linux initrd 路径（可选，macOS VZ PoC） |
+| `CRATEBAY_VZ_CMDLINE` | Linux kernel 启动参数（默认：`console=hvc0`，macOS VZ PoC） |
 
 ### 数据目录
 
 | 平台 | 配置 | 数据 | 日志 |
 |----------|--------|------|------|
-| macOS | `~/Library/Application Support/com.cargobay.app/` | 同上 | 同上 |
-| Linux | `~/.config/cargobay/` | `~/.local/share/cargobay/` | 同上 |
-| Windows | `%APPDATA%\cargobay\` | 同上 | 同上 |
+| macOS | `~/Library/Application Support/com.cratebay.app/` | 同上 | 同上 |
+| Linux | `~/.config/cratebay/` | `~/.local/share/cratebay/` | 同上 |
+| Windows | `%APPDATA%\cratebay\` | 同上 | 同上 |
 
 VM 元数据文件位于 `<config>/vms.json`。
 
-错误日志会写入“日志”目录，文件名为 `cargobay-error.log.YYYY-MM-DD`，并会自动清理（默认仅保留近 7 天）。
+错误日志会写入“日志”目录，文件名为 `cratebay-error.log.YYYY-MM-DD`，并会自动清理（默认仅保留近 7 天）。
 
 ---
 

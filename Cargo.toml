@@ -1,11 +1,11 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/cargobay-cli",
-    "crates/cargobay-daemon",
-    "crates/cargobay-core",
-    "crates/cargobay-vz",
-    "crates/cargobay-gui/src-tauri",
+    "crates/cratebay-cli",
+    "crates/cratebay-daemon",
+    "crates/cratebay-core",
+    "crates/cratebay-vz",
+    "crates/cratebay-gui/src-tauri",
 ]
 
 # ── Release profile: optimise for small binary size ─────────────

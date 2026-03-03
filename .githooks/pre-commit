@@ -47,7 +47,7 @@ for pair in "${doc_pairs[@]}"; do
 done
 
 # i18n (app): enforce that UI translations are complete and synced (en + zh only).
-i18n_file="crates/cargobay-gui/src/i18n/messages.ts"
+i18n_file="crates/cratebay-gui/src/i18n/messages.ts"
 if [[ -f "$i18n_file" ]]; then
   python_bin=""
   if command -v python3 >/dev/null 2>&1; then
@@ -179,7 +179,7 @@ if [[ "$source_changed" -eq 1 && "$website_changed" -eq 0 ]]; then
   echo "║    • website/style.css   — new component styles                 ║"
   echo "║                                                                  ║"
   echo "║  The website auto-deploys to GitHub Pages on push.              ║"
-  echo "║  URL: https://coder-hhx.github.io/CargoBay/                    ║"
+  echo "║  URL: https://coder-hhx.github.io/CrateBay/                    ║"
   echo "╚══════════════════════════════════════════════════════════════════╝"
   echo ""
 fi

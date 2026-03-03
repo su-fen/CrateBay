@@ -1,4 +1,4 @@
-# CargoBay 技术架构
+# CrateBay 技术架构
 
 ## 技术选型
 
@@ -18,7 +18,7 @@
 ## 系统架构图
 
 <p align="center">
-  <img src="../assets/architecture.svg" alt="CargoBay Architecture" width="900" />
+  <img src="../assets/architecture.svg" alt="CrateBay Architecture" width="900" />
 </p>
 
 ## 数据流说明
@@ -27,14 +27,14 @@
 ```
 GUI/CLI → bollard (Rust Docker client) → Docker socket → Docker daemon
 ```
-- **不经过 CargoBay Daemon**
+- **不经过 CrateBay Daemon**
 - 直连 Docker socket，延迟最低（~1-5ms）
 - Docker 本身就是一个 daemon，无需额外中间层
 - 自动检测 Docker socket 路径（Colima / OrbStack / Docker Desktop）
 
 ### VM 操作
 ```
-GUI/CLI → gRPC → CargoBay Daemon → Hypervisor trait → 平台 VM 后端
+GUI/CLI → gRPC → CrateBay Daemon → Hypervisor trait → 平台 VM 后端
 ```
 - **必须经过 Daemon**（需要特权操作、复杂生命周期管理）
 - Daemon 管理 VM 创建/启动/停止/删除/控制台/端口转发/VirtioFS
@@ -42,7 +42,7 @@ GUI/CLI → gRPC → CargoBay Daemon → Hypervisor trait → 平台 VM 后端
 
 ### K3s 集群管理
 ```
-GUI/CLI → cargobay-core::k3s::K3sManager → K3s 二进制 (按需下载)
+GUI/CLI → cratebay-core::k3s::K3sManager → K3s 二进制 (按需下载)
 ```
 - 从 GitHub releases 按需下载 K3s
 - Linux 上直接运行；macOS/Windows 未来将在 VM 内运行
@@ -58,16 +58,16 @@ GUI/CLI → kubectl --kubeconfig → K8s API Server
 ## Crate 结构
 
 ```
-CargoBay/
+CrateBay/
 ├── crates/
-│   ├── cargobay-core/     # 核心库：Hypervisor trait、K3s manager、
+│   ├── cratebay-core/     # 核心库：Hypervisor trait、K3s manager、
 │   │                      # store、images、port forwarding
-│   ├── cargobay-cli/      # CLI：直连 Docker (bollard) + gRPC → Daemon (VM)
-│   ├── cargobay-daemon/   # 守护进程：仅 VM 服务 (gRPC VMService)
-│   ├── cargobay-gui/      # GUI：Tauri v2 后端 + React 前端
+│   ├── cratebay-cli/      # CLI：直连 Docker (bollard) + gRPC → Daemon (VM)
+│   ├── cratebay-daemon/   # 守护进程：仅 VM 服务 (gRPC VMService)
+│   ├── cratebay-gui/      # GUI：Tauri v2 后端 + React 前端
 │   │   ├── src/           #   React 前端（TS）
 │   │   └── src-tauri/     #   Tauri 后端（Rust）
-│   └── cargobay-vz/       # macOS Virtualization.framework FFI (Swift bridge)
+│   └── cratebay-vz/       # macOS Virtualization.framework FFI (Swift bridge)
 ├── proto/                 # gRPC 定义（仅 VMService，14 个 RPC）
 └── website/               # 官方网站（GitHub Pages）
 ```
@@ -83,7 +83,7 @@ CargoBay/
 
 ## Proto 定义 (仅 VM)
 
-`proto/cargobay.proto` 定义了 `VMService`，包含 14 个 RPC：
+`proto/cratebay.proto` 定义了 `VMService`，包含 14 个 RPC：
 
 | RPC | 用途 |
 |-----|------|

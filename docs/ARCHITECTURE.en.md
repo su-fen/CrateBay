@@ -1,4 +1,4 @@
-# CargoBay Technical Architecture
+# CrateBay Technical Architecture
 
 ## Technology Choices
 
@@ -18,7 +18,7 @@
 ## System Architecture Diagram
 
 <p align="center">
-  <img src="../assets/architecture.svg" alt="CargoBay Architecture" width="900" />
+  <img src="../assets/architecture.svg" alt="CrateBay Architecture" width="900" />
 </p>
 
 ## Data Flow
@@ -27,14 +27,14 @@
 ```
 GUI/CLI → bollard (Rust Docker client) → Docker socket → Docker daemon
 ```
-- **Does not go through the CargoBay Daemon**
+- **Does not go through the CrateBay Daemon**
 - Connects directly to the Docker socket for minimal latency (~1-5 ms)
 - Docker itself is already a daemon — there is no need for an extra intermediary
 - Automatically detects the Docker socket path (Colima / OrbStack / Docker Desktop)
 
 ### VM Operations
 ```
-GUI/CLI → gRPC → CargoBay Daemon → Hypervisor trait → Platform VM backend
+GUI/CLI → gRPC → CrateBay Daemon → Hypervisor trait → Platform VM backend
 ```
 - **Must go through the Daemon** (privileged operations and complex lifecycle management required)
 - The Daemon manages VM creation / start / stop / delete / console / port forwarding / VirtioFS
@@ -42,7 +42,7 @@ GUI/CLI → gRPC → CargoBay Daemon → Hypervisor trait → Platform VM backen
 
 ### K3s Cluster Management
 ```
-GUI/CLI → cargobay-core::k3s::K3sManager → K3s binary (downloaded on demand)
+GUI/CLI → cratebay-core::k3s::K3sManager → K3s binary (downloaded on demand)
 ```
 - K3s is downloaded on demand from GitHub Releases
 - Runs natively on Linux; future macOS/Windows support will run K3s inside a VM
@@ -58,16 +58,16 @@ GUI/CLI → kubectl --kubeconfig → K8s API Server
 ## Crate Structure
 
 ```
-CargoBay/
+CrateBay/
 ├── crates/
-│   ├── cargobay-core/     # Core library: Hypervisor trait, K3s manager,
+│   ├── cratebay-core/     # Core library: Hypervisor trait, K3s manager,
 │   │                      # store, images, port forwarding
-│   ├── cargobay-cli/      # CLI: direct Docker access (bollard) + gRPC → Daemon (VM)
-│   ├── cargobay-daemon/   # Daemon: VM service only (gRPC VMService)
-│   ├── cargobay-gui/      # GUI: Tauri v2 backend + React frontend
+│   ├── cratebay-cli/      # CLI: direct Docker access (bollard) + gRPC → Daemon (VM)
+│   ├── cratebay-daemon/   # Daemon: VM service only (gRPC VMService)
+│   ├── cratebay-gui/      # GUI: Tauri v2 backend + React frontend
 │   │   ├── src/           #   React frontend (TS)
 │   │   └── src-tauri/     #   Tauri backend (Rust)
-│   └── cargobay-vz/       # macOS Virtualization.framework FFI (Swift bridge)
+│   └── cratebay-vz/       # macOS Virtualization.framework FFI (Swift bridge)
 ├── proto/                 # gRPC definitions (VMService only, 14 RPCs)
 └── website/               # Official website (GitHub Pages)
 ```
@@ -83,7 +83,7 @@ CargoBay/
 
 ## Proto Definitions (VM Only)
 
-`proto/cargobay.proto` defines the `VMService` with 14 RPCs:
+`proto/cratebay.proto` defines the `VMService` with 14 RPCs:
 
 | RPC | Purpose |
 |-----|---------|

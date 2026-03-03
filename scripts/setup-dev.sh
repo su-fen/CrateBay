@@ -3,7 +3,7 @@ set -euo pipefail
 
 # ── setup-dev.sh ──────────────────────────────────────────────────────────────
 #
-# One-time development environment setup for the CargoBay repository.
+# One-time development environment setup for the CrateBay repository.
 #
 # What it does:
 #   1. Configures repo-local git user identity
@@ -17,7 +17,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_ROOT"
 
-echo "=== CargoBay Dev Environment Setup ==="
+echo "=== CrateBay Dev Environment Setup ==="
 echo ""
 
 # ── Git identity ──────────────────────────────────────────────────────────────

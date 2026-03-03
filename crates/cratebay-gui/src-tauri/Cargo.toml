@@ -1,0 +1,34 @@
+[package]
+name = "cratebay-gui"
+version = "1.0.0"
+description = "CrateBay desktop GUI — containers and Linux VMs in one app"
+authors = ["coder-hhx <houhaixu_email@163.com>"]
+license = "Apache-2.0"
+repository = "https://github.com/coder-hhx/CrateBay"
+edition = "2021"
+rust-version = "1.77.2"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "cratebay_gui_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.5.4", features = [] }
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+tauri = { version = "2.10.0", features = ["tray-icon"] }
+tauri-plugin-dialog = "2"
+bollard = "0.18"
+tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.13.2", features = ["json"] }
+futures-util = "0.3"
+cratebay-core = { path = "../../cratebay-core", features = ["download"] }
+tonic = "0.12"
+tracing = "0.1"
+tauri-plugin-shell = "2"
+open = "5"
+chrono = "0.4"

@@ -1,0 +1,16 @@
+[package]
+name = "cratebay-daemon"
+version = "1.0.0"
+edition = "2021"
+description = "CrateBay daemon: VM lifecycle, gRPC server"
+
+[[bin]]
+name = "cratebay-daemon"
+path = "src/main.rs"
+
+[dependencies]
+cratebay-core = { path = "../cratebay-core" }
+tokio = { version = "1", features = ["full"] }
+tonic = "0.12"
+tracing = "0.1"
+tracing-subscriber = "0.3"

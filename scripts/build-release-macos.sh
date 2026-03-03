@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 #
-# build-release-macos.sh — Build CargoBay v0.1.0 macOS release artifacts
+# build-release-macos.sh — Build CrateBay v0.1.0 macOS release artifacts
 #
 # Produces:
-#   dist/CargoBay_<version>_<arch>.dmg  — GUI app with embedded daemon
-#   dist/cargobay                       — CLI binary
+#   dist/CrateBay_<version>_<arch>.dmg  — GUI app with embedded daemon
+#   dist/cratebay                       — CLI binary
 #
 # Usage:
 #   ./scripts/build-release-macos.sh
@@ -24,10 +24,10 @@ VERSION="0.1.0"
 ARCH="$(uname -m)"                           # aarch64 or x86_64
 RUST_TARGET="$(rustc -vV | grep host | awk '{print $2}')"  # e.g. aarch64-apple-darwin
 
-GUI_CRATE="crates/cargobay-gui"
+GUI_CRATE="crates/cratebay-gui"
 TAURI_DIR="$GUI_CRATE/src-tauri"
 
-echo "=== CargoBay macOS Release Build ==="
+echo "=== CrateBay macOS Release Build ==="
 echo "  Version : $VERSION"
 echo "  Arch    : $ARCH"
 echo "  Target  : $RUST_TARGET"
@@ -35,10 +35,10 @@ echo ""
 
 # ── Step 1: Build daemon & CLI ───────────────────────────────────────────────
 echo "── [1/6] Building daemon and CLI (release) ──"
-cargo build --release -p cargobay-daemon -p cargobay-cli
+cargo build --release -p cratebay-daemon -p cratebay-cli
 
-echo "  ✓ target/release/cargobay-daemon"
-echo "  ✓ target/release/cargobay"
+echo "  ✓ target/release/cratebay-daemon"
+echo "  ✓ target/release/cratebay"
 
 # ── Step 2: Install frontend dependencies ────────────────────────────────────
 echo ""
@@ -64,8 +64,8 @@ echo "  ✓ $APP_BUNDLE"
 # ── Step 4: Inject daemon into .app bundle ───────────────────────────────────
 echo ""
 echo "── [4/6] Injecting daemon into $APP_NAME ──"
-cp "target/release/cargobay-daemon" "$APP_BUNDLE/Contents/MacOS/cargobay-daemon"
-echo "  ✓ $APP_BUNDLE/Contents/MacOS/cargobay-daemon"
+cp "target/release/cratebay-daemon" "$APP_BUNDLE/Contents/MacOS/cratebay-daemon"
+echo "  ✓ $APP_BUNDLE/Contents/MacOS/cratebay-daemon"
 
 # Verify bundle structure
 echo ""
@@ -78,7 +78,7 @@ echo "── [5/6] Creating DMG ──"
 DIST_DIR="$REPO_ROOT/dist"
 mkdir -p "$DIST_DIR"
 
-DMG_NAME="CargoBay_${VERSION}_${ARCH}.dmg"
+DMG_NAME="CrateBay_${VERSION}_${ARCH}.dmg"
 DMG_PATH="$DIST_DIR/$DMG_NAME"
 
 # Remove old DMG if present
@@ -92,7 +92,7 @@ cp -R "$APP_BUNDLE" "$DMG_STAGE/"
 ln -s /Applications "$DMG_STAGE/Applications"
 
 hdiutil create \
-    -volname "CargoBay $VERSION" \
+    -volname "CrateBay $VERSION" \
     -srcfolder "$DMG_STAGE" \
     -ov \
     -format UDZO \
@@ -104,8 +104,8 @@ echo "  ✓ $DMG_PATH"
 # ── Step 6: Collect CLI binary ───────────────────────────────────────────────
 echo ""
 echo "── [6/6] Collecting CLI binary ──"
-cp "target/release/cargobay" "$DIST_DIR/cargobay"
-echo "  ✓ $DIST_DIR/cargobay"
+cp "target/release/cratebay" "$DIST_DIR/cratebay"
+echo "  ✓ $DIST_DIR/cratebay"
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""
@@ -113,12 +113,12 @@ echo "=== Build Complete ==="
 echo ""
 echo "Artifacts:"
 echo "  GUI (DMG): $DMG_PATH"
-echo "  CLI:       $DIST_DIR/cargobay"
+echo "  CLI:       $DIST_DIR/cratebay"
 echo ""
 echo "DMG size: $(du -h "$DMG_PATH" | awk '{print $1}')"
-echo "CLI size: $(du -h "$DIST_DIR/cargobay" | awk '{print $1}')"
+echo "CLI size: $(du -h "$DIST_DIR/cratebay" | awk '{print $1}')"
 echo ""
 echo "Next steps:"
-echo "  1. Open the DMG and drag CargoBay to Applications"
-echo "  2. Launch CargoBay from Applications"
-echo "  3. Test: ./dist/cargobay status"
+echo "  1. Open the DMG and drag CrateBay to Applications"
+echo "  2. Launch CrateBay from Applications"
+echo "  3. Test: ./dist/cratebay status"

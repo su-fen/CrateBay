@@ -1,5 +1,5 @@
 /* ============================================================
-   CargoBay — Official Website Scripts
+   CrateBay — Official Website Scripts
    ============================================================ */
 
 (function () {
@@ -22,7 +22,7 @@
 
       // Hero
       heroBadge: 'v1.0.0 Stable Release',
-      heroTitle1: 'Cargo',
+      heroTitle1: 'Crate',
       heroTitle2: 'Bay',
       heroTagline:
         'The open-source desktop app for managing Docker containers, Linux VMs, and Kubernetes \u2014 blazing fast, built with Rust.',
@@ -36,7 +36,7 @@
       featLabel: 'Features',
       featTitle: 'Everything you need to manage containers and beyond.',
       featDesc:
-        'CargoBay brings a unified, native-speed experience for Docker containers, Linux VMs, and Kubernetes clusters \u2014 without the overhead.',
+        'CrateBay brings a unified, native-speed experience for Docker containers, Linux VMs, and Kubernetes clusters \u2014 without the overhead.',
       feat1Title: 'Docker Container Management',
       feat1Desc:
         'Full lifecycle control \u2014 create, start, stop, restart, remove. Real-time log streaming and exec into running containers.',
@@ -67,7 +67,7 @@
       demoTitle: 'Built for speed and clarity.',
       demoDesc:
         'A clean, responsive GUI built with Tauri and React. Every interaction feels instant.',
-      demoTitlebar: 'CargoBay',
+      demoTitlebar: 'CrateBay',
       demoSidebar0: 'Dashboard',
       demoSidebar1: 'Containers',
       demoSidebar2: 'Images',
@@ -110,10 +110,10 @@
 
       // Comparison
       compLabel: 'Comparison',
-      compTitle: 'How CargoBay stacks up.',
-      compDesc: 'A quick look at how CargoBay compares to the alternatives.',
+      compTitle: 'How CrateBay stacks up.',
+      compDesc: 'A quick look at how CrateBay compares to the alternatives.',
       compFeature: 'Feature',
-      compCargoBay: 'CargoBay',
+      compCrateBay: 'CrateBay',
       compDocker: 'Docker Desktop',
       compOrbStack: 'OrbStack',
       compAppSize: 'App Size',
@@ -161,7 +161,7 @@
       navInstall: '安装',
       themeToggle: '切换深色/浅色模式',
       heroBadge: 'v1.0.0 正式版',
-      heroTitle1: 'Cargo',
+      heroTitle1: 'Crate',
       heroTitle2: 'Bay',
       heroTagline: '开源桌面应用，统一管理 Docker 容器、Linux 虚拟机和 Kubernetes 集群 —— 极速，基于 Rust 构建。',
       heroDownload: '下载 macOS 版本',
@@ -171,7 +171,7 @@
       statSize: '应用大小',
       featLabel: '核心功能',
       featTitle: '容器管理，一应俱全。',
-      featDesc: 'CargoBay 为 Docker 容器、Linux 虚拟机和 Kubernetes 集群提供统一、原生速度的管理体验——零额外开销。',
+      featDesc: 'CrateBay 为 Docker 容器、Linux 虚拟机和 Kubernetes 集群提供统一、原生速度的管理体验——零额外开销。',
       feat1Title: 'Docker 容器管理',
       feat1Desc: '全生命周期控制——创建、启动、停止、重启、删除。实时日志流和进入运行中容器的终端。',
       feat2Title: 'Linux 虚拟机',
@@ -191,7 +191,7 @@
       demoLabel: '界面',
       demoTitle: '为速度和清晰度而生。',
       demoDesc: '基于 Tauri 和 React 构建的简洁响应式 GUI。每次交互都瞬间完成。',
-      demoTitlebar: 'CargoBay',
+      demoTitlebar: 'CrateBay',
       demoSidebar0: '仪表盘',
       demoSidebar1: '容器',
       demoSidebar2: '镜像',
@@ -229,10 +229,10 @@
       techTitle: 'Rust 构建，gRPC 驱动。',
       techDesc: '全栈 Rust——从 GUI 后端到守护进程再到 VM 引擎。零垃圾回收，极致性能。',
       compLabel: '对比',
-      compTitle: 'CargoBay 横向对比。',
-      compDesc: '快速了解 CargoBay 与同类产品的差异。',
+      compTitle: 'CrateBay 横向对比。',
+      compDesc: '快速了解 CrateBay 与同类产品的差异。',
       compFeature: '特性',
-      compCargoBay: 'CargoBay',
+      compCrateBay: 'CrateBay',
       compDocker: 'Docker Desktop',
       compOrbStack: 'OrbStack',
       compAppSize: '应用大小',
@@ -318,12 +318,12 @@
 
   function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('cargobay-theme', theme);
+    localStorage.setItem('cratebay-theme', theme);
     // Update canvas colors if needed (handled by reading CSS vars in draw loop)
   }
 
   function initTheme() {
-    var stored = localStorage.getItem('cargobay-theme');
+    var stored = localStorage.getItem('cratebay-theme');
     if (stored === 'light' || stored === 'dark') {
       setTheme(stored);
     } else {

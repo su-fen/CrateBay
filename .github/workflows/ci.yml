@@ -42,22 +42,22 @@ jobs:
           - name: macOS
             os: macos-latest
             install-protoc: brew install protobuf
-            # On macOS we can lint/test the whole workspace (including cargobay-vz)
-            clippy-args: --workspace --exclude cargobay-gui -- -D warnings
-            test-args: --workspace --exclude cargobay-gui
+            # On macOS we can lint/test the whole workspace (including cratebay-vz)
+            clippy-args: --workspace --exclude cratebay-gui -- -D warnings
+            test-args: --workspace --exclude cratebay-gui
           - name: Linux
             os: ubuntu-latest
             install-protoc: sudo apt-get update && sudo apt-get install -y protobuf-compiler
-            # cargobay-vz requires Virtualization.framework (macOS only)
-            clippy-args: --workspace --exclude cargobay-gui --exclude cargobay-vz -- -D warnings
-            test-args: --workspace --exclude cargobay-gui --exclude cargobay-vz
+            # cratebay-vz requires Virtualization.framework (macOS only)
+            clippy-args: --workspace --exclude cratebay-gui --exclude cratebay-vz -- -D warnings
+            test-args: --workspace --exclude cratebay-gui --exclude cratebay-vz
           - name: Windows
             os: windows-latest
             install-protoc: choco install protoc -y
-            # cargobay-vz requires Virtualization.framework (macOS only);
-            # cargobay-gui requires WebKitGTK / WebView2 build tooling
-            clippy-args: --workspace --exclude cargobay-gui --exclude cargobay-vz -- -D warnings
-            test-args: --workspace --exclude cargobay-gui --exclude cargobay-vz
+            # cratebay-vz requires Virtualization.framework (macOS only);
+            # cratebay-gui requires WebKitGTK / WebView2 build tooling
+            clippy-args: --workspace --exclude cratebay-gui --exclude cratebay-vz -- -D warnings
+            test-args: --workspace --exclude cratebay-gui --exclude cratebay-vz
 
     steps:
       - uses: actions/checkout@v4
@@ -93,14 +93,14 @@ jobs:
         env:
           RUST_BACKTRACE: 1
 
-      # cargobay-vz: only build & test on macOS (Virtualization.framework)
-      - name: Build cargobay-vz
+      # cratebay-vz: only build & test on macOS (Virtualization.framework)
+      - name: Build cratebay-vz
         if: runner.os == 'macOS'
-        run: cargo build -p cargobay-vz
+        run: cargo build -p cratebay-vz
 
-      - name: Test cargobay-vz
+      - name: Test cratebay-vz
         if: runner.os == 'macOS'
-        run: cargo test -p cargobay-vz
+        run: cargo test -p cratebay-vz
 
   # -----------------------------------------------------------
   # Frontend — Node / React lint & build
@@ -110,7 +110,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: crates/cargobay-gui
+        working-directory: crates/cratebay-gui
     steps:
       - uses: actions/checkout@v4
 
@@ -119,7 +119,7 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: crates/cargobay-gui/package-lock.json
+          cache-dependency-path: crates/cratebay-gui/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -158,7 +158,7 @@ jobs:
           shared-key: size-check
 
       - name: Build release (CLI + daemon)
-        run: cargo build --release -p cargobay-cli -p cargobay-daemon
+        run: cargo build --release -p cratebay-cli -p cratebay-daemon
 
       - name: Report binary sizes
         run: |
@@ -166,7 +166,7 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "| Binary | Size |" >> "$GITHUB_STEP_SUMMARY"
           echo "|--------|------|" >> "$GITHUB_STEP_SUMMARY"
-          for bin in cargobay cargobay-daemon; do
+          for bin in cratebay cratebay-daemon; do
             path="target/release/$bin"
             if [ -f "$path" ]; then
               size_bytes=$(stat -f%z "$path")
@@ -179,7 +179,7 @@ jobs:
       - name: Check binary size limit (20 MB each)
         run: |
           MAX_BYTES=$((20 * 1048576))
-          for bin in cargobay cargobay-daemon; do
+          for bin in cratebay cratebay-daemon; do
             path="target/release/$bin"
             if [ -f "$path" ]; then
               size=$(stat -f%z "$path")
@@ -235,7 +235,7 @@ jobs:
           shared-key: perf-bench
 
       - name: Build release binaries
-        run: cargo build --release -p cargobay-cli -p cargobay-daemon
+        run: cargo build --release -p cratebay-cli -p cratebay-daemon
 
       - name: Run performance benchmarks
         run: ./scripts/bench-perf.sh

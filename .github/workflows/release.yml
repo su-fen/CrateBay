@@ -25,26 +25,26 @@ jobs:
           - name: macOS-aarch64
             os: macos-latest
             target: aarch64-apple-darwin
-            cli-artifact: cargobay-macos-aarch64
-            daemon-artifact: cargobay-daemon-macos-aarch64
+            cli-artifact: cratebay-macos-aarch64
+            daemon-artifact: cratebay-daemon-macos-aarch64
             ext: ""
           - name: macOS-x86_64
             os: macos-13
             target: x86_64-apple-darwin
-            cli-artifact: cargobay-macos-x86_64
-            daemon-artifact: cargobay-daemon-macos-x86_64
+            cli-artifact: cratebay-macos-x86_64
+            daemon-artifact: cratebay-daemon-macos-x86_64
             ext: ""
           - name: Linux-x86_64
             os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            cli-artifact: cargobay-linux-x86_64
-            daemon-artifact: cargobay-daemon-linux-x86_64
+            cli-artifact: cratebay-linux-x86_64
+            daemon-artifact: cratebay-daemon-linux-x86_64
             ext: ""
           - name: Windows-x86_64
             os: windows-latest
             target: x86_64-pc-windows-msvc
-            cli-artifact: cargobay-windows-x86_64
-            daemon-artifact: cargobay-daemon-windows-x86_64
+            cli-artifact: cratebay-windows-x86_64
+            daemon-artifact: cratebay-daemon-windows-x86_64
             ext: ".exe"
 
     steps:
@@ -79,23 +79,23 @@ jobs:
 
       # -- Build CLI --
       - name: Build CLI (release)
-        run: cargo build --release --target ${{ matrix.target }} -p cargobay-cli
+        run: cargo build --release --target ${{ matrix.target }} -p cratebay-cli
 
       # -- Build daemon --
       - name: Build daemon (release)
-        run: cargo build --release --target ${{ matrix.target }} -p cargobay-daemon
+        run: cargo build --release --target ${{ matrix.target }} -p cratebay-daemon
 
-      # -- Build cargobay-vz on macOS --
-      - name: Build cargobay-vz (release, macOS only)
+      # -- Build cratebay-vz on macOS --
+      - name: Build cratebay-vz (release, macOS only)
         if: runner.os == 'macOS'
-        run: cargo build --release --target ${{ matrix.target }} -p cargobay-vz
+        run: cargo build --release --target ${{ matrix.target }} -p cratebay-vz
 
       # -- Upload CLI binary --
       - name: Upload CLI artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.cli-artifact }}
-          path: target/${{ matrix.target }}/release/cargobay${{ matrix.ext }}
+          path: target/${{ matrix.target }}/release/cratebay${{ matrix.ext }}
           if-no-files-found: error
 
       # -- Upload daemon binary --
@@ -103,7 +103,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.daemon-artifact }}
-          path: target/${{ matrix.target }}/release/cargobay-daemon${{ matrix.ext }}
+          path: target/${{ matrix.target }}/release/cratebay-daemon${{ matrix.ext }}
           if-no-files-found: error
 
   # -----------------------------------------------------------
@@ -119,19 +119,19 @@ jobs:
           - name: macOS-aarch64
             os: macos-latest
             target: aarch64-apple-darwin
-            artifact: cargobay-gui-macos-aarch64
+            artifact: cratebay-gui-macos-aarch64
           - name: macOS-x86_64
             os: macos-13
             target: x86_64-apple-darwin
-            artifact: cargobay-gui-macos-x86_64
+            artifact: cratebay-gui-macos-x86_64
           - name: Linux-x86_64
             os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            artifact: cargobay-gui-linux-x86_64
+            artifact: cratebay-gui-linux-x86_64
           - name: Windows-x86_64
             os: windows-latest
             target: x86_64-pc-windows-msvc
-            artifact: cargobay-gui-windows-x86_64
+            artifact: cratebay-gui-windows-x86_64
 
     steps:
       - uses: actions/checkout@v4
@@ -151,7 +151,7 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: crates/cargobay-gui/package-lock.json
+          cache-dependency-path: crates/cratebay-gui/package-lock.json
 
       # Linux: system libraries required by Tauri / WebKitGTK
       - name: Install Linux system dependencies
@@ -171,7 +171,7 @@ jobs:
           key: gui-release-${{ matrix.target }}
 
       - name: Install frontend dependencies
-        working-directory: crates/cargobay-gui
+        working-directory: crates/cratebay-gui
         run: npm ci
 
       - name: Build Tauri app
@@ -179,7 +179,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          projectPath: crates/cargobay-gui
+          projectPath: crates/cratebay-gui
           args: --target ${{ matrix.target }}
 
       # Tauri bundles end up in target/<target>/release/bundle/

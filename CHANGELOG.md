@@ -38,10 +38,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Container environment variable viewer.
 - Local image management (list, remove, tag, inspect).
 - Docker volume management (list, create, inspect, remove).
-- CLI: image search (`cargobay image search`) and tag listing (`cargobay image tags`).
-- CLI: image import/push (`cargobay image load` / `cargobay image push`) and container snapshot packaging (`cargobay image pack-container`).
-- CLI: run containers with optional CPU/memory limits (`cargobay docker run --cpus/--memory`) and optional pull (`--pull`).
-- CLI: print container login command (`cargobay docker login-cmd`).
+- CLI: image search (`cratebay image search`) and tag listing (`cratebay image tags`).
+- CLI: image import/push (`cratebay image load` / `cratebay image push`) and container snapshot packaging (`cratebay image pack-container`).
+- CLI: run containers with optional CPU/memory limits (`cratebay docker run --cpus/--memory`) and optional pull (`--pull`).
+- CLI: print container login command (`cratebay docker login-cmd`).
 - GUI: Images page (search Docker Hub/Quay, list tags for registry references, run container with CPU/memory, import/push images).
 - GUI: VM page (VM lifecycle UI, VirtioFS mount tracking, login command generator).
 - GUI: show container login commands and package a container as an image (docker commit).
@@ -89,14 +89,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dark and Light theme support with CSS custom properties.
 - Multi-language support (English, 中文).
 - Responsive layout with sidebar collapse on small windows.
-- Custom CargoBay logo and branding.
+- Custom CrateBay logo and branding.
 - VM engine abstraction with `Hypervisor` trait (macOS Virtualization.framework, Linux KVM).
 - gRPC service definitions for VM management.
 - Daemon scaffolding for background services.
-- Rust workspace with 4 crates: `cargobay-core`, `cargobay-cli`, `cargobay-daemon`, `cargobay-gui`.
+- Rust workspace with 4 crates: `cratebay-core`, `cratebay-cli`, `cratebay-daemon`, `cratebay-gui`.
 - Cross-platform design with conditional compilation (`#[cfg(target_os)]`).
 - Bollard crate for Docker API communication.
 
-[Unreleased]: https://github.com/coder-hhx/CargoBay/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/coder-hhx/CargoBay/compare/v0.1.0...v1.0.0
-[0.1.0]: https://github.com/coder-hhx/CargoBay/releases/tag/v0.1.0
+[Unreleased]: https://github.com/coder-hhx/CrateBay/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/coder-hhx/CrateBay/compare/v0.1.0...v1.0.0
+[0.1.0]: https://github.com/coder-hhx/CrateBay/releases/tag/v0.1.0

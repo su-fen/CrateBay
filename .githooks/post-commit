@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# post-commit hook — CI monitoring reminder (prompt type)
+# Shows helpful CI commands after each commit
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  CI Monitoring"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "  After pushing, check CI status:"
+echo "    gh run list --limit 3"
+echo "    gh run watch"
+echo ""
+echo "  If CI fails:"
+echo "    gh run view --log-failed"
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""

@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/coder-hhx/CargoBay/master/assets/logo.png" alt="CargoBay" width="128" />
+  <img src="https://raw.githubusercontent.com/coder-hhx/CrateBay/master/assets/logo.png" alt="CrateBay" width="128" />
 </p>
 
-<h1 align="center">CargoBay</h1>
+<h1 align="center">CrateBay</h1>
 
 <p align="center">
   <strong>Free, open-source desktop for containers and Linux VMs.</strong><br>
@@ -15,8 +15,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/coder-hhx/CargoBay/releases">Download</a> ·
-  <a href="https://github.com/coder-hhx/CargoBay/issues">Issues</a> ·
+  <a href="https://github.com/coder-hhx/CrateBay/releases">Download</a> ·
+  <a href="https://github.com/coder-hhx/CrateBay/issues">Issues</a> ·
   <a href="docs/ARCHITECTURE.md">Architecture</a> ·
   <a href="docs/TUTORIAL.md">Tutorial</a> ·
   <a href="CHANGELOG.md">Changelog</a>
@@ -30,11 +30,11 @@
 
 ---
 
-## Why CargoBay?
+## Why CrateBay?
 
 OrbStack is great, but it's **closed-source and macOS-only**. Docker Desktop is **heavy and requires paid subscriptions**. Podman Desktop and Rancher Desktop use **Electron (300-500MB RAM)**. We believe developers deserve something better:
 
-- **Name meaning**: *CargoBay* = `cargo` (containers, and a wink to Rust `cargo`) + `bay` (a home port for your VMs and dev environments)
+- **Name meaning**: *CrateBay* = `cargo` (containers, and a wink to Rust `cargo`) + `bay` (a home port for your VMs and dev environments)
 - **100% free & open source** — Apache 2.0, no license fees, no telemetry
 - **Rust + Tauri native** — not Electron, idles at <200MB RAM
 - **VM + Containers unified** — one tool for everything
@@ -42,7 +42,7 @@ OrbStack is great, but it's **closed-source and macOS-only**. Docker Desktop is 
 
 ## Comparison
 
-| | CargoBay | OrbStack | Docker Desktop | Podman Desktop | Colima |
+| | CrateBay | OrbStack | Docker Desktop | Podman Desktop | Colima |
 |---|:---:|:---:|:---:|:---:|:---:|
 | **Open source** | ✅ | ❌ | Partial | ✅ | ✅ |
 | **Free for commercial use** | ✅ | ❌ | ❌ (>250 employees) | ✅ | ✅ |
@@ -105,25 +105,25 @@ OrbStack is great, but it's **closed-source and macOS-only**. Docker Desktop is 
 
 ## Quick Start
 
-> CargoBay v1.0.0 is now available. Feedback and contributions are welcome!
+> CrateBay v1.0.0 is now available. Feedback and contributions are welcome!
 
 ```bash
 # Build from source
-git clone https://github.com/coder-hhx/CargoBay.git
-cd CargoBay
+git clone https://github.com/coder-hhx/CrateBay.git
+cd CrateBay
 cargo build --release
 
 # CLI usage
-cargobay status                              # Show platform info
-cargobay image search nginx --source all --limit 20
-cargobay image load ./image.tar
-cargobay image push ghcr.io/owner/image:tag
-cargobay docker run nginx:latest --name web --cpus 2 --memory 512 --pull
-cargobay image pack-container web myorg/web:snapshot
-cargobay docker login-cmd web
-cargobay docker ps                           # List containers
-cargobay vm create myvm --cpus 4 --memory 4096 --rosetta  # Create VM with Rosetta
-cargobay mount add --vm myvm --tag code --host-path ~/code --guest-path /mnt/code
+cratebay status                              # Show platform info
+cratebay image search nginx --source all --limit 20
+cratebay image load ./image.tar
+cratebay image push ghcr.io/owner/image:tag
+cratebay docker run nginx:latest --name web --cpus 2 --memory 512 --pull
+cratebay image pack-container web myorg/web:snapshot
+cratebay docker login-cmd web
+cratebay docker ps                           # List containers
+cratebay vm create myvm --cpus 4 --memory 4096 --rosetta  # Create VM with Rosetta
+cratebay mount add --vm myvm --tag code --host-path ~/code --guest-path /mnt/code
 ```
 
 See [Tutorial](docs/TUTORIAL.md) for detailed instructions.
@@ -133,10 +133,10 @@ See [Tutorial](docs/TUTORIAL.md) for detailed instructions.
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full system design.
 
 <p align="center">
-  <img src="assets/architecture.svg" alt="CargoBay Architecture" width="900" />
+  <img src="assets/architecture.svg" alt="CrateBay Architecture" width="900" />
 </p>
 
-**Key**: Containers talk directly to Docker (lowest latency). VMs go through the CargoBay daemon (needs privileged lifecycle management). K8s queries use kubectl directly.
+**Key**: Containers talk directly to Docker (lowest latency). VMs go through the CrateBay daemon (needs privileged lifecycle management). K8s queries use kubectl directly.
 
 ## Contributing
 

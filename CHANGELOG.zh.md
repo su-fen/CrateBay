@@ -37,10 +37,10 @@
 - 容器环境变量查看。
 - 本地镜像管理（列表、删除、标签、详情）。
 - Docker 存储卷管理（列表、创建、详情、删除）。
-- CLI：镜像搜索（`cargobay image search`）与 tag 列表（`cargobay image tags`）。
-- CLI：镜像导入/上传（`cargobay image load` / `cargobay image push`）与基于容器打包镜像（`cargobay image pack-container`）。
-- CLI：创建并运行容器时支持可选 CPU/内存限制（`cargobay docker run --cpus/--memory`）与可选拉取镜像（`--pull`）。
-- CLI：输出容器登录命令（`cargobay docker login-cmd`）。
+- CLI：镜像搜索（`cratebay image search`）与 tag 列表（`cratebay image tags`）。
+- CLI：镜像导入/上传（`cratebay image load` / `cratebay image push`）与基于容器打包镜像（`cratebay image pack-container`）。
+- CLI：创建并运行容器时支持可选 CPU/内存限制（`cratebay docker run --cpus/--memory`）与可选拉取镜像（`--pull`）。
+- CLI：输出容器登录命令（`cratebay docker login-cmd`）。
 - GUI：镜像页（搜索 Docker Hub/Quay、对带域名的镜像列出 tags、支持 CPU/内存创建容器、导入/上传镜像）。
 - GUI：虚拟机页（VM 生命周期 UI、VirtioFS 挂载记录、登录命令生成）。
 - GUI：显示容器登录命令，并支持将容器打包为镜像（docker commit）。
@@ -88,14 +88,14 @@
 - 深色/浅色主题支持（基于 CSS 自定义属性）。
 - 多语言支持（English、中文）。
 - 响应式布局：小窗口自动折叠侧边栏。
-- CargoBay Logo 与基础品牌元素。
+- CrateBay Logo 与基础品牌元素。
 - VM 引擎抽象：`Hypervisor` trait（macOS Virtualization.framework、Linux KVM）。
 - VM 管理的 gRPC 协议定义。
 - 守护进程（daemon）脚手架，用于后台服务。
-- Rust workspace（4 个 crate）：`cargobay-core`、`cargobay-cli`、`cargobay-daemon`、`cargobay-gui`。
+- Rust workspace（4 个 crate）：`cratebay-core`、`cratebay-cli`、`cratebay-daemon`、`cratebay-gui`。
 - 跨平台设计：条件编译（`#[cfg(target_os)]`）。
 - 通过 Bollard 使用 Docker API。
 
-[未发布]: https://github.com/coder-hhx/CargoBay/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/coder-hhx/CargoBay/compare/v0.1.0...v1.0.0
-[0.1.0]: https://github.com/coder-hhx/CargoBay/releases/tag/v0.1.0
+[未发布]: https://github.com/coder-hhx/CrateBay/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/coder-hhx/CrateBay/compare/v0.1.0...v1.0.0
+[0.1.0]: https://github.com/coder-hhx/CrateBay/releases/tag/v0.1.0
