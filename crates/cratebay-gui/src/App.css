@@ -256,9 +256,21 @@
 
 .dash-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
   margin-bottom: 24px;
+}
+
+@media (max-width: 1200px) {
+  .dash-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .dash-cards {
+    grid-template-columns: 1fr;
+  }
 }
 
 .dash-card {
@@ -298,6 +310,26 @@
   stroke-linejoin: round;
 }
 
+.dash-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dash-card-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dash-card-footer {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
 .dash-card-info {
   display: flex;
   align-items: baseline;
@@ -305,7 +337,7 @@
 }
 
 .dash-card-value {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 700;
   color: var(--text);
   line-height: 1;
@@ -422,6 +454,58 @@
 .card-body {
   flex: 1;
   min-width: 0;
+}
+
+.card-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-right: 12px;
+  flex-shrink: 0;
+  justify-content: center;
+}
+
+.card-stats .stat-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text2);
+}
+
+.card-stats .stat-icon {
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.card-stats .stat-icon svg {
+  width: 12px;
+  height: 12px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+}
+
+.card-stats .stat-value {
+  font-weight: 600;
+  color: var(--text);
+  font-family: 'SF Mono', 'Consolas', monospace;
+  font-size: 11px;
+}
+
+.dash-card-footer {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.dash-card-footer .dash-card-label {
+  white-space: nowrap;
 }
 
 .card-name {
@@ -1919,6 +2003,56 @@
   color: #059669;
 }
 
+/* === Tabs === */
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text2);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+  margin-bottom: -1px;
+}
+
+.tab:hover {
+  color: var(--text);
+  background: var(--hover);
+}
+
+.tab.active {
+  color: var(--purple);
+  border-bottom-color: var(--purple);
+}
+
+.tab .icon {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab .icon svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+}
+
 /* === Responsive === */
 
 /* Large screens — cap content width to prevent over-stretching on ultra-wide monitors */
@@ -2038,10 +2172,43 @@
 }
 
 .container-card-stats {
-  padding: 6px 14px 10px;
+  display: flex;
+  gap: 16px;
+  padding: 10px 14px;
   border-top: 1px solid var(--border);
-  background: color-mix(in srgb, var(--surface2) 50%, transparent);
+  background: var(--surface2);
   border-radius: 0 0 10px 10px;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text2);
+}
+
+.stat-icon {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+}
+
+.stat-icon svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+}
+
+.stat-value {
+  font-weight: 600;
+  color: var(--text);
+  font-family: 'SF Mono', 'Consolas', monospace;
 }
 
 /* VM item stats */

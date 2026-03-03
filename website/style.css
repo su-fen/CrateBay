@@ -250,6 +250,11 @@ svg {
   width: 28px;
   height: 28px;
   border-radius: 6px;
+  filter: brightness(0.95) drop-shadow(0 0 4px rgba(139, 92, 246, 0.15));
+  transition: filter 0.3s ease;
+}
+[data-theme="light"] .nav-logo img {
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.1));
 }
 .nav-links {
   display: flex;
@@ -1076,6 +1081,11 @@ svg {
   width: 22px;
   height: 22px;
   border-radius: 4px;
+  filter: brightness(0.95) drop-shadow(0 0 4px rgba(139, 92, 246, 0.15));
+  transition: filter 0.3s ease;
+}
+[data-theme="light"] .footer-logo img {
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.1));
 }
 .footer-copy {
   font-size: 0.82rem;

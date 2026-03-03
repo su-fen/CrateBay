@@ -58,6 +58,7 @@ export function Images({
 }: ImagesProps) {
   const [showRunModal, setShowRunModal] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
+  const [activeTab, setActiveTab] = useState<"local" | "search">("local")
   const canTags = (ref: string) => ref.includes(".") || ref.includes(":") || ref.startsWith("localhost/")
 
   // Local images state
@@ -176,157 +177,179 @@ export function Images({
 
   return (
     <div className="page">
-      {/* ---- Local Images Section ---- */}
-      <div className="toolbar">
-        <h3 style={{ margin: 0, fontWeight: 600 }}>{t("localImages")}</h3>
-        <div style={{ flex: 1 }} />
-        <input
-          className="input"
-          style={{ width: 220 }}
-          placeholder={t("filterLocalImages")}
-          value={localFilter}
-          onChange={e => setLocalFilter(e.target.value)}
-        />
-        <button className="btn" onClick={fetchLocalImages} disabled={localLoading}>
-          <span className="icon">{I.refresh}</span>{t("refresh")}
+      {/* Tab Navigation */}
+      <div className="tabs">
+        <button
+          className={`tab ${activeTab === "local" ? "active" : ""}`}
+          onClick={() => setActiveTab("local")}
+        >
+          <span className="icon">{I.layers}</span>
+          {t("localImages")} ({localImages.length})
         </button>
-      </div>
-
-      {localLoading ? (
-        <div className="hint">{t("loading")}</div>
-      ) : filteredImages.length === 0 ? (
-        <div className="hint" style={{ padding: "16px 0", textAlign: "center" }}>{t("noLocalImages")}</div>
-      ) : (
-        filteredImages.map((img, idx) => (
-          <div className="container-card" key={`${img.id}-${idx}`}>
-            <div className="card-icon" style={{ background: "var(--surface2)" }}>
-              {I.layers}
-            </div>
-            <div className="card-body">
-              <div className="card-name">
-                {img.repo_tags.length > 0
-                  ? img.repo_tags.join(", ")
-                  : "<none>:<none>"}
-              </div>
-              <div className="card-meta">
-                {t("imageId")}: {img.id} · {t("imageSize")}: {img.size_human} · {t("imageCreated")}: {formatCreated(img.created)}
-              </div>
-            </div>
-            <div className="card-actions">
-              <button
-                className="action-btn"
-                onClick={() => onCopy(img.id)}
-                title={t("copyId")}
-              >
-                {I.copy}
-              </button>
-              <button
-                className="action-btn"
-                onClick={() => handleInspect(img.repo_tags[0] || img.id)}
-                title={t("inspectImage")}
-                disabled={inspectLoading}
-              >
-                {I.fileText}
-              </button>
-              <button
-                className="action-btn"
-                onClick={() => openTagModal(img.repo_tags[0] || img.id)}
-                title={t("tagImage")}
-              >
-                {I.plus}
-              </button>
-              <button
-                className="action-btn danger"
-                onClick={() => setConfirmRemove(img.repo_tags[0] || img.id)}
-                title={t("removeImage")}
-              >
-                {I.trash}
-              </button>
-            </div>
-          </div>
-        ))
-      )}
-
-      <div style={{ borderTop: "1px solid var(--border)", margin: "16px 0" }} />
-
-      {/* ---- Registry Search Section ---- */}
-      <div className="toolbar">
-        <input
-          className="input toolbar-search"
-          placeholder={t("searchImages")}
-          value={imgQuery}
-          onChange={e => setImgQuery(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && onSearch()}
-        />
-        <select className="select" value={imgSource} onChange={e => setImgSource(e.target.value)}>
-          <option value="all">{t("sourceAll")}</option>
-          <option value="dockerhub">{t("sourceDockerHub")}</option>
-          <option value="quay">{t("sourceQuay")}</option>
-        </select>
-        <button className="btn primary" disabled={imgSearching || !imgQuery.trim()} onClick={onSearch}>
-          {imgSearching ? t("searching") : t("search")}
-        </button>
-        <div style={{ flex: 1 }} />
-        <button className="btn" onClick={() => setShowImportModal(true)}>
-          <span className="icon">{I.plus}</span>{t("importImage")}
+        <button
+          className={`tab ${activeTab === "search" ? "active" : ""}`}
+          onClick={() => setActiveTab("search")}
+        >
+          <span className="icon">{I.globe}</span>
+          {t("searchImages")}
         </button>
       </div>
 
       {imgError && <ErrorInline message={imgError} onDismiss={() => setImgError("")} />}
 
-      {/* Tags bar */}
-      {imgTags.length > 0 && (
-        <div className="img-tags-bar">
-          <span className="img-tags-label">{t("tags")} ({imgTagsRef}):</span>
-          <div className="tags">
-            {imgTags.map(tag => (
-              <div className="tag" key={tag} onClick={() => openRunWithImage(`${imgTagsRef}:${tag}`)}>
-                {tag}
-              </div>
-            ))}
+      {/* ---- Local Images Section ---- */}
+      {activeTab === "local" && (
+        <>
+          <div className="toolbar">
+            <input
+              className="input"
+              style={{ width: 220 }}
+              placeholder={t("filterLocalImages")}
+              value={localFilter}
+              onChange={e => setLocalFilter(e.target.value)}
+            />
+            <div style={{ flex: 1 }} />
+            <button className="btn" onClick={() => setShowImportModal(true)}>
+              <span className="icon">{I.plus}</span>{t("importImage")}
+            </button>
+            <button className="btn" onClick={fetchLocalImages} disabled={localLoading}>
+              <span className="icon">{I.refresh}</span>{t("refresh")}
+            </button>
           </div>
-        </div>
-      )}
-      {imgTagsLoading && <div className="hint">{t("loading")}</div>}
 
-      {/* Search results - card list */}
-      {imgResults.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-icon">{I.layers}</div>
-          <h3>{t("searchHint")}</h3>
-          <p>Docker Hub · Quay.io · GitHub Container Registry</p>
-        </div>
-      ) : (
-        <div className="img-grid">
-          {imgResults.map((r, idx) => (
-            <div className="img-card" key={`${r.source}-${r.reference}-${idx}`}>
-              <div className="img-card-top">
-                <div className="img-card-header">
-                  <span className="badge">{r.source}</span>
-                  {r.official && <span className="img-official">{t("official")}</span>}
+          {localLoading ? (
+            <div className="hint">{t("loading")}</div>
+          ) : filteredImages.length === 0 ? (
+            <div className="hint" style={{ padding: "16px 0", textAlign: "center" }}>{t("noLocalImages")}</div>
+          ) : (
+            filteredImages.map((img, idx) => (
+              <div className="container-card" key={`${img.id}-${idx}`}>
+                <div className="card-icon" style={{ background: "var(--surface2)" }}>
+                  {I.layers}
                 </div>
-                <div className="img-card-name">{r.reference}</div>
-                <div className="img-card-desc">{r.description || "-"}</div>
+                <div className="card-body">
+                  <div className="card-name">
+                    {img.repo_tags.length > 0
+                      ? img.repo_tags.join(", ")
+                      : "<none>:<none>"}
+                  </div>
+                  <div className="card-meta">
+                    {t("imageId")}: {img.id} · {t("imageSize")}: {img.size_human} · {t("imageCreated")}: {formatCreated(img.created)}
+                  </div>
+                </div>
+                <div className="card-actions">
+                  <button
+                    className="action-btn"
+                    onClick={() => onCopy(img.id)}
+                    title={t("copyId")}
+                  >
+                    {I.copy}
+                  </button>
+                  <button
+                    className="action-btn"
+                    onClick={() => handleInspect(img.repo_tags[0] || img.id)}
+                    title={t("inspectImage")}
+                    disabled={inspectLoading}
+                  >
+                    {I.fileText}
+                  </button>
+                  <button
+                    className="action-btn"
+                    onClick={() => openTagModal(img.repo_tags[0] || img.id)}
+                    title={t("tagImage")}
+                  >
+                    {I.plus}
+                  </button>
+                  <button
+                    className="action-btn danger"
+                    onClick={() => setConfirmRemove(img.repo_tags[0] || img.id)}
+                    title={t("removeImage")}
+                  >
+                    {I.trash}
+                  </button>
+                </div>
               </div>
-              <div className="img-card-bottom">
-                <div className="img-card-stats">
-                  <span className="img-stat">
-                    <svg viewBox="0 0 24 24" className="img-stat-icon"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                    {r.stars ?? "-"}
-                  </span>
-                  <span className="img-stat">
-                    <svg viewBox="0 0 24 24" className="img-stat-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    {formatPulls(r.pulls)}
-                  </span>
-                </div>
-                <div className="img-card-actions">
-                  <button className="btn sm" onClick={() => openRunWithImage(r.reference)}>{t("run")}</button>
-                  <button className="btn sm" disabled={!canTags(r.reference)} onClick={() => onTags(r.reference)}>{t("tags")}</button>
-                </div>
+            ))
+          )}
+        </>
+      )}
+
+      {/* ---- Registry Search Section ---- */}
+      {activeTab === "search" && (
+        <>
+          <div className="toolbar">
+            <input
+              className="input toolbar-search"
+              placeholder={t("searchImages")}
+              value={imgQuery}
+              onChange={e => setImgQuery(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && onSearch()}
+            />
+            <select className="select" value={imgSource} onChange={e => setImgSource(e.target.value)}>
+              <option value="all">{t("sourceAll")}</option>
+              <option value="dockerhub">{t("sourceDockerHub")}</option>
+              <option value="quay">{t("sourceQuay")}</option>
+            </select>
+            <button className="btn primary" disabled={imgSearching || !imgQuery.trim()} onClick={onSearch}>
+              {imgSearching ? t("searching") : t("search")}
+            </button>
+          </div>
+
+          {/* Tags bar */}
+          {imgTags.length > 0 && (
+            <div className="img-tags-bar">
+              <span className="img-tags-label">{t("tags")} ({imgTagsRef}):</span>
+              <div className="tags">
+                {imgTags.map(tag => (
+                  <div className="tag" key={tag} onClick={() => openRunWithImage(`${imgTagsRef}:${tag}`)}>
+                    {tag}
+                  </div>
+                ))}
               </div>
             </div>
-          ))}
-        </div>
+          )}
+          {imgTagsLoading && <div className="hint">{t("loading")}</div>}
+
+          {/* Search results - card list */}
+          {imgResults.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">{I.layers}</div>
+              <h3>{t("searchHint")}</h3>
+              <p>Docker Hub · Quay.io · GitHub Container Registry</p>
+            </div>
+          ) : (
+            <div className="img-grid">
+              {imgResults.map((r, idx) => (
+                <div className="img-card" key={`${r.source}-${r.reference}-${idx}`}>
+                  <div className="img-card-top">
+                    <div className="img-card-header">
+                      <span className="badge">{r.source}</span>
+                      {r.official && <span className="img-official">{t("official")}</span>}
+                    </div>
+                    <div className="img-card-name">{r.reference}</div>
+                    <div className="img-card-desc">{r.description || "-"}</div>
+                  </div>
+                  <div className="img-card-bottom">
+                    <div className="img-card-stats">
+                      <span className="img-stat">
+                        <svg viewBox="0 0 24 24" className="img-stat-icon"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        {r.stars ?? "-"}
+                      </span>
+                      <span className="img-stat">
+                        <svg viewBox="0 0 24 24" className="img-stat-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        {formatPulls(r.pulls)}
+                      </span>
+                    </div>
+                    <div className="img-card-actions">
+                      <button className="btn sm" onClick={() => openRunWithImage(r.reference)}>{t("run")}</button>
+                      <button className="btn sm" disabled={!canTags(r.reference)} onClick={() => onTags(r.reference)}>{t("tags")}</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* Run Container Modal */}

@@ -4,7 +4,6 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event"
 import { I } from "../icons"
 import { ErrorBanner } from "../components/ErrorDisplay"
 import { EmptyState } from "../components/EmptyState"
-import { MiniStats } from "../components/StatsBar"
 import type { ContainerInfo, ContainerGroup, RunContainerResult, ContainerStats, EnvVar } from "../types"
 
 interface ExecEntry {
@@ -317,18 +316,29 @@ export function Containers({
     const childClass = opts?.child ? " container-child" : ""
     const stats = isRunning ? containerStats[c.id] : undefined
     return (
-      <div className={`container-card${childClass}${isRunning ? " container-card-with-stats" : ""}`} key={c.id}>
-        <div className="container-card-main">
-          <div className={`card-icon${isRunning ? "" : " stopped"}`}>{I.box}</div>
-          <div className="card-body">
-            <div className="card-name">{name}</div>
-            <div className="card-meta">{c.image} · {meta}</div>
+      <div className={`container-card${childClass}`} key={c.id}>
+        <div className="card-icon" style={{ background: isRunning ? undefined : "var(--surface2)" }}>{I.box}</div>
+        <div className="card-body">
+          <div className="card-name">{name}</div>
+          <div className="card-meta">{c.image} · {meta}</div>
+        </div>
+        {isRunning && stats && (
+          <div className="card-stats">
+            <div className="stat-item">
+              <span className="stat-icon">{I.cpu}</span>
+              <span className="stat-value">{stats.cpu_percent.toFixed(1)}%</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-icon">{I.memory}</span>
+              <span className="stat-value">{stats.memory_usage_mb.toFixed(0)}</span>
+            </div>
           </div>
-          <div className="card-status">
-            <span className={`dot ${isRunning ? "running" : "stopped"}`} />
-            <span>{c.status}</span>
-          </div>
-          <div className="card-actions">
+        )}
+        <div className="card-status">
+          <span className={`dot ${isRunning ? "running" : "stopped"}`} />
+          <span>{c.status}</span>
+        </div>
+        <div className="card-actions">
             <button
               className="action-btn"
               disabled={acting === c.id}
@@ -386,15 +396,6 @@ export function Containers({
             </button>
             <button className="action-btn danger" disabled={acting === c.id} onClick={() => { setConfirmRemove(c.id); setContainerToRemoveName(c.name || c.id) }} title={t("delete")}>{I.trash}</button>
           </div>
-        </div>
-        {isRunning && stats && (
-          <div className="container-card-stats">
-            <MiniStats items={[
-              { label: t("cpuUsage"), value: stats.cpu_percent, max: 100, suffix: "%" },
-              { label: t("memoryUsage"), value: stats.memory_usage_mb, max: stats.memory_limit_mb, suffix: " MB" },
-            ]} />
-          </div>
-        )}
       </div>
     )
   }

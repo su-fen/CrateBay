@@ -34,7 +34,7 @@
 
 OrbStack 很优秀，但它**闭源且仅支持 macOS**。Docker Desktop **较重且存在商业订阅限制**。Podman Desktop、Rancher Desktop 基于 **Electron（300-500MB RAM）**。我们希望给开发者一个更轻、更自由的选择：
 
-- **名字含义**：*CrateBay* = `cargo`（容器，也致敬 Rust 的 `cargo`）+ `bay`（停泊虚拟机与开发环境的港湾）
+- **名字含义**：*CrateBay* = `crate`（容器/箱子，也致敬 Rust 的 crate）+ `bay`（停泊虚拟机与开发环境的港湾）
 - **100% 免费开源** — Apache 2.0，无授权费、无遥测
 - **Rust + Tauri 原生** — 非 Electron，空闲内存目标 <200MB
 - **VM + 容器统一** — 一套工具管理全部

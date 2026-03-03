@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { invoke } from "@tauri-apps/api/core"
 import { I } from "../icons"
-import { StatsBar } from "../components/StatsBar"
 import type { ContainerInfo, ContainerStats, VmStats, VmInfoDto } from "../types"
 
 interface DashboardProps {
@@ -137,7 +136,7 @@ export function Dashboard({
           </div>
         </div>
         <div className="dash-card" onClick={() => onNavigate("settings")}>
-          <div className="dash-card-icon">{I.cpu}</div>
+          <div className="dash-card-icon">{I.settings}</div>
           <div className="dash-card-info">
             <div className="dash-card-value">{connected ? "OK" : "--"}</div>
             <div className="dash-card-label">{t("system")}</div>
@@ -147,27 +146,37 @@ export function Dashboard({
             <span>{connected ? "Docker " + t("connected") : t("disconnected")}</span>
           </div>
         </div>
-      </div>
 
-      {hasRunning && (
-        <div className="dash-resources-panel">
-          <div className="section-title">{t("totalResources")}</div>
-          <div className="dash-resources-bars">
-            <StatsBar
-              label={t("cpuUsage")}
-              value={totals.totalCpuPercent}
-              max={100}
-              suffix="%"
-            />
-            <StatsBar
-              label={t("memoryUsage")}
-              value={totals.totalMemoryUsageMb}
-              max={totals.totalMemoryLimitMb || 1}
-              suffix=" MB"
-            />
-          </div>
-        </div>
-      )}
+        {hasRunning && (
+          <>
+            <div className="dash-card">
+              <div className="dash-card-icon" style={{ background: "rgba(139, 92, 246, 0.1)" }}>
+                {I.cpu}
+              </div>
+              <div className="dash-card-header">
+                <div className="dash-card-title">{t("cpuUsage")}</div>
+                <div className="dash-card-value">{totals.totalCpuPercent.toFixed(1)}%</div>
+              </div>
+            </div>
+            <div className="dash-card">
+              <div className="dash-card-icon" style={{ background: "rgba(34, 211, 238, 0.1)" }}>
+                {I.memory}
+              </div>
+              <div className="dash-card-header">
+                <div className="dash-card-title">{t("memoryUsage")}</div>
+                <div className="dash-card-value">
+                  {totals.totalMemoryUsageMb.toFixed(0)} MB
+                </div>
+              </div>
+              <div className="dash-card-footer">
+                <div className="dash-card-label">
+                  of {totals.totalMemoryLimitMb.toFixed(0)} MB
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
 
       {running.length > 0 && <>
         <div className="section-title">{t("running")} ({running.length})</div>

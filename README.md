@@ -34,7 +34,7 @@
 
 OrbStack is great, but it's **closed-source and macOS-only**. Docker Desktop is **heavy and requires paid subscriptions**. Podman Desktop and Rancher Desktop use **Electron (300-500MB RAM)**. We believe developers deserve something better:
 
-- **Name meaning**: *CrateBay* = `cargo` (containers, and a wink to Rust `cargo`) + `bay` (a home port for your VMs and dev environments)
+- **Name meaning**: *CrateBay* = `crate` (containers, and a nod to Rust crates) + `bay` (a home port for your VMs and dev environments)
 - **100% free & open source** — Apache 2.0, no license fees, no telemetry
 - **Rust + Tauri native** — not Electron, idles at <200MB RAM
 - **VM + Containers unified** — one tool for everything
