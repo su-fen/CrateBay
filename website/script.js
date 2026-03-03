@@ -45,7 +45,7 @@
         'Native VM support via Virtualization.framework (macOS), KVM (Linux), and Hyper-V (Windows). Boot in seconds.',
       feat3Title: 'Image & Volume Management',
       feat3Desc:
-        'Search and pull images from Docker Hub and private registries. Manage volumes with inspect, create, prune, and mount operations.',
+        'Search and pull images from Docker Hub and private registries. Manage volumes with inspect, create, prune, and mount operations. Volume lists remain consistently ordered during live refresh.',
       feat4Title: 'Resource Monitoring',
       feat4Desc:
         'Real-time CPU, memory, network, and disk I/O monitoring for every container and VM. Spot issues instantly.',
@@ -177,7 +177,7 @@
       feat2Title: 'Linux 虚拟机',
       feat2Desc: '通过 Virtualization.framework (macOS)、KVM (Linux)、Hyper-V (Windows) 原生支持虚拟机，秒级启动。',
       feat3Title: '镜像与卷管理',
-      feat3Desc: '从 Docker Hub 和私有仓库搜索和拉取镜像。管理卷的检查、创建、清理和挂载操作。',
+      feat3Desc: '从 Docker Hub 和私有仓库搜索和拉取镜像。管理卷的检查、创建、清理和挂载操作。卷列表在实时刷新时保持稳定排序。',
       feat4Title: '资源监控',
       feat4Desc: '实时监控每个容器和虚拟机的 CPU、内存、网络和磁盘 I/O。即时发现问题。',
       feat5Title: '端口转发 & VirtioFS',

@@ -1482,7 +1482,7 @@ async fn volume_list() -> Result<Vec<VolumeInfo>, String> {
         .map_err(|e| e.to_string())?;
 
     let volumes = resp.volumes.unwrap_or_default();
-    Ok(volumes
+    let mut out: Vec<VolumeInfo> = volumes
         .into_iter()
         .map(|v| VolumeInfo {
             name: v.name,
@@ -1493,7 +1493,10 @@ async fn volume_list() -> Result<Vec<VolumeInfo>, String> {
             options: v.options,
             scope: v.scope.map(|s| format!("{:?}", s)).unwrap_or_default(),
         })
-        .collect())
+        .collect();
+    // Docker doesn't guarantee ordering; keep it stable to avoid UI jitter on refresh.
+    out.sort_by(|a, b| a.name.cmp(&b.name));
+    Ok(out)
 }
 
 #[derive(Debug, Serialize)]
