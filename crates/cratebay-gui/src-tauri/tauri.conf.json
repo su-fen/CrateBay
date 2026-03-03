@@ -10,11 +10,6 @@
     "beforeBuildCommand": "npm run build"
   },
   "app": {
-    "trayIcon": {
-      "iconPath": "icons/icon.png",
-      "iconAsTemplate": true,
-      "tooltip": "CrateBay"
-    },
     "security": {
       "csp": "default-src 'self'; img-src 'self' https: data:; script-src 'self'; style-src 'self' 'unsafe-inline'"
     }
