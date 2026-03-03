@@ -132,7 +132,8 @@ describe("Dashboard", () => {
 
     expect(screen.getByText("web-server")).toBeInTheDocument()
     expect(screen.getByText("api-server")).toBeInTheDocument()
-    expect(screen.getByText(/Running \(2\)/)).toBeInTheDocument()
+    expect(screen.getByText(t("running"))).toBeInTheDocument()
+    expect(screen.getByText("2", { selector: ".dash-section-count" })).toBeInTheDocument()
   })
 
   it("does not show running containers section when none are running", () => {
@@ -156,7 +157,7 @@ describe("Dashboard", () => {
       />
     )
 
-    const viewAll = screen.getByText(/View all \(7\)/)
+    const viewAll = screen.getByText(t("viewAll"))
     expect(viewAll).toBeInTheDocument()
 
     await user.click(viewAll)
@@ -171,8 +172,8 @@ describe("Dashboard", () => {
       <Dashboard {...defaultProps} containers={running} running={running} />
     )
 
-    // Should only render 5 container-card elements in the running section
-    const containerCards = document.querySelectorAll(".container-card")
+    // Should only render 5 running-item elements in the running section
+    const containerCards = document.querySelectorAll(".dash-running-item")
     expect(containerCards.length).toBe(5)
   })
 

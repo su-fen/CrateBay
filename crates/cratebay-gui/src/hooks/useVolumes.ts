@@ -64,16 +64,23 @@ export function useVolumes() {
     } catch (e) {
       if (reqId !== latestReqId.current) return
       setError(String(e))
-    } finally {
-      if (reqId !== latestReqId.current) return
+    }
+    if (reqId === latestReqId.current) {
       setLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    fetchVolumes()
-    const iv = setInterval(fetchVolumes, 5000)
-    return () => clearInterval(iv)
+    const initialFetch = setTimeout(() => {
+      void fetchVolumes()
+    }, 0)
+    const iv = setInterval(() => {
+      void fetchVolumes()
+    }, 5000)
+    return () => {
+      clearTimeout(initialFetch)
+      clearInterval(iv)
+    }
   }, [fetchVolumes])
 
   const createVolume = useCallback(async (name: string, driver: string) => {

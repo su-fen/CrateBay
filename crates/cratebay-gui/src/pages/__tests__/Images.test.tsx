@@ -58,27 +58,43 @@ const defaultProps = {
   t,
 }
 
+const renderImages = (props: Partial<typeof defaultProps> = {}) => {
+  render(<Images {...defaultProps} {...props} />)
+}
+
+const openSearchTab = async (user: ReturnType<typeof userEvent.setup>) => {
+  await user.click(
+    screen.getByRole("button", { name: new RegExp(t("searchImages"), "i") })
+  )
+}
+
 describe("Images", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(invoke).mockResolvedValue([])
   })
 
-  it("renders the search input and buttons", () => {
-    render(<Images {...defaultProps} />)
+  it("renders the search input and buttons", async () => {
+    const user = userEvent.setup()
+    renderImages()
+    await openSearchTab(user)
 
     expect(screen.getByPlaceholderText(t("searchImages"))).toBeInTheDocument()
     expect(screen.getByText(t("search"))).toBeInTheDocument()
   })
 
   it("shows the local images section header", () => {
-    render(<Images {...defaultProps} />)
+    renderImages()
 
-    expect(screen.getByText(t("localImages"))).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: new RegExp(t("localImages"), "i") })
+    ).toBeInTheDocument()
   })
 
-  it("shows empty search state with hint", () => {
-    render(<Images {...defaultProps} />)
+  it("shows empty search state with hint", async () => {
+    const user = userEvent.setup()
+    renderImages()
+    await openSearchTab(user)
 
     expect(screen.getByText(t("searchHint"))).toBeInTheDocument()
   })
@@ -86,7 +102,8 @@ describe("Images", () => {
   it("calls onSearch when the search button is clicked", async () => {
     const user = userEvent.setup()
     const onSearch = vi.fn()
-    render(<Images {...defaultProps} imgQuery="nginx" onSearch={onSearch} />)
+    renderImages({ imgQuery: "nginx", onSearch })
+    await openSearchTab(user)
 
     const searchBtn = screen.getByText(t("search"))
     await user.click(searchBtn)
@@ -94,20 +111,25 @@ describe("Images", () => {
     expect(onSearch).toHaveBeenCalled()
   })
 
-  it("disables search button when imgQuery is empty", () => {
-    render(<Images {...defaultProps} imgQuery="" />)
+  it("disables search button when imgQuery is empty", async () => {
+    const user = userEvent.setup()
+    renderImages({ imgQuery: "" })
+    await openSearchTab(user)
 
     const searchBtn = screen.getByText(t("search"))
     expect(searchBtn).toBeDisabled()
   })
 
-  it("disables search button while searching", () => {
-    render(<Images {...defaultProps} imgQuery="nginx" imgSearching={true} />)
+  it("disables search button while searching", async () => {
+    const user = userEvent.setup()
+    renderImages({ imgQuery: "nginx", imgSearching: true })
+    await openSearchTab(user)
 
     expect(screen.getByText(t("searching"))).toBeDisabled()
   })
 
-  it("renders search results as cards", () => {
+  it("renders search results as cards", async () => {
+    const user = userEvent.setup()
     const results = [
       mockSearchResult(),
       mockSearchResult({
@@ -120,7 +142,8 @@ describe("Images", () => {
       }),
     ]
 
-    render(<Images {...defaultProps} imgResults={results} />)
+    renderImages({ imgResults: results })
+    await openSearchTab(user)
 
     expect(screen.getByText("nginx")).toBeInTheDocument()
     expect(screen.getByText("Official Nginx image")).toBeInTheDocument()
@@ -128,30 +151,38 @@ describe("Images", () => {
     expect(screen.getByText("etcd service")).toBeInTheDocument()
   })
 
-  it("shows official badge for official images", () => {
+  it("shows official badge for official images", async () => {
+    const user = userEvent.setup()
     const results = [mockSearchResult({ official: true })]
-    render(<Images {...defaultProps} imgResults={results} />)
+    renderImages({ imgResults: results })
+    await openSearchTab(user)
 
     expect(screen.getByText(t("official"))).toBeInTheDocument()
   })
 
-  it("does not show official badge for non-official images", () => {
+  it("does not show official badge for non-official images", async () => {
+    const user = userEvent.setup()
     const results = [mockSearchResult({ official: false })]
-    render(<Images {...defaultProps} imgResults={results} />)
+    renderImages({ imgResults: results })
+    await openSearchTab(user)
 
     expect(screen.queryByText(t("official"))).not.toBeInTheDocument()
   })
 
-  it("shows source badge on result cards", () => {
+  it("shows source badge on result cards", async () => {
+    const user = userEvent.setup()
     const results = [mockSearchResult({ source: "dockerhub" })]
-    render(<Images {...defaultProps} imgResults={results} />)
+    renderImages({ imgResults: results })
+    await openSearchTab(user)
 
     expect(screen.getByText("dockerhub")).toBeInTheDocument()
   })
 
-  it("renders run and tags buttons on each result card", () => {
+  it("renders run and tags buttons on each result card", async () => {
+    const user = userEvent.setup()
     const results = [mockSearchResult()]
-    render(<Images {...defaultProps} imgResults={results} />)
+    renderImages({ imgResults: results })
+    await openSearchTab(user)
 
     expect(screen.getAllByText(t("run")).length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText(t("tags")).length).toBeGreaterThanOrEqual(1)
@@ -162,7 +193,8 @@ describe("Images", () => {
     const onTags = vi.fn()
     const results = [mockSearchResult({ reference: "quay.io/coreos/etcd" })]
 
-    render(<Images {...defaultProps} imgResults={results} onTags={onTags} />)
+    renderImages({ imgResults: results, onTags })
+    await openSearchTab(user)
 
     // Find the tags button within the search result card
     const tagsButtons = screen.getAllByText(t("tags"))
@@ -173,14 +205,13 @@ describe("Images", () => {
     expect(onTags).toHaveBeenCalledWith("quay.io/coreos/etcd")
   })
 
-  it("displays tags when available", () => {
-    render(
-      <Images
-        {...defaultProps}
-        imgTags={["latest", "1.0", "2.0"]}
-        imgTagsRef="quay.io/coreos/etcd"
-      />
-    )
+  it("displays tags when available", async () => {
+    const user = userEvent.setup()
+    renderImages({
+      imgTags: ["latest", "1.0", "2.0"],
+      imgTagsRef: "quay.io/coreos/etcd",
+    })
+    await openSearchTab(user)
 
     expect(screen.getByText(/Tags/)).toBeInTheDocument()
     expect(screen.getByText("latest")).toBeInTheDocument()
@@ -189,14 +220,14 @@ describe("Images", () => {
   })
 
   it("shows the import image button", () => {
-    render(<Images {...defaultProps} />)
+    renderImages()
 
     expect(screen.getByText(t("importImage"))).toBeInTheDocument()
   })
 
   it("opens the import/push modal when import button is clicked", async () => {
     const user = userEvent.setup()
-    render(<Images {...defaultProps} />)
+    renderImages()
 
     const importBtn = screen.getByText(t("importImage"))
     await user.click(importBtn)
@@ -206,7 +237,7 @@ describe("Images", () => {
   })
 
   it("shows error message when imgError is set", () => {
-    render(<Images {...defaultProps} imgError="Something went wrong" />)
+    renderImages({ imgError: "Something went wrong" })
 
     expect(screen.getByText("Something went wrong")).toBeInTheDocument()
   })
@@ -214,9 +245,7 @@ describe("Images", () => {
   it("dismisses error when dismiss button is clicked", async () => {
     const user = userEvent.setup()
     const setImgError = vi.fn()
-    render(
-      <Images {...defaultProps} imgError="Some error" setImgError={setImgError} />
-    )
+    renderImages({ imgError: "Some error", setImgError })
 
     // The error inline has a dismiss button (x)
     const dismissBtns = document.querySelectorAll(".error-inline-dismiss")
@@ -238,7 +267,7 @@ describe("Images", () => {
       },
     ])
 
-    render(<Images {...defaultProps} />)
+    renderImages()
 
     // Wait for local images to load
     const removeBtn = await screen.findByTitle(t("removeImage"))
@@ -269,7 +298,7 @@ describe("Images", () => {
       return undefined
     })
 
-    render(<Images {...defaultProps} />)
+    renderImages()
 
     // Wait for local images to load and click remove
     const removeBtn = await screen.findByTitle(t("removeImage"))
@@ -282,33 +311,37 @@ describe("Images", () => {
     expect(invoke).toHaveBeenCalledWith("image_remove", { id: "nginx:latest" })
   })
 
-  it("shows source filter dropdown", () => {
-    render(<Images {...defaultProps} />)
+  it("shows source filter dropdown", async () => {
+    const user = userEvent.setup()
+    renderImages()
+    await openSearchTab(user)
 
     expect(screen.getByText(t("sourceAll"))).toBeInTheDocument()
   })
 
-  it("formats pull counts with K and M suffixes", () => {
+  it("formats pull counts with K and M suffixes", async () => {
+    const user = userEvent.setup()
     const results = [
       mockSearchResult({ reference: "nginx-official", pulls: 5000000 }),
       mockSearchResult({ reference: "small-image", pulls: 1500, source: "quay" }),
     ]
 
-    render(<Images {...defaultProps} imgResults={results} />)
+    renderImages({ imgResults: results })
+    await openSearchTab(user)
 
     expect(screen.getByText("5.0M")).toBeInTheDocument()
     expect(screen.getByText("1.5K")).toBeInTheDocument()
   })
 
   it("shows local image filter input", () => {
-    render(<Images {...defaultProps} />)
+    renderImages()
 
     expect(screen.getByPlaceholderText(t("filterLocalImages"))).toBeInTheDocument()
   })
 
   it("shows no local images message when list is empty", async () => {
     vi.mocked(invoke).mockResolvedValue([])
-    render(<Images {...defaultProps} />)
+    renderImages()
 
     expect(await screen.findByText(t("noLocalImages"))).toBeInTheDocument()
   })
