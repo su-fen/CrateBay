@@ -1,10 +1,23 @@
 # Build
 /target/
 /dist/
+**/target/
+**/dist/
+**/build/
+**/out/
+**/coverage/
+**/.cache/
+**/.next/
+**/.nuxt/
+**/.svelte-kit/
+**/.turbo/
+**/.vite/
+**/.parcel-cache/
 
 # Dependencies
 /node_modules/
 assets/node_modules/
+**/node_modules/
 
 # IDE
 .idea/
