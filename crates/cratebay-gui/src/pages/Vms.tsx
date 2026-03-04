@@ -220,7 +220,6 @@ export function Vms({
           <span className="icon">{I.refresh}</span>{vmLoading ? t("loading") : t("refresh")}
         </button>
         <div className="toolbar-spacer" />
-        <div className="hint hint-subtle">{t("vmHint")}</div>
       </div>
 
       {vmError && <ErrorInline message={vmError} onDismiss={() => setVmError("")} />}
@@ -524,7 +523,6 @@ export function Vms({
                             <span className="vm-console-card-icon-svg">{I.terminal}</span>
                           </div>
                           <div className="vm-console-card-title">{t("vmConsole")}</div>
-                          <div className="hint vm-console-card-hint">{t("vmHint")}</div>
                           <button type="button" className="btn primary" onClick={() => openConsole(vm)}>
                             <span className="icon">{I.terminal}</span>{t("vmConsole")}
                           </button>

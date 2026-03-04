@@ -100,7 +100,7 @@ export function Settings({ theme, setTheme, lang, setLang, t }: SettingsProps) {
         </button>
       </div>
       {updateInfo && (
-        <div className="setting-row update-result">
+        <div className={`setting-row update-result${!updateInfo.available ? " up-to-date" : ""}`}>
           <div className="setting-icon">
             <svg viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="10" />

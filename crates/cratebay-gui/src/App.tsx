@@ -69,11 +69,83 @@ function App() {
   const appWindow = getCurrentWindow()
   const [maximized, setMaximized] = useState(false)
 
+  // Restore saved window size/position on startup
+  const MIN_WIDTH = 1100
+  const MIN_HEIGHT = 650
   useEffect(() => {
+    const restore = async () => {
+      try {
+        const saved = localStorage.getItem("windowState")
+        if (!saved) return
+        const { width, height, x, y, maximized: wasMax } = JSON.parse(saved)
+        if (wasMax) {
+          await appWindow.maximize()
+        } else if (width && height) {
+          const { LogicalSize, LogicalPosition } = await import("@tauri-apps/api/dpi")
+          await appWindow.setSize(new LogicalSize(
+            Math.max(width, MIN_WIDTH),
+            Math.max(height, MIN_HEIGHT),
+          ))
+          if (x != null && y != null) {
+            await appWindow.setPosition(new LogicalPosition(x, y))
+          }
+        }
+      } catch { /* ignore restore errors */ }
+    }
+    restore()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Save window size/position on resize, track maximized state, enforce min size
+  useEffect(() => {
+    let saveTimer: ReturnType<typeof setTimeout> | null = null
     const unlisten = appWindow.onResized(async () => {
-      setMaximized(await appWindow.isMaximized())
+      const isMax = await appWindow.isMaximized()
+      setMaximized(isMax)
+
+      // Enforce minimum window size (decorations:false may not honor minWidth/minHeight)
+      if (!isMax) {
+        try {
+          const size = await appWindow.innerSize()
+          const factor = await appWindow.scaleFactor()
+          const logicalW = Math.round(size.width / factor)
+          const logicalH = Math.round(size.height / factor)
+          if (logicalW < MIN_WIDTH || logicalH < MIN_HEIGHT) {
+            const { LogicalSize } = await import("@tauri-apps/api/dpi")
+            await appWindow.setSize(new LogicalSize(
+              Math.max(logicalW, MIN_WIDTH),
+              Math.max(logicalH, MIN_HEIGHT),
+            ))
+            return // skip save — will fire another resize
+          }
+        } catch { /* ignore */ }
+      }
+
+      // Debounce saving to avoid excessive writes
+      if (saveTimer) clearTimeout(saveTimer)
+      saveTimer = setTimeout(async () => {
+        try {
+          if (isMax) {
+            localStorage.setItem("windowState", JSON.stringify({ maximized: true }))
+          } else {
+            const size = await appWindow.innerSize()
+            const pos = await appWindow.outerPosition()
+            const factor = await appWindow.scaleFactor()
+            localStorage.setItem("windowState", JSON.stringify({
+              width: Math.round(size.width / factor),
+              height: Math.round(size.height / factor),
+              x: Math.round(pos.x / factor),
+              y: Math.round(pos.y / factor),
+              maximized: false,
+            }))
+          }
+        } catch { /* ignore */ }
+      }, 500)
     })
-    return () => { unlisten.then(f => f()) }
+    return () => {
+      unlisten.then(f => f())
+      if (saveTimer) clearTimeout(saveTimer)
+    }
   }, [appWindow])
 
   const handleMinimize = useCallback(() => appWindow.minimize(), [appWindow])

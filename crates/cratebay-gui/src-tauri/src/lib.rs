@@ -2422,34 +2422,72 @@ async fn check_update() -> Result<UpdateInfo, String> {
 
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(10))
+        .redirect(reqwest::redirect::Policy::none())
         .build()
         .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
 
-    let resp = client
-        .get("https://api.github.com/repos/coder-hhx/CrateBay/releases/latest")
+    // Use redirect-based approach first (no rate limit), fall back to API
+    let tag = match client
+        .head("https://github.com/coder-hhx/CrateBay/releases/latest")
         .header("User-Agent", format!("CrateBay/{}", current_version))
-        .header("Accept", "application/vnd.github.v3+json")
         .send()
         .await
-        .map_err(|e| format!("Failed to fetch release info: {}", e))?;
+    {
+        Ok(resp) if resp.status().is_redirection() => {
+            // Location header: https://github.com/.../releases/tag/v1.2.3
+            resp.headers()
+                .get("location")
+                .and_then(|v| v.to_str().ok())
+                .filter(|url| url.contains("/releases/tag/"))
+                .and_then(|url| url.rsplit('/').next())
+                .map(|t| t.trim_start_matches('v').to_string())
+                .unwrap_or_default()
+        }
+        _ => String::new(),
+    };
 
-    if !resp.status().is_success() {
-        return Err(format!("GitHub API returned status {}", resp.status()));
-    }
+    // If redirect approach failed, try API as fallback
+    let (tag, release_notes, html_url) = if tag.is_empty() {
+        let resp = client
+            .get("https://api.github.com/repos/coder-hhx/CrateBay/releases/latest")
+            .header("User-Agent", format!("CrateBay/{}", current_version))
+            .header("Accept", "application/vnd.github.v3+json")
+            .send()
+            .await
+            .map_err(|e| format!("Failed to fetch release info: {}", e))?;
 
-    let body: serde_json::Value = resp
-        .json()
-        .await
-        .map_err(|e| format!("Failed to parse release info: {}", e))?;
+        if resp.status() == reqwest::StatusCode::NOT_FOUND {
+            // No releases published yet — treat as up-to-date
+            return Ok(UpdateInfo {
+                available: false,
+                current_version: current_version.to_string(),
+                latest_version: current_version.to_string(),
+                release_notes: String::new(),
+                download_url: String::new(),
+            });
+        }
 
-    let tag = body["tag_name"]
-        .as_str()
-        .unwrap_or("")
-        .trim_start_matches('v')
-        .to_string();
+        if !resp.status().is_success() {
+            return Err(format!("GitHub API returned status {}", resp.status()));
+        }
 
-    let release_notes = body["body"].as_str().unwrap_or("").to_string();
-    let html_url = body["html_url"].as_str().unwrap_or("").to_string();
+        let body: serde_json::Value = resp
+            .json()
+            .await
+            .map_err(|e| format!("Failed to parse release info: {}", e))?;
+
+        let api_tag = body["tag_name"]
+            .as_str()
+            .unwrap_or("")
+            .trim_start_matches('v')
+            .to_string();
+        let notes = body["body"].as_str().unwrap_or("").to_string();
+        let url = body["html_url"].as_str().unwrap_or("").to_string();
+        (api_tag, notes, url)
+    } else {
+        let url = format!("https://github.com/coder-hhx/CrateBay/releases/tag/v{}", tag);
+        (tag, String::new(), url)
+    };
 
     let available = !tag.is_empty() && tag != current_version;
 
@@ -2483,6 +2521,7 @@ async fn set_window_theme(window: tauri::WebviewWindow, theme: String) -> Result
 
 pub fn run() {
     cratebay_core::logging::init();
+    #[allow(unused_mut)]
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init());
@@ -2539,6 +2578,8 @@ pub fn run() {
                 let _ = window.set_background_color(Some(tauri::window::Color(15, 17, 26, 255)));
                 // Hide native title bar text (macOS/Linux with decorations: true)
                 let _ = window.set_title("");
+                // Enforce minimum window size (decorations:false may not honor config minWidth/minHeight)
+                let _ = window.set_min_size(Some(tauri::LogicalSize::new(1100.0, 650.0)));
             }
 
             Ok(())

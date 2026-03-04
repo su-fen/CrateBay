@@ -2,7 +2,7 @@
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "CrateBay",
   "version": "1.0.0",
-  "identifier": "com.cratebay.app",
+  "identifier": "com.cratebay.desktop",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://127.0.0.1:5173",
@@ -13,8 +13,8 @@
     "windows": [
       {
         "title": "CrateBay",
-        "width": 1400,
-        "height": 800,
+        "width": 1800,
+        "height": 1050,
         "minWidth": 1100,
         "minHeight": 650,
         "resizable": true,

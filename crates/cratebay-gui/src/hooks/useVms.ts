@@ -70,7 +70,7 @@ export function useVms() {
     const iv = setInterval(async () => {
       try {
         const progress = await invoke<OsImageDownloadProgressDto>("image_download_status", {
-          image_id: downloadingImage,
+          imageId: downloadingImage,
         })
         setDownloadProgress(progress)
         if (progress.done || progress.error) {
@@ -106,10 +106,10 @@ export function useVms() {
       await invoke<string>("vm_create", {
         name: vmName.trim(),
         cpus: vmCpus,
-        memory_mb: vmMem,
-        disk_gb: vmDisk,
+        memoryMb: vmMem,
+        diskGb: vmDisk,
         rosetta: vmRosetta,
-        os_image: selectedOsImage || null,
+        osImage: selectedOsImage || null,
       })
       setVmName("")
       await fetchVms()
@@ -145,8 +145,8 @@ export function useVms() {
       await invoke("vm_mount_add", {
         vm: mountVmId,
         tag: mountTag.trim(),
-        host_path: mountHostPath.trim(),
-        guest_path: mountGuestPath.trim() || "/mnt/host",
+        hostPath: mountHostPath.trim(),
+        guestPath: mountGuestPath.trim() || "/mnt/host",
         readonly: mountReadonly,
       })
       setMountTag("")
@@ -176,7 +176,7 @@ export function useVms() {
     setDownloadProgress(null)
     setVmError("")
     try {
-      await invoke("image_download_os", { image_id: imageId })
+      await invoke("image_download_os", { imageId: imageId })
       await fetchOsImages()
       return true
     } catch (e) {
@@ -191,7 +191,7 @@ export function useVms() {
   const deleteOsImage = useCallback(async (imageId: string) => {
     setVmError("")
     try {
-      await invoke("image_delete_os", { image_id: imageId })
+      await invoke("image_delete_os", { imageId: imageId })
       await fetchOsImages()
       if (selectedOsImage === imageId) {
         setSelectedOsImage("")
@@ -208,9 +208,9 @@ export function useVms() {
     setVmError("")
     try {
       await invoke("vm_port_forward_add", {
-        vm_id: pfVmId,
-        host_port: pfHostPort,
-        guest_port: pfGuestPort,
+        vmId: pfVmId,
+        hostPort: pfHostPort,
+        guestPort: pfGuestPort,
         protocol: pfProtocol || "tcp",
       })
       setPfHostPort(8080)
@@ -226,7 +226,7 @@ export function useVms() {
   const removePortForward = useCallback(async (vmId: string, hostPort: number) => {
     setVmError("")
     try {
-      await invoke("vm_port_forward_remove", { vm_id: vmId, host_port: hostPort })
+      await invoke("vm_port_forward_remove", { vmId: vmId, hostPort: hostPort })
       await fetchVms()
       return true
     } catch (e) {

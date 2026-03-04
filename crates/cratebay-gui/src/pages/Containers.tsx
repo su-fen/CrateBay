@@ -4,7 +4,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event"
 import { I } from "../icons"
 import { ErrorBanner } from "../components/ErrorDisplay"
 import { EmptyState } from "../components/EmptyState"
-import type { ContainerInfo, ContainerGroup, RunContainerResult, ContainerStats, EnvVar } from "../types"
+import type { ContainerInfo, ContainerGroup, RunContainerResult, ContainerStats, EnvVar, LocalImageInfo } from "../types"
 
 interface ExecEntry {
   command: string
@@ -39,9 +39,9 @@ export function Containers({
   const [runCpus, setRunCpus] = useState<number | "">("")
   const [runMem, setRunMem] = useState<number | "">("")
   const [runPull, setRunPull] = useState(true)
-  const [runLoading, setRunLoading] = useState(false)
-  const [runResult, setRunResult] = useState<RunContainerResult | null>(null)
-  const [runError, setRunError] = useState("")
+  const [_runLoading, _setRunLoading] = useState(false)
+  const [_runResult, setRunResult] = useState<RunContainerResult | null>(null)
+  const [_runError, setRunError] = useState("")
   const [runEnvVars, setRunEnvVars] = useState<{ key: string; value: string }[]>([])
 
   // Log viewer state
@@ -153,20 +153,76 @@ export function Containers({
     }
   }
 
+  // Creating container inline status
+  const [creating, setCreating] = useState(false)
+  const [createStatus, setCreateStatus] = useState("")
+  const [createImageName, setCreateImageName] = useState("")
+  const [createFailed, setCreateFailed] = useState("")
+
+  // Local images for autocomplete
+  const [localImages, setLocalImages] = useState<string[]>([])
+  const [showImageDropdown, setShowImageDropdown] = useState(false)
+  const imageInputRef = useRef<HTMLInputElement>(null)
+  const imageDropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const fetchImages = async () => {
+      try {
+        const result = await invoke<LocalImageInfo[]>("image_list")
+        const tags = result.flatMap(img => img.repo_tags).filter(t => t && t !== "<none>:<none>")
+        setLocalImages(tags)
+      } catch { /* ignore */ }
+    }
+    fetchImages()
+  }, [])
+
+  // Close image dropdown on click outside
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (imageDropdownRef.current && !imageDropdownRef.current.contains(e.target as Node) &&
+          imageInputRef.current && !imageInputRef.current.contains(e.target as Node)) {
+        setShowImageDropdown(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClick)
+    return () => document.removeEventListener("mousedown", handleClick)
+  }, [])
+
+  const filteredImages = localImages.filter(img =>
+    img.toLowerCase().includes(runImage.toLowerCase())
+  )
+
   const handleRun = async () => {
     if (!runImage.trim()) return
-    setRunLoading(true)
-    setRunError("")
+    const image = runImage
+    const name = runName
+    const cpus = runCpus
+    const mem = runMem
+    const pull = runPull
+    const envStrings = runEnvVars
+      .filter(e => e.key.trim())
+      .map(e => `${e.key}=${e.value}`)
+    const env = envStrings.length > 0 ? envStrings : undefined
+
+    // Close modal, show inline creating card
+    setShowRunModal(false)
+    setCreating(true)
+    setCreateFailed("")
+    setCreateImageName(name || image)
+    setCreateStatus(pull ? t("pullingImage") : t("creatingContainer"))
+
     try {
-      const envStrings = runEnvVars
-        .filter(e => e.key.trim())
-        .map(e => `${e.key}=${e.value}`)
-      const result = await onRun(runImage, runName, runCpus, runMem, runPull, envStrings.length > 0 ? envStrings : undefined)
-      if (result) setRunResult(result)
+      if (pull) setCreateStatus(t("pullingImage"))
+      await onRun(image, name, cpus, mem, pull, env)
+      // Container created — fetchContainers already called by onRun, list will update
+      setCreating(false)
     } catch (e) {
-      setRunError(String(e))
-    } finally {
-      setRunLoading(false)
+      setCreateFailed(String(e))
+      setCreateStatus(String(e))
+      setTimeout(() => {
+        setCreating(false)
+        setCreateFailed("")
+      }, 6000)
     }
   }
 
@@ -312,7 +368,6 @@ export function Containers({
   const renderCard = (c: ContainerInfo, opts?: { child?: boolean }) => {
     const isRunning = c.state === "running"
     const name = c.name || c.id
-    const meta = isRunning ? (c.ports || c.id) : c.id
     const childClass = opts?.child ? " container-child" : ""
     const stats = isRunning ? containerStats[c.id] : undefined
     return (
@@ -321,7 +376,11 @@ export function Containers({
           <div className={`card-icon${isRunning ? "" : " stopped"}`}>{I.box}</div>
           <div className="card-body">
             <div className="card-name">{name}</div>
-            <div className="card-meta">{c.image} · {meta}</div>
+            <div className="card-meta">
+              {c.image}
+              {isRunning && c.ports && <><span className="meta-dot"> · </span><span className="card-ports">{c.ports}</span></>}
+              {!isRunning && <><span className="meta-dot"> · </span>{c.id.slice(0, 12)}</>}
+            </div>
           </div>
           <div className="card-right">
             <div className="card-stats">
@@ -357,7 +416,7 @@ export function Containers({
               }}
               title={t("loginCommand")}
             >
-              {I.terminal}<span className="action-label">{t("loginCommand")}</span>
+              {I.key}<span className="action-label">{t("loginCommand")}</span>
             </button>
             <button
               className="action-btn"
@@ -382,7 +441,7 @@ export function Containers({
                 onClick={(e) => { e.stopPropagation(); openExecModal(c) }}
                 title={t("execCommand")}
               >
-                {I.command}<span className="action-label">{t("execCommand")}</span>
+                {I.terminal}<span className="action-label">{t("execCommand")}</span>
               </button>
             )}
             <button
@@ -406,7 +465,7 @@ export function Containers({
             ) : (
               <button className="action-btn success" disabled={acting === c.id} onClick={(e) => { e.stopPropagation(); onContainerAction("start_container", c.id) }} title={t("start")}>{I.play}<span className="action-label">{t("start")}</span></button>
             )}
-            <button className="action-btn danger" disabled={acting === c.id} onClick={(e) => { e.stopPropagation(); setConfirmRemove(c.id); setContainerToRemoveName(c.name || c.id) }} title={t("delete")}>{I.trash}</button>
+            <button className="action-btn danger" disabled={acting === c.id} onClick={(e) => { e.stopPropagation(); setConfirmRemove(c.id); setContainerToRemoveName(c.name || c.id) }} title={t("delete")}>{I.trash}<span className="action-label">{t("delete")}</span></button>
           </div>
         </div>
       </div>
@@ -423,7 +482,24 @@ export function Containers({
       </div>
 
       <div className="page-scroll">
-      {groups.length === 0 ? (
+      {/* Inline creating card */}
+      {creating && (
+        <div className={`container-card creating-card${createFailed ? " creating-error" : ""}`}>
+          <div className="card-main">
+            <div className="card-icon creating-icon">
+              {!createFailed ? <div className="spinner spinner-sm" /> : I.alertCircle}
+            </div>
+            <div className="card-body">
+              <div className="card-name">{createImageName}</div>
+              <div className="card-meta">{createStatus}</div>
+            </div>
+            {createFailed && (
+              <button className="creating-dismiss" onClick={() => { setCreating(false); setCreateFailed("") }}>&times;</button>
+            )}
+          </div>
+        </div>
+      )}
+      {groups.length === 0 && !creating ? (
         <EmptyState
           icon={I.box}
           title={t("noContainers")}
@@ -437,7 +513,6 @@ export function Containers({
           }
 
           const expanded = !!expandedGroups[g.key]
-          const hasRunning = g.runningCount > 0
           return (
             <div className="container-group" key={g.key}>
               <div
@@ -454,16 +529,24 @@ export function Containers({
                 title={expanded ? "Collapse" : "Expand"}
               >
                 <div className="card-main">
-                  <div className="card-icon">{I.box}</div>
+                  <div className="card-icon">{I.layers}</div>
                   <div className="card-body">
                     <div className="card-name">{g.key}</div>
                     <div className="card-meta">
-                      {t("running")}: {g.runningCount} · {t("stopped")}: {g.stoppedCount}
+                      {g.containers.length} {t("containers")} · {g.runningCount} {t("running")}
                     </div>
                   </div>
-                  <div className="card-status">
-                    <span className={`dot ${hasRunning ? "running" : "stopped"}`} />
-                    <span>{hasRunning ? t("running") : t("stopped")}</span>
+                  <div className="card-right">
+                    <div className="card-stats">
+                      <div className="stat-item">
+                        <span className="stat-icon">{I.box}</span>
+                        <span className="stat-value">{g.containers.length}</span>
+                      </div>
+                    </div>
+                    <div className="card-status">
+                      <span className={`dot ${g.runningCount > 0 ? "running" : "stopped"}`} />
+                      <span>{g.runningCount > 0 ? `${g.runningCount} ${t("running")}` : t("stopped")}</span>
+                    </div>
                   </div>
                   <div className="group-chevron" aria-hidden="true">
                     {expanded ? I.chevronDown : I.chevronRight}
@@ -504,7 +587,30 @@ export function Containers({
                   </div>
                   <div className="run-field">
                     <label>{t("image")}<span className="run-required">*</span></label>
-                    <input className="input" value={runImage} onChange={e => setRunImage(e.target.value)} placeholder="nginx:latest" autoFocus />
+                    <div className="image-autocomplete">
+                      <input
+                        ref={imageInputRef}
+                        className="input"
+                        value={runImage}
+                        onChange={e => { setRunImage(e.target.value); setShowImageDropdown(true) }}
+                        onFocus={() => setShowImageDropdown(true)}
+                        placeholder="nginx:latest"
+                        autoFocus
+                      />
+                      {showImageDropdown && filteredImages.length > 0 && (
+                        <div className="image-dropdown" ref={imageDropdownRef}>
+                          {filteredImages.slice(0, 8).map(img => (
+                            <div
+                              key={img}
+                              className="image-dropdown-item"
+                              onClick={() => { setRunImage(img); setShowImageDropdown(false) }}
+                            >
+                              {img}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="run-field">
                     <label>{t("nameOptional")}</label>
@@ -585,34 +691,11 @@ export function Containers({
                   </button>
                 </div>
               </div>
-
-              {/* Error & Result */}
-              {runError && (
-                <div className="run-error">
-                  <span className="run-error-icon">{I.alertCircle}</span>
-                  {runError}
-                </div>
-              )}
-              {runResult && (
-                <div className="run-result">
-                  <div className="run-result-title">{I.terminal} {t("loginCommand")}</div>
-                  <div className="run-result-code">
-                    <code>{runResult.login_cmd}</code>
-                    <button className="icon-btn" onClick={() => {
-                      navigator.clipboard.writeText(runResult.login_cmd)
-                    }} title={t("copy")}>{I.copy}</button>
-                  </div>
-                </div>
-              )}
             </div>
             <div className="modal-footer">
               <button className="btn" onClick={() => setShowRunModal(false)}>{t("close")}</button>
-              <button className="btn primary" disabled={runLoading || !runImage.trim()} onClick={handleRun}>
-                {runLoading ? (
-                  <><div className="spinner spinner-sm" />{t("creating")}</>
-                ) : (
-                  <><span className="icon">{I.play}</span>{t("create")}</>
-                )}
+              <button className="btn primary" disabled={!runImage.trim()} onClick={handleRun}>
+                <span className="icon">{I.play}</span>{t("create")}
               </button>
             </div>
           </div>
