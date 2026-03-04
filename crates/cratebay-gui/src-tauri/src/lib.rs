@@ -300,6 +300,7 @@ pub struct ContainerInfo {
 
 fn format_published_ports(mut pairs: Vec<(u16, u16)>) -> String {
     pairs.sort_unstable();
+    pairs.dedup();
     pairs
         .into_iter()
         .map(|(public, private)| format!("{}:{}", public, private))
@@ -791,8 +792,11 @@ struct DockerHubSearchResponse {
 
 #[derive(Deserialize)]
 struct DockerHubRepo {
+    #[serde(alias = "repo_name")]
     name: String,
+    #[serde(alias = "repo_owner")]
     namespace: Option<String>,
+    #[serde(alias = "short_description")]
     description: Option<String>,
     star_count: Option<u64>,
     pull_count: Option<u64>,
@@ -812,7 +816,7 @@ struct RegistryTokenResponse {
 
 fn http_client() -> Result<reqwest::Client, String> {
     reqwest::Client::builder()
-        .user_agent("CrateBay/0.1.0 (+https://github.com/coder-hhx/CrateBay)")
+        .user_agent("CrateBay/1.0.0 (+https://github.com/coder-hhx/CrateBay)")
         .build()
         .map_err(|e| e.to_string())
 }
@@ -1066,40 +1070,40 @@ fn vm_state_to_string(state: cratebay_core::hypervisor::VmState) -> String {
 async fn vm_list(state: State<'_, AppState>) -> Result<Vec<VmInfoDto>, String> {
     state.ensure_daemon().await;
     if let Ok(mut client) = connect_vm_service(&state.grpc_addr).await {
-        let resp = client
+        if let Ok(resp) = client
             .list_v_ms(proto::ListVMsRequest {})
             .await
-            .map_err(|e| e.to_string())?
-            .into_inner();
-
-        return Ok(resp
-            .vms
-            .into_iter()
-            .map(|vm| VmInfoDto {
-                id: vm.vm_id,
-                name: vm.name,
-                state: vm.status,
-                cpus: vm.cpus,
-                memory_mb: vm.memory_mb,
-                disk_gb: vm.disk_gb,
-                rosetta_enabled: vm.rosetta_enabled,
-                mounts: vm
-                    .shared_dirs
-                    .into_iter()
-                    .map(SharedDirectoryDto::from)
-                    .collect(),
-                port_forwards: vm
-                    .port_forwards
-                    .into_iter()
-                    .map(|pf| PortForwardDto {
-                        host_port: pf.host_port as u16,
-                        guest_port: pf.guest_port as u16,
-                        protocol: pf.protocol,
-                    })
-                    .collect(),
-                os_image: None, // gRPC path does not expose os_image yet
-            })
-            .collect());
+        {
+            let resp = resp.into_inner();
+            return Ok(resp
+                .vms
+                .into_iter()
+                .map(|vm| VmInfoDto {
+                    id: vm.vm_id,
+                    name: vm.name,
+                    state: vm.status,
+                    cpus: vm.cpus,
+                    memory_mb: vm.memory_mb,
+                    disk_gb: vm.disk_gb,
+                    rosetta_enabled: vm.rosetta_enabled,
+                    mounts: vm
+                        .shared_dirs
+                        .into_iter()
+                        .map(SharedDirectoryDto::from)
+                        .collect(),
+                    port_forwards: vm
+                        .port_forwards
+                        .into_iter()
+                        .map(|pf| PortForwardDto {
+                            host_port: pf.host_port as u16,
+                            guest_port: pf.guest_port as u16,
+                            protocol: pf.protocol,
+                        })
+                        .collect(),
+                    os_image: None, // gRPC path does not expose os_image yet
+                })
+                .collect());
+        }
     }
 
     let vms = state.hv.list_vms().map_err(|e| e.to_string())?;
@@ -2075,7 +2079,7 @@ async fn search_dockerhub(
     let mut out = Vec::new();
 
     for r in data.results.into_iter().take(limit) {
-        let ns = r.namespace.unwrap_or_else(|| "library".to_string());
+        let ns = r.namespace.filter(|s| !s.is_empty()).unwrap_or_else(|| "library".to_string());
         let name = if ns == "library" {
             r.name.clone()
         } else {
@@ -2467,11 +2471,33 @@ async fn open_release_page(url: String) -> Result<(), String> {
     open::that(&url).map_err(|e| format!("Failed to open URL: {}", e))
 }
 
+#[tauri::command]
+async fn set_window_theme(window: tauri::WebviewWindow, theme: String) -> Result<(), String> {
+    let t = match theme.as_str() {
+        "light" => Some(tauri::Theme::Light),
+        "dark" => Some(tauri::Theme::Dark),
+        _ => None,
+    };
+    window.set_theme(t).map_err(|e| e.to_string())
+}
+
 pub fn run() {
     cratebay_core::logging::init();
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_shell::init());
+
+    // Enable MCP debug plugin only in debug builds
+    #[cfg(debug_assertions)]
+    {
+        builder = builder.plugin(tauri_plugin_mcp::init_with_config(
+            tauri_plugin_mcp::PluginConfig::new("CrateBay".to_string())
+                .start_socket_server(true)
+                .socket_path("/tmp/tauri-mcp-cratebay.sock".into()),
+        ));
+    }
+
+    builder
         .manage(AppState {
             hv: cratebay_core::create_hypervisor(),
             grpc_addr: grpc_addr(),
@@ -2485,7 +2511,7 @@ pub fn run() {
             let menu = build_tray_menu(&app_handle, 0, 0)?;
 
             TrayIconBuilder::with_id("main-tray")
-                .icon(app.default_window_icon().cloned().unwrap())
+                .icon(tauri::include_image!("icons/tray-icon.png"))
                 .icon_as_template(true)
                 .tooltip("CrateBay")
                 .menu(&menu)
@@ -2507,6 +2533,13 @@ pub fn run() {
 
             // Initial tray menu refresh (to get real counts)
             refresh_tray_menu(&app_handle);
+
+            // Set webview background color to match dark theme (prevents white flash on resize)
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.set_background_color(Some(tauri::window::Color(15, 17, 26, 255)));
+                // Hide native title bar text (macOS/Linux with decorations: true)
+                let _ = window.set_title("");
+            }
 
             Ok(())
         })
@@ -2577,7 +2610,8 @@ pub fn run() {
             k8s_list_deployments,
             k8s_pod_logs,
             check_update,
-            open_release_page
+            open_release_page,
+            set_window_theme
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -32,3 +32,4 @@ tracing = "0.1"
 tauri-plugin-shell = "2"
 open = "5"
 chrono = "0.4"
+tauri-plugin-mcp = { git = "https://github.com/P3GLEG/tauri-plugin-mcp" }

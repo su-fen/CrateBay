@@ -323,21 +323,25 @@ export function Containers({
             <div className="card-name">{name}</div>
             <div className="card-meta">{c.image} · {meta}</div>
           </div>
-          {isRunning && stats && (
+          <div className="card-right">
             <div className="card-stats">
-              <div className="stat-item">
-                <span className="stat-icon">{I.cpu}</span>
-                <span className="stat-value">{stats.cpu_percent.toFixed(1)}%</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-icon">{I.memory}</span>
-                <span className="stat-value">{stats.memory_usage_mb.toFixed(0)} MB</span>
-              </div>
+              {isRunning && stats ? (
+                <>
+                  <div className="stat-item">
+                    <span className="stat-icon">{I.cpu}</span>
+                    <span className="stat-value">{stats.cpu_percent.toFixed(1)}%</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-icon">{I.memory}</span>
+                    <span className="stat-value">{stats.memory_usage_mb.toFixed(0)} MB</span>
+                  </div>
+                </>
+              ) : null}
             </div>
-          )}
-          <div className="card-status">
-            <span className={`dot ${isRunning ? "running" : "stopped"}`} />
-            <span>{c.status}</span>
+            <div className="card-status">
+              <span className={`dot ${isRunning ? "running" : "stopped"}`} />
+              <span>{c.status}</span>
+            </div>
           </div>
         </div>
         <div className="card-actions">
@@ -418,6 +422,7 @@ export function Containers({
         </button>
       </div>
 
+      <div className="page-scroll">
       {groups.length === 0 ? (
         <EmptyState
           icon={I.box}
@@ -474,6 +479,7 @@ export function Containers({
           )
         })
       )}
+      </div>
 
       {/* Run Container Modal */}
       {showRunModal && (

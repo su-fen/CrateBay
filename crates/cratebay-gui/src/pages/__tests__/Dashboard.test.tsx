@@ -40,7 +40,7 @@ const defaultProps = {
   runningVms: [] as VmInfoDto[],
   imgResultsCount: 0,
   installedImagesCount: 0,
-  connected: true,
+  volumesCount: 0,
   onNavigate: vi.fn(),
   t,
 }
@@ -51,13 +51,12 @@ describe("Dashboard", () => {
     vi.mocked(invoke).mockResolvedValue(null)
   })
 
-  it("renders four dashboard cards", () => {
+  it("renders three dashboard cards", () => {
     render(<Dashboard {...defaultProps} />)
 
     expect(screen.getByText(t("containers"))).toBeInTheDocument()
     expect(screen.getByText(t("vms"))).toBeInTheDocument()
     expect(screen.getByText(t("images"))).toBeInTheDocument()
-    expect(screen.getByText(t("system"))).toBeInTheDocument()
   })
 
   it("shows container count on the containers card", () => {
@@ -72,20 +71,6 @@ describe("Dashboard", () => {
 
     expect(screen.getByText("3")).toBeInTheDocument()
     expect(screen.getByText(/1 running/)).toBeInTheDocument()
-  })
-
-  it("shows connected status when Docker is connected", () => {
-    render(<Dashboard {...defaultProps} connected={true} />)
-
-    expect(screen.getByText("OK")).toBeInTheDocument()
-    expect(screen.getByText(/Docker Connected/)).toBeInTheDocument()
-  })
-
-  it("shows disconnected status when Docker is not connected", () => {
-    render(<Dashboard {...defaultProps} connected={false} />)
-
-    expect(screen.getByText("--")).toBeInTheDocument()
-    expect(screen.getByText(t("disconnected"))).toBeInTheDocument()
   })
 
   it("navigates to containers page when containers card is clicked", async () => {

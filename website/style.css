@@ -63,7 +63,7 @@
   --mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Cascadia Code',
     'Consolas', monospace;
   --max-w: 1200px;
-  --section-py: 120px;
+  --section-py: 60px;
   --transition-theme: 0.3s ease;
 }
 
@@ -135,6 +135,28 @@ body {
   overflow-x: hidden;
 }
 
+/* --- Full-page gradient overlay for visual continuity ------- */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 40%, rgba(139, 92, 246, 0.06), transparent),
+    radial-gradient(ellipse 60% 40% at 80% 20%, rgba(34, 211, 238, 0.04), transparent),
+    radial-gradient(ellipse 70% 50% at 50% 80%, rgba(139, 92, 246, 0.04), transparent);
+}
+[data-theme="light"] body::before {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 40%, rgba(124, 58, 237, 0.03), transparent),
+    radial-gradient(ellipse 60% 40% at 80% 20%, rgba(8, 145, 178, 0.02), transparent),
+    radial-gradient(ellipse 70% 50% at 50% 80%, rgba(124, 58, 237, 0.02), transparent);
+}
+
 a {
   color: var(--cyan);
   text-decoration: none;
@@ -189,7 +211,7 @@ svg {
   font-size: 1.05rem;
   color: var(--text2);
   max-width: 600px;
-  margin-bottom: 48px;
+  margin-bottom: 32px;
 }
 
 .gradient-text {
@@ -385,7 +407,7 @@ svg {
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 120px 24px 80px;
+  padding: 80px 24px 60px;
   overflow: hidden;
 }
 
@@ -395,10 +417,10 @@ svg {
   border-radius: 50%;
   filter: blur(120px);
   pointer-events: none;
-  opacity: 0.4;
+  opacity: 0.3;
 }
 [data-theme="light"] .hero-glow {
-  opacity: 0.15;
+  opacity: 0.12;
 }
 .hero-glow-1 {
   width: 600px;
@@ -546,7 +568,7 @@ svg {
   align-items: center;
   justify-content: center;
   gap: 40px;
-  margin-top: 64px;
+  margin-top: 40px;
   animation: fadeInUp 0.8s ease-out 0.4s both;
 }
 .hero-stat {
@@ -572,6 +594,38 @@ svg {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* --- Section glow accents ---------------------------------- */
+.features::before,
+.techstack::before,
+.getting-started::before {
+  content: '';
+  position: absolute;
+  top: -80px;
+  left: 0;
+  right: 0;
+  height: 160px;
+  pointer-events: none;
+  z-index: 0;
+}
+.features::before {
+  background: radial-gradient(ellipse 50% 100% at 30% 100%, rgba(139, 92, 246, 0.05), transparent);
+}
+.techstack::before {
+  background: radial-gradient(ellipse 50% 100% at 70% 100%, rgba(34, 211, 238, 0.04), transparent);
+}
+.getting-started::before {
+  background: radial-gradient(ellipse 50% 100% at 50% 100%, rgba(139, 92, 246, 0.04), transparent);
+}
+[data-theme="light"] .features::before {
+  background: radial-gradient(ellipse 50% 100% at 30% 100%, rgba(124, 58, 237, 0.025), transparent);
+}
+[data-theme="light"] .techstack::before {
+  background: radial-gradient(ellipse 50% 100% at 70% 100%, rgba(8, 145, 178, 0.02), transparent);
+}
+[data-theme="light"] .getting-started::before {
+  background: radial-gradient(ellipse 50% 100% at 50% 100%, rgba(124, 58, 237, 0.02), transparent);
 }
 
 /* --- Features ---------------------------------------------- */
@@ -869,7 +923,7 @@ svg {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
-  margin-bottom: 48px;
+  margin-bottom: 32px;
 }
 
 .tech-badge {
@@ -906,6 +960,9 @@ svg {
   max-width: 100%;
   height: auto;
   border-radius: 8px;
+  min-height: 120px;
+  background: var(--surface2);
+  object-fit: contain;
 }
 
 /* --- Comparison Table -------------------------------------- */
@@ -979,11 +1036,9 @@ svg {
 }
 
 .install-methods {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  max-width: 680px;
-  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
 }
 
 .install-card {
@@ -1139,9 +1194,9 @@ svg {
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   :root {
-    --section-py: 80px;
+    --section-py: 48px;
   }
   .nav-links {
     display: none;
@@ -1177,6 +1232,13 @@ svg {
   .features-grid {
     grid-template-columns: 1fr;
   }
+  .install-methods {
+    grid-template-columns: 1fr;
+  }
+  .hero {
+    min-height: auto;
+    padding: 80px 24px 40px;
+  }
   .hero h1 {
     font-size: 2.5rem;
   }
@@ -1194,4 +1256,147 @@ svg {
   .footer-left {
     flex-direction: column;
   }
+}
+
+/* --- Mock Card Layout (Container Cards) -------------------- */
+.mock-sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px 16px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.mock-sidebar-logo img {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+}
+.mock-sidebar-brand {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.mock-sidebar-version {
+  font-size: 0.65rem;
+  color: var(--text3);
+  margin-left: auto;
+}
+
+.mock-container-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.mock-container-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--table-row-border);
+}
+.mock-container-card:last-child {
+  border-bottom: none;
+}
+
+.mock-card-icon {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+}
+
+.mock-card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.mock-card-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mock-card-meta {
+  font-size: 11px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mock-card-stats {
+  display: flex;
+  gap: 6px;
+}
+
+.mock-stat {
+  font-size: 10px;
+  padding: 2px 8px;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 4px;
+  color: #64748b;
+  white-space: nowrap;
+}
+[data-theme="dark"] .mock-stat {
+  background: rgba(255, 255, 255, 0.06);
+  color: #94a3b8;
+}
+
+.mock-card-status {
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.mock-card-status .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.mock-card-status.running {
+  color: #34d399;
+}
+.mock-card-status.running .dot {
+  background: #34d399;
+}
+.mock-card-status.stopped {
+  color: #94a3b8;
+}
+.mock-card-status.stopped .dot {
+  background: #94a3b8;
+}
+
+.mock-chip {
+  font-size: 11px;
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.mock-status-pill {
+  font-size: 11px;
+  background: rgba(0, 0, 0, 0.03);
+  padding: 4px 10px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #64748b;
+}
+.mock-status-pill .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+[data-theme="dark"] .mock-status-pill {
+  background: rgba(255, 255, 255, 0.04);
+  color: #94a3b8;
 }

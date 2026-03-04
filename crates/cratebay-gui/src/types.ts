@@ -103,7 +103,7 @@ export interface ImageInspectInfo {
 }
 
 export type NavPage = "dashboard" | "containers" | "vms" | "images" | "volumes" | "kubernetes" | "settings"
-export type Theme = "dark" | "light"
+export type Theme = "dark" | "light" | "system"
 export type ModalKind = "" | "text" | "package"
 
 export interface ContainerGroup {

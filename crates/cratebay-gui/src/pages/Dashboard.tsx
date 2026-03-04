@@ -10,9 +10,9 @@ interface DashboardProps {
   vmsRunningCount: number
   runningVms: VmInfoDto[]
   imgResultsCount: number
-  connected: boolean
   installedImagesCount: number
-  onNavigate: (page: "containers" | "vms" | "images" | "settings") => void
+  volumesCount: number
+  onNavigate: (page: "containers" | "vms" | "images" | "volumes") => void
   t: (key: string) => string
 }
 
@@ -24,7 +24,7 @@ interface TotalResources {
 
 export function Dashboard({
   containers, running, vmsCount, vmsRunningCount, runningVms,
-  imgResultsCount, installedImagesCount, connected, onNavigate, t,
+  imgResultsCount, installedImagesCount, volumesCount, onNavigate, t,
 }: DashboardProps) {
   const [totals, setTotals] = useState<TotalResources>({
     totalCpuPercent: 0,
@@ -154,19 +154,14 @@ export function Dashboard({
           </div>
         </div>
 
-        <div className="dash-card" onClick={() => onNavigate("settings")}>
+        <div className="dash-card" onClick={() => onNavigate("volumes")}>
           <div className="dash-card-top">
-            <div className="dash-card-icon icon-neutral">{I.settings}</div>
-            <div className="dash-card-sub">
-              <span className={`dash-status ${connected ? "online" : "offline"}`}>
-                <span className={`dot ${connected ? "on" : "off"}`} />
-                {connected ? "Docker " + t("connected") : t("disconnected")}
-              </span>
-            </div>
+            <div className="dash-card-icon icon-yellow">{I.hardDrive}</div>
+            <div className="dash-card-sub" />
           </div>
           <div className="dash-card-bottom">
-            <div className="dash-card-value">{connected ? "OK" : "--"}</div>
-            <div className="dash-card-label">{t("system")}</div>
+            <div className="dash-card-value">{volumesCount}</div>
+            <div className="dash-card-label">{t("volumes")}</div>
           </div>
         </div>
       </div>

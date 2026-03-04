@@ -216,6 +216,7 @@ export function Images({
             </button>
           </div>
 
+          <div className="page-scroll">
           {localLoading ? (
             <div className="loading"><div className="spinner" />{t("loading")}</div>
           ) : filteredImages.length === 0 ? (
@@ -289,6 +290,7 @@ export function Images({
               ))}
             </div>
           )}
+          </div>
         </>
       )}
 
@@ -313,6 +315,7 @@ export function Images({
             </button>
           </div>
 
+          <div className="page-scroll">
           {/* Tags bar */}
           {imgTags.length > 0 && (
             <div className="img-tags-bar">
@@ -369,6 +372,7 @@ export function Images({
               ))}
             </div>
           )}
+          </div>
         </>
       )}
 

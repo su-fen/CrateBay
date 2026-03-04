@@ -219,6 +219,11 @@
         <div class="demo-body">
           <div class="mock-dashboard">
             <div class="mock-sidebar">
+              <div class="mock-sidebar-logo">
+                <img src="logo.png" alt="CrateBay" width="22" height="22" />
+                <span class="mock-sidebar-brand">CrateBay</span>
+                <span class="mock-sidebar-version">v1.0.0</span>
+              </div>
               <div class="mock-sidebar-item">
                 <svg viewBox="0 0 24 24" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
                 <span data-i18n="demoSidebar0">Dashboard</span>
@@ -243,53 +248,77 @@
                 <svg viewBox="0 0 24 24" stroke="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
                 <span data-i18n="demoSidebar5">Kubernetes</span>
               </div>
+              <div style="flex:1"></div>
+              <div class="mock-sidebar-item">
+                <svg viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                <span data-i18n="demoSidebar6">Settings</span>
+              </div>
             </div>
             <div class="mock-main">
               <div class="mock-main-header">
-                <h4 data-i18n="demoHeader">Containers</h4>
-                <button class="mock-btn" data-i18n="demoBtn">+ New</button>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <h4 data-i18n="demoHeader">Containers</h4>
+                  <span class="mock-chip">2 running</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <button class="mock-btn" data-i18n="demoBtn">+ Create Container</button>
+                  <div class="mock-status-pill">
+                    <span class="dot" style="background:#34d399"></span> Connected
+                  </div>
+                </div>
               </div>
-              <table class="mock-table">
-                <thead>
-                  <tr>
-                    <th data-i18n="demoThName">Name</th>
-                    <th data-i18n="demoThImage">Image</th>
-                    <th data-i18n="demoThStatus">Status</th>
-                    <th data-i18n="demoThCpu">CPU</th>
-                    <th data-i18n="demoThMem">Memory</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td class="mock-name" data-i18n="demoR1Name">web-frontend</td>
-                    <td><code class="mock-image" data-i18n="demoR1Img">nginx:alpine</code></td>
-                    <td><span class="mock-status running"><span class="dot"></span> <span data-i18n="demoR1Status">Running</span></span></td>
-                    <td data-i18n="demoR1Cpu">0.3%</td>
-                    <td data-i18n="demoR1Mem">24 MB</td>
-                  </tr>
-                  <tr>
-                    <td class="mock-name" data-i18n="demoR2Name">api-server</td>
-                    <td><code class="mock-image" data-i18n="demoR2Img">node:20-slim</code></td>
-                    <td><span class="mock-status running"><span class="dot"></span> <span data-i18n="demoR2Status">Running</span></span></td>
-                    <td data-i18n="demoR2Cpu">1.2%</td>
-                    <td data-i18n="demoR2Mem">128 MB</td>
-                  </tr>
-                  <tr>
-                    <td class="mock-name" data-i18n="demoR3Name">db-postgres</td>
-                    <td><code class="mock-image" data-i18n="demoR3Img">postgres:16</code></td>
-                    <td><span class="mock-status stopped"><span class="dot"></span> <span data-i18n="demoR3Status">Stopped</span></span></td>
-                    <td data-i18n="demoR3Cpu">&mdash;</td>
-                    <td data-i18n="demoR3Mem">&mdash;</td>
-                  </tr>
-                  <tr>
-                    <td class="mock-name" data-i18n="demoR4Name">redis-cache</td>
-                    <td><code class="mock-image" data-i18n="demoR4Img">redis:7-alpine</code></td>
-                    <td><span class="mock-status paused"><span class="dot"></span> <span data-i18n="demoR4Status">Paused</span></span></td>
-                    <td data-i18n="demoR4Cpu">&mdash;</td>
-                    <td data-i18n="demoR4Mem">52 MB</td>
-                  </tr>
-                </tbody>
-              </table>
+              <div class="mock-container-list">
+                <div class="mock-container-card">
+                  <div class="mock-card-icon"></div>
+                  <div class="mock-card-body">
+                    <div class="mock-card-name">web-frontend</div>
+                    <div class="mock-card-meta">nginx:alpine &middot; 80:80</div>
+                  </div>
+                  <div class="mock-card-stats">
+                    <span class="mock-stat">0.3%</span>
+                    <span class="mock-stat">24 MB</span>
+                  </div>
+                  <div class="mock-card-status running">
+                    <span class="dot"></span> Up 2h
+                  </div>
+                </div>
+                <div class="mock-container-card">
+                  <div class="mock-card-icon"></div>
+                  <div class="mock-card-body">
+                    <div class="mock-card-name">api-server</div>
+                    <div class="mock-card-meta">node:20-slim &middot; 3000:3000</div>
+                  </div>
+                  <div class="mock-card-stats">
+                    <span class="mock-stat">1.2%</span>
+                    <span class="mock-stat">128 MB</span>
+                  </div>
+                  <div class="mock-card-status running">
+                    <span class="dot"></span> Up 5 days
+                  </div>
+                </div>
+                <div class="mock-container-card">
+                  <div class="mock-card-icon"></div>
+                  <div class="mock-card-body">
+                    <div class="mock-card-name">db-postgres</div>
+                    <div class="mock-card-meta">postgres:16 &middot; 5432:5432</div>
+                  </div>
+                  <div class="mock-card-stats"></div>
+                  <div class="mock-card-status stopped">
+                    <span class="dot"></span> Stopped
+                  </div>
+                </div>
+                <div class="mock-container-card">
+                  <div class="mock-card-icon"></div>
+                  <div class="mock-card-body">
+                    <div class="mock-card-name">redis-cache</div>
+                    <div class="mock-card-meta">redis:7-alpine &middot; 6379:6379</div>
+                  </div>
+                  <div class="mock-card-stats"></div>
+                  <div class="mock-card-status stopped">
+                    <span class="dot"></span> Stopped
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

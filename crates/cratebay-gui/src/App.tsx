@@ -24,13 +24,37 @@ import "./App.css"
 
 function App() {
   const [activePage, setActivePage] = useState<NavPage>("dashboard")
-  const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem("theme") as Theme) || "dark")
+  const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem("theme") as Theme) || "system")
   const normalizeLang = (value: string | null) => (value === "zh" ? "zh" : "en")
   const [lang, setLang] = useState(() => normalizeLang(localStorage.getItem("lang")))
 
   const t = (key: string) => messages[lang]?.[key] || messages.en[key] || key
 
-  useEffect(() => { localStorage.setItem("theme", theme) }, [theme])
+  // Resolve effective theme (dark/light) from preference (which may be "system")
+  const getEffective = (pref: Theme): "dark" | "light" => {
+    if (pref === "system") return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+    return pref
+  }
+  const [effective, setEffective] = useState<"dark" | "light">(() => getEffective(theme))
+
+  useEffect(() => {
+    localStorage.setItem("theme", theme)
+    setEffective(getEffective(theme))
+
+    // Listen for OS theme changes when in "system" mode
+    if (theme === "system") {
+      const mq = window.matchMedia("(prefers-color-scheme: dark)")
+      const handler = (e: MediaQueryListEvent) => setEffective(e.matches ? "dark" : "light")
+      mq.addEventListener("change", handler)
+      return () => mq.removeEventListener("change", handler)
+    }
+  }, [theme])
+
+  useEffect(() => {
+    document.documentElement.style.background = effective === "light" ? "#f8fafc" : "#0f111a"
+    // Sync native window theme (affects macOS title bar color)
+    invoke("set_window_theme", { theme: effective }).catch(() => {})
+  }, [effective])
   useEffect(() => { localStorage.setItem("lang", lang) }, [lang])
 
   const { toast, showToast } = useToast()
@@ -40,18 +64,17 @@ function App() {
   const vmHook = useVms()
   const volumeHook = useVolumes()
 
-  // Window controls (Windows only — macOS keeps native titlebar)
+  // Window controls (Windows: right-side buttons; macOS: left-side traffic lights)
   const isWindows = navigator.userAgent.includes("Windows")
   const appWindow = getCurrentWindow()
   const [maximized, setMaximized] = useState(false)
 
   useEffect(() => {
-    if (!isWindows) return
     const unlisten = appWindow.onResized(async () => {
       setMaximized(await appWindow.isMaximized())
     })
     return () => { unlisten.then(f => f()) }
-  }, [appWindow, isWindows])
+  }, [appWindow])
 
   const handleMinimize = useCallback(() => appWindow.minimize(), [appWindow])
   const handleMaximize = useCallback(() => appWindow.toggleMaximize(), [appWindow])
@@ -104,7 +127,7 @@ function App() {
             runningVms={vmHook.running}
             imgResultsCount={images.imgResults.length}
             installedImagesCount={installedImagesCount}
-            connected={containers.connected}
+            volumesCount={volumeHook.volumes.length}
             onNavigate={setActivePage}
             t={t}
           />
@@ -269,7 +292,7 @@ function App() {
   }
 
   return (
-    <div className={`app ${theme === "light" ? "light" : ""} ${isWindows ? "platform-windows" : ""}`}>
+    <div className={`app ${effective === "light" ? "light" : ""} ${isWindows ? "platform-windows" : ""}`}>
       <AppModal
         {...modal}
         onClose={modal.closeModal}
@@ -282,7 +305,7 @@ function App() {
       {toast && <div className="toast">{toast}</div>}
       <UpdateChecker t={t} />
       <div className="sidebar">
-        <div className="sidebar-header">
+        <div className="sidebar-header" data-tauri-drag-region>
           <img src="/logo.png" alt={t("appName")} />
           <span className="brand-name">{t("appName")}</span>
           <span className="brand-version">v1.0.0</span>

@@ -2,6 +2,7 @@ import { useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
 import { langNames } from "../i18n/messages"
 import { I } from "../icons"
+import { CustomSelect } from "../components/CustomSelect"
 import type { Theme } from "../types"
 
 interface UpdateInfo {
@@ -58,10 +59,15 @@ export function Settings({ theme, setTheme, lang, setLang, t }: SettingsProps) {
           <div className="setting-label">{t("theme")}</div>
           <div className="setting-desc">{t("themeDesc")}</div>
         </div>
-        <select value={theme} onChange={e => setTheme(e.target.value as Theme)}>
-          <option value="dark">{t("dark")}</option>
-          <option value="light">{t("light")}</option>
-        </select>
+        <CustomSelect
+          value={theme}
+          options={[
+            { value: "system", label: t("systemTheme") },
+            { value: "dark", label: t("dark") },
+            { value: "light", label: t("light") },
+          ]}
+          onChange={v => setTheme(v as Theme)}
+        />
       </div>
       <div className="settings-section-title">{t("language")}</div>
       <div className="setting-row">
@@ -70,11 +76,11 @@ export function Settings({ theme, setTheme, lang, setLang, t }: SettingsProps) {
           <div className="setting-label">{t("language")}</div>
           <div className="setting-desc">{t("languageDesc")}</div>
         </div>
-        <select value={lang} onChange={e => setLang(normalizeLang(e.target.value))}>
-          {Object.entries(langNames).map(([code, name]) => (
-            <option key={code} value={code}>{name}</option>
-          ))}
-        </select>
+        <CustomSelect
+          value={lang}
+          options={Object.entries(langNames).map(([code, name]) => ({ value: code, label: name }))}
+          onChange={v => setLang(normalizeLang(v))}
+        />
       </div>
       <div className="settings-section-title">{t("updates")}</div>
       <div className="setting-row">
@@ -82,7 +88,7 @@ export function Settings({ theme, setTheme, lang, setLang, t }: SettingsProps) {
         <div className="setting-info">
           <div className="setting-label">{t("updates")}</div>
           <div className="setting-desc">
-            {t("currentVersion")}: v{updateInfo?.current_version ?? "0.1.0"}
+            {t("currentVersion")}: v{updateInfo?.current_version ?? "1.0.0"}
           </div>
         </div>
         <button
