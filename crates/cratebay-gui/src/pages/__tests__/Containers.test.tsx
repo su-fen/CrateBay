@@ -237,8 +237,7 @@ describe("Containers", () => {
     render(<Containers {...defaultProps} containers={[c1, c2]} groups={[group]} />)
 
     expect(screen.getByText("app")).toBeInTheDocument()
-    expect(screen.getByText(/Running: 1/)).toBeInTheDocument()
-    expect(screen.getByText(/Stopped: 1/)).toBeInTheDocument()
+    expect(screen.getByText(/2\s+Containers\s+·\s+1\s+Running/)).toBeInTheDocument()
   })
 
   it("shows children containers when a group is expanded", () => {
