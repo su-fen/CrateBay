@@ -63,7 +63,7 @@
   --mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Cascadia Code',
     'Consolas', monospace;
   --max-w: 1200px;
-  --section-py: 60px;
+  --section-py: 40px;
   --transition-theme: 0.3s ease;
 }
 
@@ -146,15 +146,19 @@ body::before {
   pointer-events: none;
   z-index: 0;
   background:
-    radial-gradient(ellipse 80% 50% at 20% 40%, rgba(139, 92, 246, 0.06), transparent),
-    radial-gradient(ellipse 60% 40% at 80% 20%, rgba(34, 211, 238, 0.04), transparent),
-    radial-gradient(ellipse 70% 50% at 50% 80%, rgba(139, 92, 246, 0.04), transparent);
+    radial-gradient(ellipse 80% 50% at 20% 20%, rgba(139, 92, 246, 0.12), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 85% 10%, rgba(34, 211, 238, 0.08), transparent 70%),
+    radial-gradient(ellipse 70% 40% at 50% 50%, rgba(139, 92, 246, 0.06), transparent 70%),
+    radial-gradient(ellipse 60% 50% at 15% 80%, rgba(34, 211, 238, 0.05), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 80% 90%, rgba(139, 92, 246, 0.06), transparent 70%);
 }
 [data-theme="light"] body::before {
   background:
-    radial-gradient(ellipse 80% 50% at 20% 40%, rgba(124, 58, 237, 0.03), transparent),
-    radial-gradient(ellipse 60% 40% at 80% 20%, rgba(8, 145, 178, 0.02), transparent),
-    radial-gradient(ellipse 70% 50% at 50% 80%, rgba(124, 58, 237, 0.02), transparent);
+    radial-gradient(ellipse 80% 50% at 20% 20%, rgba(124, 58, 237, 0.06), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 85% 10%, rgba(8, 145, 178, 0.04), transparent 70%),
+    radial-gradient(ellipse 70% 40% at 50% 50%, rgba(124, 58, 237, 0.03), transparent 70%),
+    radial-gradient(ellipse 60% 50% at 15% 80%, rgba(8, 145, 178, 0.03), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 80% 90%, rgba(124, 58, 237, 0.03), transparent 70%);
 }
 
 a {
@@ -402,12 +406,12 @@ svg {
 .hero {
   position: relative;
   z-index: 1;
-  min-height: 100vh;
+  min-height: 80vh;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 80px 24px 60px;
+  padding: 80px 24px 40px;
   overflow: hidden;
 }
 
@@ -1075,7 +1079,8 @@ svg {
   overflow-x: auto;
 }
 .code-block code {
-  white-space: pre;
+  white-space: pre-wrap;
+  word-break: break-all;
   display: block;
 }
 .code-block .prompt {
@@ -1192,11 +1197,14 @@ svg {
     overflow-x: auto;
     padding: 12px;
   }
+  .install-methods {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 768px) {
   :root {
-    --section-py: 48px;
+    --section-py: 32px;
   }
   .nav-links {
     display: none;
@@ -1399,4 +1407,28 @@ svg {
 [data-theme="dark"] .mock-status-pill {
   background: rgba(255, 255, 255, 0.04);
   color: #94a3b8;
+}
+
+/* Mock group header & child cards */
+.mock-group-header {
+  background: rgba(139, 92, 246, 0.04);
+  border-left: 2px solid var(--purple);
+}
+.mock-group-icon {
+  background: var(--surface2) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mock-group-icon svg {
+  stroke: var(--purple);
+}
+.mock-child-card {
+  padding-left: 42px;
+}
+.mock-chevron {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--text3);
 }

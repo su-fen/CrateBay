@@ -258,7 +258,7 @@
               <div class="mock-main-header">
                 <div style="display:flex;align-items:center;gap:10px">
                   <h4 data-i18n="demoHeader">Containers</h4>
-                  <span class="mock-chip">2 running</span>
+                  <span class="mock-chip">3 running</span>
                 </div>
                 <div style="display:flex;align-items:center;gap:10px">
                   <button class="mock-btn" data-i18n="demoBtn">+ Create Container</button>
@@ -268,7 +268,24 @@
                 </div>
               </div>
               <div class="mock-container-list">
-                <div class="mock-container-card">
+                <!-- Group header -->
+                <div class="mock-container-card mock-group-header">
+                  <div class="mock-card-icon mock-group-icon">
+                    <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" width="14" height="14"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                  </div>
+                  <div class="mock-card-body">
+                    <div class="mock-card-name">web-stack</div>
+                    <div class="mock-card-meta" data-i18n="demoGroupMeta">3 containers &middot; 2 running</div>
+                  </div>
+                  <div class="mock-card-stats">
+                    <span class="mock-stat">3</span>
+                  </div>
+                  <div class="mock-card-status running">
+                    <span class="dot"></span> 2 running
+                  </div>
+                  <svg class="mock-chevron" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="mock-container-card mock-child-card">
                   <div class="mock-card-icon"></div>
                   <div class="mock-card-body">
                     <div class="mock-card-name">web-frontend</div>
@@ -282,7 +299,7 @@
                     <span class="dot"></span> Up 2h
                   </div>
                 </div>
-                <div class="mock-container-card">
+                <div class="mock-container-card mock-child-card">
                   <div class="mock-card-icon"></div>
                   <div class="mock-card-body">
                     <div class="mock-card-name">api-server</div>
@@ -293,11 +310,11 @@
                     <span class="mock-stat">128 MB</span>
                   </div>
                   <div class="mock-card-status running">
-                    <span class="dot"></span> Up 5 days
+                    <span class="dot"></span> Up 5d
                   </div>
                 </div>
-                <div class="mock-container-card">
-                  <div class="mock-card-icon"></div>
+                <div class="mock-container-card mock-child-card">
+                  <div class="mock-card-icon" style="background:linear-gradient(135deg,#64748b,#475569)"></div>
                   <div class="mock-card-body">
                     <div class="mock-card-name">db-postgres</div>
                     <div class="mock-card-meta">postgres:16 &middot; 5432:5432</div>
@@ -308,14 +325,17 @@
                   </div>
                 </div>
                 <div class="mock-container-card">
-                  <div class="mock-card-icon"></div>
+                  <div class="mock-card-icon" style="background:linear-gradient(135deg,#22d3ee,#0891b2)"></div>
                   <div class="mock-card-body">
                     <div class="mock-card-name">redis-cache</div>
                     <div class="mock-card-meta">redis:7-alpine &middot; 6379:6379</div>
                   </div>
-                  <div class="mock-card-stats"></div>
-                  <div class="mock-card-status stopped">
-                    <span class="dot"></span> Stopped
+                  <div class="mock-card-stats">
+                    <span class="mock-stat">0.1%</span>
+                    <span class="mock-stat">8 MB</span>
+                  </div>
+                  <div class="mock-card-status running">
+                    <span class="dot"></span> Up 12h
                   </div>
                 </div>
               </div>
