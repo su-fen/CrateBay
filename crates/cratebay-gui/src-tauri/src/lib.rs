@@ -2603,7 +2603,10 @@ async fn ollama_check_running() -> Result<String, String> {
     let url = format!("{}/api/version", OLLAMA_BASE_URL.trim_end_matches('/'));
     let resp = client.get(&url).send().await.map_err(|e| e.to_string())?;
     if !resp.status().is_success() {
-        return Err(format!("ollama version endpoint returned {}", resp.status()));
+        return Err(format!(
+            "ollama version endpoint returned {}",
+            resp.status()
+        ));
     }
     let body: OllamaVersionResponse = resp.json().await.map_err(|e| e.to_string())?;
     Ok(body.version.unwrap_or_default())
