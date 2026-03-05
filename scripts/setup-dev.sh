@@ -43,7 +43,7 @@ if command -v node >/dev/null 2>&1; then
   echo "  node = ${node_version}"
   if (( node_major < 22 )); then
     echo "  WARNING: Node.js 22+ is required by local CI."
-    echo "  Run: nvm install 22 && nvm use 22"
+    echo "  Run: nvm install 24 && nvm use 24"
   fi
 else
   echo "  WARNING: node not found. Install Node.js 22+."

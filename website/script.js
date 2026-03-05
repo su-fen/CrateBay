@@ -55,12 +55,12 @@
       feat6Title: 'Kubernetes (K3s)',
       feat6Desc:
         'Built-in K3s integration with pod, service, and deployment dashboards. Manage namespaces and workloads effortlessly.',
-      feat7Title: 'Plugin System',
+      feat7Title: 'AI Assistant',
       feat7Desc:
-        'Extensible architecture with lifecycle hooks. Build custom plugins to integrate your own tools and workflows.',
-      feat8Title: 'Cross-platform',
+        'Built-in assistant turns natural language into step-by-step plans, enforces confirmation on risky actions, and keeps audit trails.',
+      feat8Title: 'Agent / CLI Bridge',
       feat8Desc:
-        'Runs on macOS, Linux, and Windows. Same interface, same speed, same experience on every platform.',
+        'Run Codex, Claude, Gemini, Qwen and OpenClaw workflows with allowlist, dry-run, timeout control, and command audit.',
 
       // Demo
       demoLabel: 'Interface',
@@ -195,10 +195,10 @@
       feat5Desc: '自动端口转发，通过 VirtioFS 实现主机与客户机之间的近原生文件共享。',
       feat6Title: 'Kubernetes (K3s)',
       feat6Desc: '内置 K3s 集成，提供 Pod、Service 和 Deployment 仪表盘。轻松管理命名空间和工作负载。',
-      feat7Title: '插件系统',
-      feat7Desc: '可扩展架构与生命周期钩子。构建自定义插件来集成你自己的工具和工作流。',
-      feat8Title: '跨平台',
-      feat8Desc: '支持 macOS、Linux 和 Windows。相同的界面、相同的速度、相同的体验。',
+      feat7Title: 'AI 助手',
+      feat7Desc: '内嵌助手把自然语言目标拆成可执行步骤，对高风险动作强制确认，并保留审计记录。',
+      feat8Title: 'Agent / CLI 桥接',
+      feat8Desc: '支持 Codex、Claude、Gemini、Qwen、OpenClaw 工作流，提供白名单、dry-run、超时与审计控制。',
       demoLabel: '界面',
       demoTitle: '为速度和清晰度而生。',
       demoDesc: '基于 Tauri 和 React 构建的简洁响应式 GUI。每次交互都瞬间完成。',

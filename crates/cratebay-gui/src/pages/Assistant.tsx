@@ -4,7 +4,11 @@ import { I } from "../icons"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import type { AssistantPlanResult, AssistantPlanStep } from "../types"
+import type {
+  AssistantPlanResult,
+  AssistantPlanStep,
+  AssistantStepExecutionResult,
+} from "../types"
 
 interface AssistantProps {
   t: (key: string) => string
@@ -62,23 +66,28 @@ export function Assistant({ t }: AssistantProps) {
       return
     }
 
-    if (step.requires_confirmation) {
-      const ok = window.confirm(
-        `${t("assistantConfirmAction")}\n${step.title}\n${step.command}`
-      )
-      if (!ok) return
-    }
+    const confirmed = step.requires_confirmation
+      ? window.confirm(`${t("assistantConfirmAction")}\n${step.title}\n${step.command}`)
+      : true
+    if (!confirmed) return
 
     setExecutingStepId(step.id)
     setStepResultMap((prev) => ({ ...prev, [step.id]: t("working") }))
     try {
-      const result = await invoke(step.command, argsObj)
+      const result = await invoke<AssistantStepExecutionResult>("assistant_execute_step", {
+        command: step.command,
+        args: argsObj,
+        riskLevel: step.risk_level,
+        requiresConfirmation: step.requires_confirmation,
+        confirmed,
+      })
+      const output =
+        typeof result.output === "string"
+          ? result.output
+          : JSON.stringify(result.output, null, 2) || t("done")
       setStepResultMap((prev) => ({
         ...prev,
-        [step.id]:
-          typeof result === "string"
-            ? result
-            : JSON.stringify(result, null, 2) || t("done"),
+        [step.id]: result.request_id ? `${output}\nrequest_id=${result.request_id}` : output,
       }))
     } catch (e) {
       setStepResultMap((prev) => ({

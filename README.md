@@ -132,8 +132,8 @@ See [Tutorial](docs/TUTORIAL.md) for detailed instructions.
 
 ```bash
 # 1) Use Node.js 22+ for frontend tooling (22/24 LTS recommended)
-nvm install 22
-nvm use 22
+nvm install 24
+nvm use 24
 
 # 2) Enable git hooks (pre-commit + pre-push gate)
 bash scripts/setup-dev.sh

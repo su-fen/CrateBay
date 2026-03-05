@@ -1070,8 +1070,7 @@ fn vm_state_to_string(state: cratebay_core::hypervisor::VmState) -> String {
     }
 }
 
-#[tauri::command]
-async fn vm_list(state: State<'_, AppState>) -> Result<Vec<VmInfoDto>, String> {
+async fn vm_list_inner(state: &AppState) -> Result<Vec<VmInfoDto>, String> {
     state.ensure_daemon().await;
     if let Ok(mut client) = connect_vm_service(&state.grpc_addr).await {
         if let Ok(resp) = client.list_v_ms(proto::ListVMsRequest {}).await {
@@ -1140,6 +1139,50 @@ async fn vm_list(state: State<'_, AppState>) -> Result<Vec<VmInfoDto>, String> {
         .collect())
 }
 
+async fn vm_start_inner(state: &AppState, id: String) -> Result<(), String> {
+    state.ensure_daemon().await;
+    if let Ok(mut client) = connect_vm_service(&state.grpc_addr).await {
+        client
+            .start_vm(proto::StartVmRequest { vm_id: id })
+            .await
+            .map_err(|e| e.to_string())?;
+        return Ok(());
+    }
+
+    state.hv.start_vm(&id).map_err(|e| e.to_string())
+}
+
+async fn vm_stop_inner(state: &AppState, id: String) -> Result<(), String> {
+    state.ensure_daemon().await;
+    if let Ok(mut client) = connect_vm_service(&state.grpc_addr).await {
+        client
+            .stop_vm(proto::StopVmRequest { vm_id: id })
+            .await
+            .map_err(|e| e.to_string())?;
+        return Ok(());
+    }
+
+    state.hv.stop_vm(&id).map_err(|e| e.to_string())
+}
+
+async fn vm_delete_inner(state: &AppState, id: String) -> Result<(), String> {
+    state.ensure_daemon().await;
+    if let Ok(mut client) = connect_vm_service(&state.grpc_addr).await {
+        client
+            .delete_vm(proto::DeleteVmRequest { vm_id: id })
+            .await
+            .map_err(|e| e.to_string())?;
+        return Ok(());
+    }
+
+    state.hv.delete_vm(&id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn vm_list(state: State<'_, AppState>) -> Result<Vec<VmInfoDto>, String> {
+    vm_list_inner(state.inner()).await
+}
+
 #[tauri::command]
 async fn vm_create(
     state: State<'_, AppState>,
@@ -1204,44 +1247,17 @@ async fn vm_create(
 
 #[tauri::command]
 async fn vm_start(state: State<'_, AppState>, id: String) -> Result<(), String> {
-    state.ensure_daemon().await;
-    if let Ok(mut client) = connect_vm_service(&state.grpc_addr).await {
-        client
-            .start_vm(proto::StartVmRequest { vm_id: id })
-            .await
-            .map_err(|e| e.to_string())?;
-        return Ok(());
-    }
-
-    state.hv.start_vm(&id).map_err(|e| e.to_string())
+    vm_start_inner(state.inner(), id).await
 }
 
 #[tauri::command]
 async fn vm_stop(state: State<'_, AppState>, id: String) -> Result<(), String> {
-    state.ensure_daemon().await;
-    if let Ok(mut client) = connect_vm_service(&state.grpc_addr).await {
-        client
-            .stop_vm(proto::StopVmRequest { vm_id: id })
-            .await
-            .map_err(|e| e.to_string())?;
-        return Ok(());
-    }
-
-    state.hv.stop_vm(&id).map_err(|e| e.to_string())
+    vm_stop_inner(state.inner(), id).await
 }
 
 #[tauri::command]
 async fn vm_delete(state: State<'_, AppState>, id: String) -> Result<(), String> {
-    state.ensure_daemon().await;
-    if let Ok(mut client) = connect_vm_service(&state.grpc_addr).await {
-        client
-            .delete_vm(proto::DeleteVmRequest { vm_id: id })
-            .await
-            .map_err(|e| e.to_string())?;
-        return Ok(());
-    }
-
-    state.hv.delete_vm(&id).map_err(|e| e.to_string())
+    vm_delete_inner(state.inner(), id).await
 }
 
 #[tauri::command]
@@ -2459,6 +2475,7 @@ impl Default for AiSecurityPolicy {
             cli_command_allowlist: vec![
                 "codex".to_string(),
                 "claude".to_string(),
+                "openclaw".to_string(),
                 "gemini".to_string(),
                 "qwen".to_string(),
                 "aider".to_string(),
@@ -2853,6 +2870,73 @@ pub struct AgentCliRunResult {
     stdout: String,
     stderr: String,
     duration_ms: u128,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AssistantStepExecutionResult {
+    ok: bool,
+    request_id: String,
+    command: String,
+    risk_level: String,
+    output: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct AssistantCommandPolicy {
+    risk_level: &'static str,
+    always_confirm: bool,
+}
+
+fn assistant_command_policy(command: &str) -> Option<AssistantCommandPolicy> {
+    match command {
+        "list_containers" | "vm_list" | "k8s_list_pods" => Some(AssistantCommandPolicy {
+            risk_level: "read",
+            always_confirm: false,
+        }),
+        "start_container" | "stop_container" | "vm_start" | "vm_stop" => {
+            Some(AssistantCommandPolicy {
+                risk_level: "write",
+                always_confirm: false,
+            })
+        }
+        "remove_container" | "vm_delete" => Some(AssistantCommandPolicy {
+            risk_level: "destructive",
+            always_confirm: true,
+        }),
+        _ => None,
+    }
+}
+
+fn assistant_arg_map(
+    args: &serde_json::Value,
+) -> Result<&serde_json::Map<String, serde_json::Value>, String> {
+    args.as_object()
+        .ok_or_else(|| "assistant step args must be a JSON object".to_string())
+}
+
+fn assistant_arg_string(
+    args: &serde_json::Map<String, serde_json::Value>,
+    key: &str,
+) -> Result<String, String> {
+    args.get(key)
+        .and_then(|v| v.as_str())
+        .map(|v| v.trim().to_string())
+        .filter(|v| !v.is_empty())
+        .ok_or_else(|| format!("assistant step missing required string arg '{}'", key))
+}
+
+fn assistant_arg_optional_string(
+    args: &serde_json::Map<String, serde_json::Value>,
+    key: &str,
+) -> Result<Option<String>, String> {
+    match args.get(key) {
+        Some(v) if v.is_null() => Ok(None),
+        Some(v) => v
+            .as_str()
+            .map(|s| Some(s.trim().to_string()))
+            .ok_or_else(|| format!("assistant step arg '{}' must be a string or null", key)),
+        None => Ok(None),
+    }
 }
 
 fn next_ai_request_id() -> String {
@@ -3607,6 +3691,124 @@ async fn ai_generate_plan(
 }
 
 #[tauri::command]
+async fn assistant_execute_step(
+    state: State<'_, AppState>,
+    command: String,
+    args: serde_json::Value,
+    risk_level: Option<String>,
+    requires_confirmation: Option<bool>,
+    confirmed: Option<bool>,
+) -> Result<AssistantStepExecutionResult, String> {
+    let settings = load_ai_settings()?;
+    let request_id = next_ai_request_id();
+    let command = command.trim().to_string();
+    let Some(policy) = assistant_command_policy(&command) else {
+        let msg = format!("Assistant command '{}' is not allowed", command);
+        ai_audit_log("assistant_execute_step", "deny", &request_id, &msg);
+        return Err(msg);
+    };
+
+    if let Some(client_risk) = risk_level.as_deref() {
+        if client_risk != policy.risk_level {
+            let msg = format!(
+                "Assistant risk level mismatch for '{}': client='{}' server='{}'",
+                command, client_risk, policy.risk_level
+            );
+            ai_audit_log("assistant_execute_step", "deny", &request_id, &msg);
+            return Err(msg);
+        }
+    }
+
+    let needs_confirmation = policy.always_confirm
+        || (settings.security_policy.destructive_action_confirmation
+            && requires_confirmation.unwrap_or(false));
+    if needs_confirmation && !confirmed.unwrap_or(false) {
+        let msg = format!(
+            "Assistant command '{}' requires explicit confirmation",
+            command
+        );
+        ai_audit_log("assistant_execute_step", "deny", &request_id, &msg);
+        return Err(msg);
+    }
+
+    let arg_keys = args
+        .as_object()
+        .map(|obj| obj.keys().cloned().collect::<Vec<_>>().join(","))
+        .unwrap_or_default();
+    let args_map = assistant_arg_map(&args)?;
+
+    let output = match command.as_str() {
+        "list_containers" => {
+            let items = list_containers().await?;
+            serde_json::to_value(items).map_err(|e| e.to_string())?
+        }
+        "start_container" => {
+            let id = assistant_arg_string(args_map, "id")?;
+            start_container(id).await?;
+            serde_json::json!({ "ok": true })
+        }
+        "stop_container" => {
+            let id = assistant_arg_string(args_map, "id")?;
+            stop_container(id).await?;
+            serde_json::json!({ "ok": true })
+        }
+        "remove_container" => {
+            let id = assistant_arg_string(args_map, "id")?;
+            remove_container(id).await?;
+            serde_json::json!({ "ok": true })
+        }
+        "vm_list" => {
+            let items = vm_list_inner(state.inner()).await?;
+            serde_json::to_value(items).map_err(|e| e.to_string())?
+        }
+        "vm_start" => {
+            let id = assistant_arg_string(args_map, "id")?;
+            vm_start_inner(state.inner(), id).await?;
+            serde_json::json!({ "ok": true })
+        }
+        "vm_stop" => {
+            let id = assistant_arg_string(args_map, "id")?;
+            vm_stop_inner(state.inner(), id).await?;
+            serde_json::json!({ "ok": true })
+        }
+        "vm_delete" => {
+            let id = assistant_arg_string(args_map, "id")?;
+            vm_delete_inner(state.inner(), id).await?;
+            serde_json::json!({ "ok": true })
+        }
+        "k8s_list_pods" => {
+            let namespace = assistant_arg_optional_string(args_map, "namespace")?
+                .map(|v| v.trim().to_string())
+                .filter(|v| !v.is_empty());
+            let pods = k8s_list_pods(namespace).await?;
+            serde_json::to_value(pods).map_err(|e| e.to_string())?
+        }
+        _ => unreachable!("assistant command policy should reject unknown commands"),
+    };
+
+    ai_audit_log(
+        "assistant_execute_step",
+        "write",
+        &request_id,
+        &format!(
+            "command={} risk={} args_keys=[{}] confirm={}",
+            command,
+            policy.risk_level,
+            arg_keys,
+            confirmed.unwrap_or(false)
+        ),
+    );
+
+    Ok(AssistantStepExecutionResult {
+        ok: true,
+        request_id,
+        command,
+        risk_level: policy.risk_level.to_string(),
+        output,
+    })
+}
+
+#[tauri::command]
 fn mcp_check_access(action: String, token: Option<String>) -> Result<McpAccessCheckResult, String> {
     let settings = load_ai_settings()?;
     let policy = settings.security_policy;
@@ -3691,6 +3893,19 @@ fn default_agent_cli_presets() -> Vec<AgentCliPreset> {
             description: "Invoke claude with prompt text".to_string(),
             command: "claude".to_string(),
             args_template: vec!["--print".to_string(), "{{prompt}}".to_string()],
+            timeout_sec: 180,
+            dangerous: false,
+        },
+        AgentCliPreset {
+            id: "openclaw".to_string(),
+            name: "OpenClaw CLI".to_string(),
+            description: "Invoke openclaw cli prompt mode".to_string(),
+            command: "openclaw".to_string(),
+            args_template: vec![
+                "run".to_string(),
+                "--prompt".to_string(),
+                "{{prompt}}".to_string(),
+            ],
             timeout_sec: 180,
             dangerous: false,
         },
@@ -3868,7 +4083,10 @@ async fn agent_cli_run(
 
 #[cfg(test)]
 mod ai_tests {
-    use super::{infer_assistant_steps, redact_sensitive};
+    use super::{
+        assistant_arg_optional_string, assistant_arg_string, assistant_command_policy,
+        infer_assistant_steps, is_command_allowed, redact_sensitive,
+    };
 
     #[test]
     fn infer_plan_marks_destructive_actions() {
@@ -3893,6 +4111,48 @@ mod ai_tests {
         let output = redact_sensitive(input.to_string());
         assert!(output.contains("Authorization[redacted]"));
         assert!(output.contains("Bearer [redacted]"));
+    }
+
+    #[test]
+    fn assistant_policy_limits_command_surface() {
+        let destructive = assistant_command_policy("vm_delete").expect("policy should exist");
+        assert_eq!(destructive.risk_level, "destructive");
+        assert!(destructive.always_confirm);
+
+        let read = assistant_command_policy("list_containers").expect("policy should exist");
+        assert_eq!(read.risk_level, "read");
+        assert!(!read.always_confirm);
+
+        assert!(assistant_command_policy("docker_run").is_none());
+    }
+
+    #[test]
+    fn assistant_arg_helpers_parse_required_and_optional_values() {
+        let args = serde_json::json!({
+            "id": "vm-1",
+            "namespace": "default",
+            "nullable": null
+        });
+        let map = args.as_object().expect("object");
+        assert_eq!(
+            assistant_arg_string(map, "id").expect("id"),
+            "vm-1".to_string()
+        );
+        assert_eq!(
+            assistant_arg_optional_string(map, "namespace").expect("namespace"),
+            Some("default".to_string())
+        );
+        assert_eq!(
+            assistant_arg_optional_string(map, "nullable").expect("nullable"),
+            None
+        );
+    }
+
+    #[test]
+    fn cli_allowlist_matches_binary_file_name() {
+        let allowlist = vec!["openclaw".to_string(), "codex".to_string()];
+        assert!(is_command_allowed(&allowlist, "/usr/local/bin/openclaw"));
+        assert!(!is_command_allowed(&allowlist, "/usr/local/bin/bash"));
     }
 }
 
@@ -4164,6 +4424,7 @@ pub fn run() {
             ai_chat,
             ai_test_connection,
             ai_generate_plan,
+            assistant_execute_step,
             mcp_check_access,
             agent_cli_list_presets,
             agent_cli_run,

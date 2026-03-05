@@ -132,8 +132,8 @@ cratebay mount add --vm myvm --tag code --host-path ~/code --guest-path /mnt/cod
 
 ```bash
 # 1) 前端工具链使用 Node.js 22+（建议 22/24 LTS）
-nvm install 22
-nvm use 22
+nvm install 24
+nvm use 24
 
 # 2) 启用仓库 Git Hooks（pre-commit + pre-push 门禁）
 bash scripts/setup-dev.sh

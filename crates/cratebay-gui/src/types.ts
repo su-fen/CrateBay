@@ -196,6 +196,14 @@ export interface AssistantPlanResult {
   steps: AssistantPlanStep[]
 }
 
+export interface AssistantStepExecutionResult {
+  ok: boolean
+  request_id: string
+  command: string
+  risk_level: "read" | "write" | "destructive" | string
+  output: unknown
+}
+
 export interface AgentCliPreset {
   id: string
   name: string

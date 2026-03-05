@@ -41,7 +41,7 @@ node_major="$(node -p "process.versions.node.split('.')[0]")"
 node_version="$(node -v)"
 if (( node_major < 22 )); then
   echo "ERROR: Node.js 22+ is required. Current: ${node_version}"
-  echo "Use: nvm install 22 && nvm use 22"
+  echo "Use: nvm install 24 && nvm use 24"
   exit 1
 fi
 

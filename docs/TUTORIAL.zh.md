@@ -47,8 +47,8 @@ source ~/.cargo/env
 brew install node@22
 
 # or via nvm
-nvm install 22
-nvm use 22
+nvm install 24
+nvm use 24
 ```
 
 ### Docker 运行时
