@@ -217,6 +217,13 @@ Settings are split into two tabs:
 
 Preferences are saved in `localStorage` (GUI) and AI settings are persisted to `ai-settings.json`.
 
+Current AI preview surface:
+
+- **AI Hub** page with tabs: `Overview / Models / Sandboxes / MCP / Assistant`
+- **Models** tab includes Ollama phase 1: runtime status and local model list
+
+> Roadmap note: CrateBay is expanding the AI surface into **Models / Sandboxes / MCP Manager**. See [Vision](VISION.md) for the proposal and milestones.
+
 ---
 
 ## 4. CLI Reference

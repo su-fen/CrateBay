@@ -109,7 +109,7 @@ export type NavPage =
   | "images"
   | "volumes"
   | "kubernetes"
-  | "assistant"
+  | "ai"
   | "settings"
 export type Theme = "dark" | "light" | "system"
 export type ModalKind = "" | "text" | "package"
@@ -296,4 +296,22 @@ export interface K8sDeployment {
   up_to_date: number
   available: number
   age: string
+}
+
+export interface OllamaStatusDto {
+  installed: boolean
+  running: boolean
+  version: string
+  base_url: string
+}
+
+export interface OllamaModelDto {
+  name: string
+  size_bytes: number
+  size_human: string
+  modified_at: string
+  digest: string
+  family: string
+  parameter_size: string
+  quantization_level: string
 }

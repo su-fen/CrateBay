@@ -17,7 +17,8 @@
 <p align="center">
   <a href="https://github.com/coder-hhx/CrateBay/releases">Releases (Preview)</a> ·
   <a href="https://github.com/coder-hhx/CrateBay/issues">Issues</a> ·
-  <a href="docs/ARCHITECTURE.md">Architecture</a> ·
+  <a href="docs/VISION.md">Vision</a> ·
+  <a href="docs/ARCHITECTURE.en.md">Architecture</a> ·
   <a href="docs/TUTORIAL.md">Tutorial</a> ·
   <a href="CHANGELOG.md">Changelog</a>
 </p>
@@ -39,6 +40,7 @@ OrbStack is great, but it's **closed-source and macOS-only**. Docker Desktop is 
 - **Rust + Tauri native** — not Electron, idles at <200MB RAM
 - **VM + Containers unified** — one tool for everything
 - **Cross-platform** — macOS, Linux, and Windows
+- **AI infra roadmap** — agent sandboxes, local models, and MCP server management ([Vision](docs/VISION.md))
 
 ## Comparison
 
@@ -132,6 +134,22 @@ AI UX update in current preview:
 
 - Assistant now uses a dedicated AI icon in navigation and page header.
 - Settings are split into `General` and `AI` tabs to avoid long stacked forms.
+
+AI infrastructure progress in current preview:
+
+- New top-level **AI Hub** page with `Overview / Models / Sandboxes / MCP / Assistant` tabs.
+- `Models` tab now includes **Ollama phase 1**: runtime status + local model listing.
+- `scripts/setup-ai.sh` and `tools/opensandbox/` provide local bootstrap scaffolding.
+
+## AI Infrastructure (Roadmap)
+
+CrateBay is evolving into a **self-hosted AI infrastructure desktop** on top of the existing Docker/VM foundation:
+
+- **Agent Sandboxes**: one-click isolated execution environments (OpenSandbox-compatible path planned)
+- **Local Model Runtime**: Ollama-first model lifecycle + runtime visibility
+- **MCP Server Manager**: manage multiple MCP servers and export client configs
+
+See [Vision](docs/VISION.md) and [Roadmap](docs/ROADMAP.md).
 
 ## Development Setup (Contributors)
 

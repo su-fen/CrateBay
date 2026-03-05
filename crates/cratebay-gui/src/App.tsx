@@ -24,7 +24,7 @@ import { Vms } from "./pages/Vms"
 import { Volumes } from "./pages/Volumes"
 import { Settings } from "./pages/Settings"
 import { Kubernetes } from "./pages/Kubernetes"
-import { Assistant } from "./pages/Assistant"
+import { AiHub } from "./pages/AiHub"
 import type { DockerRuntimeSetupResult, NavPage, Theme, VmInfoDto, LocalImageInfo } from "./types"
 
 function App() {
@@ -216,13 +216,13 @@ function App() {
     { page: "volumes", icon: I.hardDrive, count: volumeHook.volumes.length },
     { page: "vms", icon: I.server, count: vmHook.vms.length },
     { page: "kubernetes", icon: I.kubernetes },
-    { page: "assistant", icon: I.aiAssistant },
+    { page: "ai", icon: I.aiAssistant },
   ]
 
   const pageNames: Record<NavPage, string> = {
     dashboard: t("dashboard"), containers: t("containers"),
     vms: t("vms"), images: t("images"), volumes: t("volumes"),
-    kubernetes: t("kubernetes"), assistant: t("assistant"), settings: t("settings"),
+    kubernetes: t("kubernetes"), ai: t("ai"), settings: t("settings"),
   }
 
   const renderPage = () => {
@@ -387,8 +387,8 @@ function App() {
         )
       case "kubernetes":
         return <Kubernetes t={t} />
-      case "assistant":
-        return <Assistant t={t} />
+      case "ai":
+        return <AiHub t={t} />
       case "settings":
         return (
           <Settings

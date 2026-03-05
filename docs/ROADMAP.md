@@ -1,6 +1,8 @@
 # CrateBay Roadmap
 
 > **English** · [中文](../README.zh.md)
+>
+> Vision: [AI Infra Proposal](VISION.md) · [中文](VISION.zh.md)
 
 ## v0.1.0 — Foundation (Done)
 
@@ -68,3 +70,25 @@
 - ⬜ Remote Docker host connections
 - ⬜ GPU passthrough (macOS Metal, Linux VFIO)
 - ⬜ Telemetry-free analytics dashboard (local-only usage stats)
+
+## v1.2.0 — AI Infrastructure MVP (In Progress)
+
+- ✅ AI hub navigation scaffold: `Overview / Models / Sandboxes / MCP / Assistant`
+- ✅ Ollama phase 1: runtime status check + local model listing in GUI
+- ✅ AI bootstrap tooling: `scripts/setup-ai.sh` + OpenSandbox local config scaffold
+- ⬜ Managed Services abstraction: install/configure/start/stop/status/logs
+- ⬜ Ollama phase 2: pull/delete models and richer storage management
+- ⬜ MCP Server Manager MVP (registry, start/stop/logs, export client config)
+
+## v1.3.0 — Agent Sandbox v1 (Planned)
+
+- ⬜ Sandbox templates (dev env images) + lifecycle UI (create/start/stop/inspect)
+- ⬜ OpenSandbox integration path (optional local runtime backend)
+- ⬜ Network policy presets, TTL cleanup, secrets refs, workspace mounts
+- ⬜ Assistant/Skills: sandbox executor (opt-in) + audit events
+
+## v1.4.0 — Local Models & GPU Observability (Planned)
+
+- ⬜ Model runtime profiles (model sets, per-workflow presets)
+- ⬜ GPU visibility (best-effort per OS) and basic VRAM usage snapshots
+- ⬜ Multi-runtime support (Ollama first; extend later)

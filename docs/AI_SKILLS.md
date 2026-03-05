@@ -52,3 +52,4 @@ Settings UX is now separated into two tabs:
 2. Add schema validation before execution (`input_schema` strict mode).
 3. Add audit events per skill execution (`skill_id`, `executor`, `target`, `request_id`).
 4. Add import/export format for user skill packs.
+5. Add a sandbox executor (`sandbox_action`) so skills can run inside isolated Agent Sandboxes.

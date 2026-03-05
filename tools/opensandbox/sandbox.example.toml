@@ -1,0 +1,35 @@
+# OpenSandbox example config (Docker runtime)
+#
+# This file is intentionally conservative and source-controlled so CrateBay can:
+# - point users to a known-good starting point
+# - eventually generate/manage configs via "Managed Services"
+#
+# NOTE: This is a template. Change `api_key` before exposing beyond localhost.
+
+# -----------------------------------------------------------------------------
+# Option A: Host networking (simple, fastest; typically single sandbox at a time)
+# -----------------------------------------------------------------------------
+
+[server]
+host = "127.0.0.1"
+port = 8080
+log_level = "INFO"
+api_key = "change-me"
+
+[runtime]
+type = "docker"
+execd_image = "opensandbox/execd:v1.0.6"
+
+[docker]
+network_mode = "host"
+
+# -----------------------------------------------------------------------------
+# Option B: Bridge networking (more isolated; requires correct host IP)
+# -----------------------------------------------------------------------------
+#
+# Uncomment this block and comment out the `[docker]` block above.
+#
+# [docker]
+# network_mode = "bridge"
+# host_ip = "172.17.0.1"
+

@@ -8,6 +8,22 @@
 
 ## [未发布]
 
+### 新增
+
+#### AI 基础设施（预览）
+- 新增顶层 AI Hub 页面，包含 `Overview / Models / Sandboxes / MCP / Assistant` 标签。
+- GUI 接入 Ollama 第一阶段能力（`ollama_status`、`ollama_list_models`）：运行状态检测 + 本地模型列表。
+- 新增 AI 引导脚本 `scripts/setup-ai.sh`，用于前置检查与可选的 best-effort 安装流程。
+- 新增 `tools/opensandbox/` 本地脚手架，提供模板配置和启动说明。
+
+#### 产品方向文档
+- 新增 `docs/VISION.md` 与 `docs/VISION.zh.md`，明确 AI 基础设施定位、架构方向与阶段路线。
+
+### 变更
+
+- 路线图中将 AI Infrastructure MVP 调整为进行中并细化阶段状态（`docs/ROADMAP.md`）。
+- README/教程/官网文案同步“已落地 AI Hub + Ollama 第一阶段”与后续里程碑。
+
 ## [1.0.0] - 2026-03-02
 
 ### 新增

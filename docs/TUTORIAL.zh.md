@@ -217,6 +217,13 @@ Docker 存储卷管理：
 
 其中 GUI 偏好保存在 `localStorage`，AI 配置持久化在 `ai-settings.json`。
 
+当前 AI 预览能力：
+
+- **AI Hub** 页面标签：`Overview / Models / Sandboxes / MCP / Assistant`
+- **Models** 标签已接入 Ollama 第一阶段：运行状态与本地模型列表
+
+> 规划说明：CrateBay 会把 AI 能力扩展为 **Models / Sandboxes / MCP Manager** 三大模块。见 [愿景](VISION.zh.md) 了解提案与里程碑。
+
 ---
 
 ## 4. CLI 命令参考

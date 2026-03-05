@@ -2527,6 +2527,137 @@ fn refresh_tray_menu(app: &tauri::AppHandle) {
     });
 }
 
+// ── Local model runtime (Ollama) ─────────────────────────────────────
+
+const OLLAMA_BASE_URL: &str = "http://127.0.0.1:11434";
+
+fn ollama_http_client() -> Result<reqwest::Client, String> {
+    reqwest::Client::builder()
+        .timeout(Duration::from_millis(900))
+        .user_agent("CrateBay/1.0.0 (+https://github.com/coder-hhx/CrateBay)")
+        .build()
+        .map_err(|e| e.to_string())
+}
+
+#[derive(Debug, Serialize)]
+pub struct OllamaStatusDto {
+    installed: bool,
+    running: bool,
+    version: String,
+    base_url: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct OllamaModelDto {
+    name: String,
+    size_bytes: u64,
+    size_human: String,
+    modified_at: String,
+    digest: String,
+    family: String,
+    parameter_size: String,
+    quantization_level: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct OllamaVersionResponse {
+    version: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct OllamaTagsResponse {
+    models: Vec<OllamaTagModel>,
+}
+
+#[derive(Debug, Deserialize)]
+struct OllamaTagModel {
+    name: String,
+    #[serde(default)]
+    modified_at: String,
+    #[serde(default)]
+    size: u64,
+    #[serde(default)]
+    digest: String,
+    #[serde(default)]
+    details: OllamaModelDetails,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct OllamaModelDetails {
+    #[serde(default)]
+    family: String,
+    #[serde(default)]
+    parameter_size: String,
+    #[serde(default)]
+    quantization_level: String,
+}
+
+async fn ollama_check_installed() -> bool {
+    tokio::task::spawn_blocking(|| Command::new("ollama").arg("--version").output().is_ok())
+        .await
+        .unwrap_or(false)
+}
+
+async fn ollama_check_running() -> Result<String, String> {
+    let client = ollama_http_client()?;
+    let url = format!("{}/api/version", OLLAMA_BASE_URL.trim_end_matches('/'));
+    let resp = client.get(&url).send().await.map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(format!("ollama version endpoint returned {}", resp.status()));
+    }
+    let body: OllamaVersionResponse = resp.json().await.map_err(|e| e.to_string())?;
+    Ok(body.version.unwrap_or_default())
+}
+
+#[tauri::command]
+async fn ollama_status() -> Result<OllamaStatusDto, String> {
+    let installed = ollama_check_installed().await;
+    match ollama_check_running().await {
+        Ok(version) => Ok(OllamaStatusDto {
+            installed,
+            running: true,
+            version,
+            base_url: OLLAMA_BASE_URL.to_string(),
+        }),
+        Err(_) => Ok(OllamaStatusDto {
+            installed,
+            running: false,
+            version: String::new(),
+            base_url: OLLAMA_BASE_URL.to_string(),
+        }),
+    }
+}
+
+#[tauri::command]
+async fn ollama_list_models() -> Result<Vec<OllamaModelDto>, String> {
+    let client = ollama_http_client()?;
+    let url = format!("{}/api/tags", OLLAMA_BASE_URL.trim_end_matches('/'));
+    let resp = client.get(&url).send().await.map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(format!("ollama tags endpoint returned {}", resp.status()));
+    }
+    let body: OllamaTagsResponse = resp.json().await.map_err(|e| e.to_string())?;
+    let mut out = body
+        .models
+        .into_iter()
+        .map(|m| {
+            let size = m.size;
+            OllamaModelDto {
+                name: m.name,
+                size_bytes: size,
+                size_human: format_bytes_human(size),
+                modified_at: m.modified_at,
+                digest: m.digest,
+                family: m.details.family,
+                parameter_size: m.details.parameter_size,
+                quantization_level: m.details.quantization_level,
+            }
+        })
+        .collect::<Vec<_>>();
+    out.sort_by(|a, b| a.name.cmp(&b.name));
+    Ok(out)
+}
+
 // ── AI settings commands ───────────────────────────────────────────
 
 const AI_SECRET_SERVICE: &str = "com.cratebay.app.ai";
@@ -5148,6 +5279,8 @@ pub fn run() {
             k8s_list_services,
             k8s_list_deployments,
             k8s_pod_logs,
+            ollama_status,
+            ollama_list_models,
             load_ai_settings,
             save_ai_settings,
             validate_ai_profile,

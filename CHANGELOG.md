@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### AI Infrastructure (Preview)
+- New top-level AI Hub page with `Overview / Models / Sandboxes / MCP / Assistant` tabs.
+- Ollama integration phase 1 in GUI (`ollama_status`, `ollama_list_models`) with runtime status and local model listing.
+- AI bootstrap script `scripts/setup-ai.sh` for prerequisite checks and optional best-effort install flow.
+- OpenSandbox local scaffold under `tools/opensandbox/` with template config and setup notes.
+
+#### Product Direction Docs
+- Added `docs/VISION.md` and `docs/VISION.zh.md` with AI infrastructure positioning, architecture direction, and phased roadmap.
+
+### Changed
+
+- Updated roadmap milestones with explicit in-progress status for AI Infrastructure MVP (`docs/ROADMAP.md`).
+- Updated README/Tutorial/website messaging to reflect shipped AI Hub/Ollama phase 1 progress and next milestones.
+
 ## [1.0.0] - 2026-03-02
 
 ### Added
