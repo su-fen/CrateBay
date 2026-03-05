@@ -142,6 +142,30 @@ bash scripts/setup-dev.sh
 ./scripts/ci-local.sh
 ```
 
+## Tauri MCP Bridge（本地调试）
+
+```bash
+# MCP Bridge 仅在 debug 构建中启用
+cd crates/cratebay-gui
+npm run tauri dev
+
+# 可选：覆盖 MCP Bridge 监听地址/端口（默认 127.0.0.1:9223）
+export CRATEBAY_MCP_BIND=127.0.0.1
+export CRATEBAY_MCP_PORT=9223
+```
+
+为本地客户端安装 MCP Server 配置：
+
+```bash
+# Claude Code
+npx -y install-mcp @hypothesi/tauri-mcp-server --client claude-code --yes --oauth no
+
+# Cursor
+npx -y install-mcp @hypothesi/tauri-mcp-server --client cursor --yes --oauth no
+```
+
+`npm run tauri dev` 启动后，在 MCP 客户端中使用 `127.0.0.1:9223` 发起会话连接即可。
+
 ## 架构
 
 查看 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。

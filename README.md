@@ -142,6 +142,30 @@ bash scripts/setup-dev.sh
 ./scripts/ci-local.sh
 ```
 
+## Tauri MCP Bridge (Local Debug)
+
+```bash
+# MCP Bridge is enabled only in debug builds.
+cd crates/cratebay-gui
+npm run tauri dev
+
+# Optional: override MCP bridge bind address/port (default: 127.0.0.1:9223)
+export CRATEBAY_MCP_BIND=127.0.0.1
+export CRATEBAY_MCP_PORT=9223
+```
+
+Install MCP server integration for local clients:
+
+```bash
+# Claude Code
+npx -y install-mcp @hypothesi/tauri-mcp-server --client claude-code --yes --oauth no
+
+# Cursor
+npx -y install-mcp @hypothesi/tauri-mcp-server --client cursor --yes --oauth no
+```
+
+After `npm run tauri dev` is running, start a session in your MCP client with host `127.0.0.1` and port `9223`.
+
 ## Architecture
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full system design.

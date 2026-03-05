@@ -106,8 +106,12 @@ jobs:
   # Frontend — Node / React lint & build
   # -----------------------------------------------------------
   frontend:
-    name: Frontend Lint, Build & Test
+    name: Frontend Lint, Build & Test (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["22", "24"]
     defaults:
       run:
         working-directory: crates/cratebay-gui
@@ -117,7 +121,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: ${{ matrix.node-version }}
           cache: npm
           cache-dependency-path: crates/cratebay-gui/package-lock.json
 
