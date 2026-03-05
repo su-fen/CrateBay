@@ -40,3 +40,7 @@ assets/node_modules/
 /internal/
 .claude/
 .codex-screenshots/
+
+# Local automation artifacts
+/.playwright-cli/
+/output/
