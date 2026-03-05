@@ -4,6 +4,36 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event"
 import { I } from "../icons"
 import { ErrorBanner } from "../components/ErrorDisplay"
 import { EmptyState } from "../components/EmptyState"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { Input } from "@/components/ui/input"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Separator } from "@/components/ui/separator"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { cn } from "@/lib/utils"
+import { iconStroke, cardActionSecondary, cardActionOutline } from "@/lib/styles"
 import type { ContainerInfo, ContainerGroup, RunContainerResult, ContainerStats, EnvVar, LocalImageInfo } from "../types"
 
 interface ExecEntry {
@@ -26,6 +56,19 @@ interface ContainersProps {
   onFetch: () => void
   onRun: (image: string, name: string, cpus: number | "", mem: number | "", pull: boolean, env?: string[]) => Promise<RunContainerResult | null>
   t: (key: string) => string
+}
+
+
+function Spinner({ className }: { className?: string }) {
+  return (
+    <div
+      className={cn(
+        "size-4 rounded-full border-2 border-border border-t-primary animate-spin",
+        className
+      )}
+      aria-hidden="true"
+    />
+  )
 }
 
 export function Containers({
@@ -351,7 +394,12 @@ export function Containers({
   }, [showLogModal])
 
   if (loading) {
-    return <div className="loading"><div className="spinner" />{t("loadingContainers")}</div>
+    return (
+      <div className="flex items-center justify-center gap-2 py-20 text-muted-foreground">
+        <Spinner />
+        {t("loadingContainers")}
+      </div>
+    )
   }
   if (error) {
     return (
@@ -367,137 +415,290 @@ export function Containers({
   const renderCard = (c: ContainerInfo, opts?: { child?: boolean }) => {
     const isRunning = c.state === "running"
     const name = c.name || c.id
-    const childClass = opts?.child ? " container-child" : ""
     const stats = isRunning ? containerStats[c.id] : undefined
+
+    const disabled = acting === c.id
     return (
-      <div className={`container-card${childClass}${isRunning ? "" : " stopped"}`} key={c.id}>
-        <div className="card-main">
-          <div className={`card-icon${isRunning ? "" : " stopped"}`}>{I.box}</div>
-          <div className="card-body">
-            <div className="card-name">{name}</div>
-            <div className="card-meta">
-              {c.image}
-              {isRunning && c.ports && <><span className="meta-dot"> · </span><span className="card-ports">{c.ports}</span></>}
-              {!isRunning && <><span className="meta-dot"> · </span>{c.id.slice(0, 12)}</>}
-            </div>
-          </div>
-          <div className="card-right">
-            <div className="card-stats">
-              {isRunning && stats ? (
-                <>
-                  <div className="stat-item">
-                    <span className="stat-icon">{I.cpu}</span>
-                    <span className="stat-value">{stats.cpu_percent.toFixed(1)}%</span>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-icon">{I.memory}</span>
-                    <span className="stat-value">{stats.memory_usage_mb.toFixed(0)} MB</span>
-                  </div>
-                </>
-              ) : null}
-            </div>
-            <div className="card-status">
-              <span className={`dot ${isRunning ? "running" : "stopped"}`} />
-              <span>{c.status}</span>
-            </div>
-          </div>
-        </div>
-        <div className="card-actions">
-          <div className="card-actions-group">
-            <button
-              className="action-btn"
-              disabled={acting === c.id}
-              onClick={async (e) => {
-                e.stopPropagation()
-                const target = c.name || c.id
-                const cmd = await invoke<string>("container_login_cmd", { container: target, shell: "/bin/sh" })
-                onOpenTextModal(t("loginCommand"), cmd, cmd)
-              }}
-              title={t("loginCommand")}
-            >
-              {I.key}<span className="action-label">{t("loginCommand")}</span>
-            </button>
-            <button
-              className="action-btn"
-              disabled={acting === c.id}
-              onClick={(e) => { e.stopPropagation(); openLogModal(c) }}
-              title={t("viewLogs")}
-            >
-              {I.fileText}<span className="action-label">{t("logs")}</span>
-            </button>
-            <button
-              className="action-btn"
-              disabled={acting === c.id}
-              onClick={(e) => { e.stopPropagation(); openEnvModal(c) }}
-              title={t("viewEnvVars")}
-            >
-              {I.settings}<span className="action-label">{t("envVars")}</span>
-            </button>
-            {isRunning && (
-              <button
-                className="action-btn"
-                disabled={acting === c.id}
-                onClick={(e) => { e.stopPropagation(); openExecModal(c) }}
-                title={t("execCommand")}
+      <Card
+        key={c.id}
+        data-testid={`container-card-${c.id}`}
+        className={cn("py-0", opts?.child && "ml-6")}
+      >
+        <CardContent className="py-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex min-w-0 items-start gap-3">
+              <div
+                className={cn(
+                  "size-10 shrink-0 rounded-lg flex items-center justify-center",
+                  iconStroke,
+                  "[&_svg]:size-[18px]",
+                  isRunning ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                )}
               >
-                {I.terminal}<span className="action-label">{t("execCommand")}</span>
-              </button>
-            )}
-            <button
-              className="action-btn"
-              disabled={acting === c.id}
-              onClick={(e) => {
-                e.stopPropagation()
-                const target = c.name || c.id
-                const defaultTag = `${(c.image || "image").split(":")[0]}-snapshot:latest`
-                onOpenPackageModal(target, defaultTag)
-              }}
-              title={t("packageImage")}
-            >
-              {I.layers}<span className="action-label">{t("package")}</span>
-            </button>
+                {I.box}
+              </div>
+
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <div className="font-semibold text-foreground truncate">{name}</div>
+                  <Badge
+                    variant="secondary"
+                    className={cn(
+                      "rounded-md px-2 py-0.5 text-[11px] border",
+                      isRunning
+                        ? "border-brand-green/15 bg-brand-green/10 text-brand-green"
+                        : "border-border/60 bg-popover/40 text-muted-foreground"
+                    )}
+                  >
+                    {isRunning ? t("running") : t("stopped")}
+                  </Badge>
+                </div>
+
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <span className="truncate">{c.image}</span>
+                  {isRunning && c.ports ? (
+                    <>
+                      <span className="text-muted-foreground/50">•</span>
+                      <span className="font-mono text-brand-cyan">{c.ports}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-muted-foreground/50">•</span>
+                      <span className="font-mono">{c.id.slice(0, 12)}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-end gap-2">
+              {isRunning && stats && (
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1">
+                    <span className={cn(iconStroke, "[&_svg]:size-3")}>{I.cpu}</span>
+                    <span className="font-mono">{stats.cpu_percent.toFixed(1)}%</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <span className={cn(iconStroke, "[&_svg]:size-3")}>{I.memory}</span>
+                    <span className="font-mono">{stats.memory_usage_mb.toFixed(0)} MB</span>
+                  </span>
+                </div>
+              )}
+
+              <div className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+                <span
+                  className={cn(
+                    "size-1.5 rounded-full",
+                    isRunning
+                      ? "bg-brand-green shadow-[0_0_10px_hsl(var(--brand-green)/0.6)]"
+                      : "bg-destructive"
+                  )}
+                />
+                <span>{c.status}</span>
+              </div>
+            </div>
           </div>
-          <div className="card-actions-sep" />
-          <div className="card-actions-group">
-            {isRunning ? (
-              <button className="action-btn warn" disabled={acting === c.id} onClick={(e) => { e.stopPropagation(); onContainerAction("stop_container", c.id) }} title={t("stop")}>{I.stop}<span className="action-label">{t("stop")}</span></button>
-            ) : (
-              <button className="action-btn success" disabled={acting === c.id} onClick={(e) => { e.stopPropagation(); onContainerAction("start_container", c.id) }} title={t("start")}>{I.play}<span className="action-label">{t("start")}</span></button>
-            )}
-            <button className="action-btn danger" disabled={acting === c.id} onClick={(e) => { e.stopPropagation(); setConfirmRemove(c.id); setContainerToRemoveName(c.name || c.id) }} title={t("delete")}>{I.trash}<span className="action-label">{t("delete")}</span></button>
+
+          <Separator className="my-3" />
+
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="xs"
+                variant="secondary"
+                className={cardActionSecondary}
+                disabled={disabled}
+                title={t("loginCommand")}
+                onClick={async () => {
+                  const target = c.name || c.id
+                  const cmd = await invoke<string>("container_login_cmd", { container: target, shell: "/bin/sh" })
+                  onOpenTextModal(t("loginCommand"), cmd, cmd)
+                }}
+              >
+                <span className={cn(iconStroke, "[&_svg]:size-3")}>{I.key}</span>
+                {t("loginCommand")}
+              </Button>
+
+              <Button
+                type="button"
+                size="xs"
+                variant="secondary"
+                className={cardActionSecondary}
+                disabled={disabled}
+                title={t("viewLogs")}
+                onClick={() => openLogModal(c)}
+              >
+                <span className={cn(iconStroke, "[&_svg]:size-3")}>{I.fileText}</span>
+                {t("logs")}
+              </Button>
+
+              <Button
+                type="button"
+                size="xs"
+                variant="secondary"
+                className={cardActionSecondary}
+                disabled={disabled}
+                title={t("viewEnvVars")}
+                onClick={() => openEnvModal(c)}
+              >
+                <span className={cn(iconStroke, "[&_svg]:size-3")}>{I.settings}</span>
+                {t("envVars")}
+              </Button>
+
+              {isRunning && (
+                <Button
+                  type="button"
+                  size="xs"
+                  variant="secondary"
+                  className={cardActionSecondary}
+                  disabled={disabled}
+                  title={t("execCommand")}
+                  onClick={() => openExecModal(c)}
+                >
+                  <span className={cn(iconStroke, "[&_svg]:size-3")}>{I.terminal}</span>
+                  {t("execCommand")}
+                </Button>
+              )}
+
+              <Button
+                type="button"
+                size="xs"
+                variant="secondary"
+                className={cardActionSecondary}
+                disabled={disabled}
+                title={t("packageImage")}
+                onClick={() => {
+                  const target = c.name || c.id
+                  const defaultTag = `${(c.image || "image").split(":")[0]}-snapshot:latest`
+                  onOpenPackageModal(target, defaultTag)
+                }}
+              >
+                <span className={cn(iconStroke, "[&_svg]:size-3")}>{I.layers}</span>
+                {t("package")}
+              </Button>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {isRunning ? (
+                <Button
+                  type="button"
+                  size="xs"
+                  variant="outline"
+                  className={cardActionOutline}
+                  disabled={disabled}
+                  title={t("stop")}
+                  onClick={() => onContainerAction("stop_container", c.id)}
+                >
+                  <span className={cn(iconStroke, "[&_svg]:size-3")}>{I.stop}</span>
+                  {t("stop")}
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  size="xs"
+                  variant="outline"
+                  className={cardActionOutline}
+                  disabled={disabled}
+                  title={t("start")}
+                  onClick={() => onContainerAction("start_container", c.id)}
+                >
+                  <span className={cn(iconStroke, "[&_svg]:size-3")}>{I.play}</span>
+                  {t("start")}
+                </Button>
+              )}
+
+              <Button
+                type="button"
+                size="xs"
+                variant="destructive"
+                disabled={disabled}
+                title={t("delete")}
+                onClick={() => {
+                  setConfirmRemove(c.id)
+                  setContainerToRemoveName(c.name || c.id)
+                }}
+              >
+                <span className={cn(iconStroke, "[&_svg]:size-3")}>{I.trash}</span>
+                {t("delete")}
+              </Button>
+            </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     )
   }
 
   return (
-    <div className="page">
-      <div className="toolbar">
-        <div style={{ flex: 1 }} />
-        <button className="btn primary" onClick={openRunModal}>
-          <span className="icon">{I.plus}</span>{t("runNewContainer")}
-        </button>
+    <div className="space-y-4">
+      <div className="flex items-center justify-end gap-2">
+        <Button type="button" variant="outline" size="sm" onClick={onFetch}>
+          <span className={cn(iconStroke, "[&_svg]:size-4")}>{I.refresh}</span>
+          {t("refresh")}
+        </Button>
+        <Button type="button" onClick={openRunModal} data-testid="containers-run">
+          <span className={cn(iconStroke, "[&_svg]:size-4")}>{I.plus}</span>
+          {t("runNewContainer")}
+        </Button>
       </div>
 
-      <div className="page-scroll">
-      {/* Inline creating card */}
-      {creating && (
-        <div className={`container-card creating-card${createFailed ? " creating-error" : ""}`}>
-          <div className="card-main">
-            <div className="card-icon creating-icon">
-              {!createFailed ? <div className="spinner spinner-sm" /> : I.alertCircle}
-            </div>
-            <div className="card-body">
-              <div className="card-name">{createImageName}</div>
-              <div className="card-meta">{createStatus}</div>
-            </div>
-            {createFailed && (
-              <button className="creating-dismiss" onClick={() => { setCreating(false); setCreateFailed("") }}>&times;</button>
-            )}
-          </div>
-        </div>
-      )}
+      <div className="space-y-3">
+        {/* Inline creating card */}
+        {creating && (
+          <Card className={cn("py-0", createFailed && "border-destructive/30")}>
+            <CardContent className="py-3 flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div
+                  className={cn(
+                    "mt-0.5 size-9 rounded-lg flex items-center justify-center",
+                    createFailed ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"
+                  )}
+                >
+                  {createFailed ? (
+                    <span className={cn(iconStroke, "[&_svg]:size-4")}>{I.alertCircle}</span>
+                  ) : (
+                    <Spinner className="size-4 border-primary/30 border-t-primary" />
+                  )}
+                </div>
+
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-foreground truncate">
+                    {createImageName}
+                  </div>
+                  <div
+                    className={cn(
+                      "mt-0.5 text-xs whitespace-pre-wrap",
+                      createFailed ? "text-destructive/90" : "text-muted-foreground"
+                    )}
+                  >
+                    {createStatus}
+                  </div>
+                  {createFailed && (
+                    <div className="mt-2 text-xs text-muted-foreground whitespace-pre-wrap">
+                      {createFailed}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {createFailed && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  className="hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => {
+                    setCreating(false)
+                    setCreateFailed("")
+                  }}
+                  aria-label={t("close")}
+                >
+                  ×
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        )}
       {groups.length === 0 && !creating ? (
         <EmptyState
           icon={I.box}
@@ -505,466 +706,573 @@ export function Containers({
           description={t("runContainerTip")}
           code="docker run -it -p 80:80 docker/getting-started"
         />
-      ) : (
-        groups.map(g => {
-          if (g.containers.length <= 1) {
-            return renderCard(g.containers[0])
-          }
+        ) : (
+          groups.map(g => {
+            if (g.containers.length <= 1) {
+              return renderCard(g.containers[0])
+            }
 
-          const expanded = !!expandedGroups[g.key]
-          return (
-            <div className="container-group" key={g.key}>
-              <div
-                className={`container-card container-group-header${expanded ? " expanded" : ""}`}
-                role="button"
-                tabIndex={0}
-                onClick={() => onToggleGroup(g.key)}
-                onKeyDown={e => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault()
-                    onToggleGroup(g.key)
-                  }
-                }}
-                title={expanded ? "Collapse" : "Expand"}
-              >
-                <div className="card-main">
-                  <div className="card-icon">{I.layers}</div>
-                  <div className="card-body">
-                    <div className="card-name">{g.key}</div>
-                    <div className="card-meta">
-                      {g.containers.length} {t("containers")} · {g.runningCount} {t("running")}
-                    </div>
-                  </div>
-                  <div className="card-right">
-                    <div className="card-stats">
-                      <div className="stat-item">
-                        <span className="stat-icon">{I.box}</span>
-                        <span className="stat-value">{g.containers.length}</span>
-                      </div>
-                    </div>
-                    <div className="card-status">
-                      <span className={`dot ${g.runningCount > 0 ? "running" : "stopped"}`} />
-                      <span>{g.runningCount > 0 ? `${g.runningCount} ${t("running")}` : t("stopped")}</span>
-                    </div>
-                  </div>
-                  <div className="group-chevron" aria-hidden="true">
-                    {expanded ? I.chevronDown : I.chevronRight}
-                  </div>
-                </div>
-              </div>
-              {expanded && (
-                <div className="container-group-children">
+            const expanded = !!expandedGroups[g.key]
+            return (
+              <Collapsible key={g.key} open={expanded} onOpenChange={() => onToggleGroup(g.key)}>
+                <Card className="py-0 gap-0">
+                  <CardContent className="px-0">
+                    <CollapsibleTrigger asChild>
+                      <button
+                        type="button"
+                        title={expanded ? "Collapse" : "Expand"}
+                        className="w-full px-4 py-3 flex items-center justify-between gap-3 text-left hover:bg-accent/30 transition-colors rounded-xl"
+                      >
+                        <div className="flex items-start gap-3 min-w-0">
+                          <div className="mt-0.5 size-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                            <span className={cn(iconStroke, "[&_svg]:size-4")}>{I.layers}</span>
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold text-foreground truncate">
+                              {g.key}
+                            </div>
+                            <div className="mt-0.5 text-xs text-muted-foreground">
+                              {g.containers.length} {t("containers")}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <Badge
+                            variant="secondary"
+                            className={cn(
+                              "rounded-full gap-2 px-3 py-1 text-xs font-medium border border-border/60 bg-popover/40",
+                              g.runningCount > 0 ? "text-brand-green" : "text-muted-foreground"
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                "size-1.5 rounded-full",
+                                g.runningCount > 0 ? "bg-brand-green" : "bg-muted-foreground/70"
+                              )}
+                            />
+                            {g.runningCount} {t("running")}
+                          </Badge>
+
+                          {g.stoppedCount > 0 && (
+                            <Badge
+                              variant="secondary"
+                              className="rounded-full gap-2 px-3 py-1 text-xs font-medium border border-border/60 bg-popover/40 text-muted-foreground"
+                            >
+                              <span className="size-1.5 rounded-full bg-muted-foreground/70" />
+                              {g.stoppedCount} {t("stopped")}
+                            </Badge>
+                          )}
+
+                          <span className={cn(iconStroke, "text-muted-foreground [&_svg]:size-4")}>
+                            {expanded ? I.chevronDown : I.chevronRight}
+                          </span>
+                        </div>
+                      </button>
+                    </CollapsibleTrigger>
+                  </CardContent>
+                </Card>
+
+                <CollapsibleContent className="mt-2 space-y-3">
                   {g.containers.map(c => renderCard(c, { child: true }))}
-                </div>
-              )}
-            </div>
-          )
-        })
-      )}
+                </CollapsibleContent>
+              </Collapsible>
+            )
+          })
+        )}
       </div>
 
       {/* Run Container Modal */}
-      {showRunModal && (
-        <div className="modal-backdrop run-modal-backdrop" onClick={() => setShowRunModal(false)}>
-          <div className="modal run-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-head">
-              <div className="modal-title">
-                <span className="modal-title-icon">{I.play}</span>
-                {t("runContainer")}
-              </div>
-              <div className="modal-actions">
-                <button className="icon-btn" onClick={() => setShowRunModal(false)} title={t("close")}>&times;</button>
-              </div>
-            </div>
-            <div className="modal-body run-modal-body">
-              <div className="form">
-                {/* Image & Name Section */}
-                <div className="run-section">
-                  <div className="run-section-title">
-                    <span className="run-section-icon">{I.box}</span>
-                    {t("image")}
-                  </div>
-                  <div className="run-field">
-                    <label>{t("image")}<span className="run-required">*</span></label>
-                    <div className="image-autocomplete">
-                      <input
-                        ref={imageInputRef}
-                        className="input"
-                        value={runImage}
-                        onChange={e => { setRunImage(e.target.value); setShowImageDropdown(true) }}
-                        onFocus={() => setShowImageDropdown(true)}
-                        placeholder="nginx:latest"
-                        autoFocus
-                      />
-                      {showImageDropdown && filteredImages.length > 0 && (
-                        <div className="image-dropdown" ref={imageDropdownRef}>
-                          {filteredImages.slice(0, 8).map(img => (
-                            <div
+      <Dialog open={showRunModal} onOpenChange={setShowRunModal}>
+        <DialogContent className="sm:max-w-[760px]" data-testid="containers-dialog-run">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className={cn(iconStroke, "text-primary [&_svg]:size-4")}>{I.play}</span>
+              {t("runContainer")}
+            </DialogTitle>
+            <DialogDescription>{t("runContainerTip")}</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-1">
+                <label className="text-xs font-semibold text-muted-foreground">
+                  {t("image")} <span className="text-destructive">*</span>
+                </label>
+                <div className="relative mt-1">
+                  <Input
+                    ref={imageInputRef}
+                    value={runImage}
+                    onChange={(e) => {
+                      setRunImage(e.target.value)
+                      setShowImageDropdown(true)
+                    }}
+                    onFocus={() => setShowImageDropdown(true)}
+                    placeholder="nginx:latest"
+                    autoFocus
+                  />
+
+                  {showImageDropdown && filteredImages.length > 0 && (
+                    <div
+                      ref={imageDropdownRef}
+                      className="absolute z-50 mt-1 w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md"
+                    >
+                      <ScrollArea className="max-h-56">
+                        <div className="p-1">
+                          {filteredImages.slice(0, 8).map((img) => (
+                            <button
                               key={img}
-                              className="image-dropdown-item"
-                              onClick={() => { setRunImage(img); setShowImageDropdown(false) }}
+                              type="button"
+                              className="w-full text-left rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
+                              onClick={() => {
+                                setRunImage(img)
+                                setShowImageDropdown(false)
+                              }}
                             >
                               {img}
-                            </div>
+                            </button>
                           ))}
                         </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="run-field">
-                    <label>{t("nameOptional")}</label>
-                    <input className="input" value={runName} onChange={e => setRunName(e.target.value)} placeholder="my-container" />
-                  </div>
-                </div>
-
-                {/* Resources Section */}
-                <div className="run-section">
-                  <div className="run-section-title">
-                    <span className="run-section-icon">{I.cpu}</span>
-                    {t("cpus")} & {t("memoryMb")}
-                  </div>
-                  <div className="run-resources-grid">
-                    <div className="run-field">
-                      <label>{t("cpus")}</label>
-                      <input className="input" type="number" min={1} value={runCpus} onChange={e => setRunCpus(e.target.value === "" ? "" : Number(e.target.value))} placeholder="—" />
-                    </div>
-                    <div className="run-field">
-                      <label>{t("memoryMb")}</label>
-                      <input className="input" type="number" min={64} value={runMem} onChange={e => setRunMem(e.target.value === "" ? "" : Number(e.target.value))} placeholder="—" />
-                    </div>
-                  </div>
-                  <div className="run-toggle-row">
-                    <input type="checkbox" checked={runPull} onChange={e => setRunPull(e.target.checked)} id="run-pull-toggle" />
-                    <label htmlFor="run-pull-toggle">{t("pullBeforeRun")}</label>
-                  </div>
-                </div>
-
-                {/* Environment Variables Section */}
-                <div className="run-section">
-                  <div className="run-section-title">
-                    <span className="run-section-icon">{I.settings}</span>
-                    {t("envVars")}
-                  </div>
-                  <div className="run-env-hint">{t("envVarsHint")}</div>
-                  {runEnvVars.length > 0 && (
-                    <div className="run-env-list">
-                      {runEnvVars.map((env, i) => (
-                        <div className="run-env-row" key={i}>
-                          <input
-                            className="input"
-                            value={env.key}
-                            onChange={e => {
-                              const updated = [...runEnvVars]
-                              updated[i] = { ...updated[i], key: e.target.value }
-                              setRunEnvVars(updated)
-                            }}
-                            placeholder={t("envKey")}
-                          />
-                          <span className="run-env-eq">=</span>
-                          <input
-                            className="input"
-                            value={env.value}
-                            onChange={e => {
-                              const updated = [...runEnvVars]
-                              updated[i] = { ...updated[i], value: e.target.value }
-                              setRunEnvVars(updated)
-                            }}
-                            placeholder={t("envValue")}
-                          />
-                          <button
-                            className="run-env-delete"
-                            onClick={() => setRunEnvVars(runEnvVars.filter((_, j) => j !== i))}
-                            title={t("removeEnvVar")}
-                          >
-                            {I.trash}
-                          </button>
-                        </div>
-                      ))}
+                      </ScrollArea>
                     </div>
                   )}
-                  <button
-                    className="btn xs run-env-add"
-                    onClick={() => setRunEnvVars([...runEnvVars, { key: "", value: "" }])}
-                  >
-                    <span className="icon">{I.plus}</span>{t("addEnvVar")}
-                  </button>
                 </div>
               </div>
+
+              <div className="sm:col-span-1">
+                <label className="text-xs font-semibold text-muted-foreground">
+                  {t("nameOptional")}
+                </label>
+                <Input
+                  value={runName}
+                  onChange={(e) => setRunName(e.target.value)}
+                  placeholder="my-container"
+                  className="mt-1"
+                />
+              </div>
             </div>
-            <div className="modal-footer">
-              <button className="btn" onClick={() => setShowRunModal(false)}>{t("close")}</button>
-              <button className="btn primary" disabled={!runImage.trim()} onClick={handleRun}>
-                <span className="icon">{I.play}</span>{t("create")}
-              </button>
+
+            <Separator />
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground">{t("cpus")}</label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={runCpus}
+                  onChange={(e) =>
+                    setRunCpus(e.target.value === "" ? "" : Number(e.target.value))
+                  }
+                  placeholder="—"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground">{t("memoryMb")}</label>
+                <Input
+                  type="number"
+                  min={64}
+                  value={runMem}
+                  onChange={(e) =>
+                    setRunMem(e.target.value === "" ? "" : Number(e.target.value))
+                  }
+                  placeholder="—"
+                  className="mt-1"
+                />
+              </div>
+              <div className="flex items-end">
+                <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Checkbox checked={runPull} onCheckedChange={(v) => setRunPull(v === true)} />
+                  <span>{t("pullBeforeRun")}</span>
+                </label>
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-sm font-semibold flex items-center gap-2">
+                    <span className={cn(iconStroke, "[&_svg]:size-4")}>{I.settings}</span>
+                    {t("envVars")}
+                  </div>
+                  <div className="text-xs text-muted-foreground">{t("envVarsHint")}</div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="xs"
+                  onClick={() => setRunEnvVars([...runEnvVars, { key: "", value: "" }])}
+                >
+                  <span className={cn(iconStroke, "[&_svg]:size-3")}>{I.plus}</span>
+                  {t("addEnvVar")}
+                </Button>
+              </div>
+
+              {runEnvVars.length > 0 ? (
+                <div className="space-y-2">
+                  {runEnvVars.map((env, i) => (
+                    <div
+                      key={i}
+                      className="grid grid-cols-[1fr_auto_1fr_auto] items-center gap-2"
+                    >
+                      <Input
+                        value={env.key}
+                        onChange={(e) => {
+                          const updated = [...runEnvVars]
+                          updated[i] = { ...updated[i], key: e.target.value }
+                          setRunEnvVars(updated)
+                        }}
+                        placeholder={t("envKey")}
+                      />
+                      <span className="text-xs text-muted-foreground">=</span>
+                      <Input
+                        value={env.value}
+                        onChange={(e) => {
+                          const updated = [...runEnvVars]
+                          updated[i] = { ...updated[i], value: e.target.value }
+                          setRunEnvVars(updated)
+                        }}
+                        placeholder={t("envValue")}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-xs"
+                        className="hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => setRunEnvVars(runEnvVars.filter((_, j) => j !== i))}
+                        title={t("removeEnvVar")}
+                        aria-label={t("removeEnvVar")}
+                      >
+                        <span className={cn(iconStroke, "[&_svg]:size-3")}>{I.trash}</span>
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
+                  {t("noEnvVars")}
+                </div>
+              )}
             </div>
           </div>
-        </div>
-      )}
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setShowRunModal(false)}>
+              {t("close")}
+            </Button>
+            <Button type="button" disabled={!runImage.trim()} onClick={handleRun}>
+              <span className={cn(iconStroke, "[&_svg]:size-4")}>{I.play}</span>
+              {t("create")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Env Viewer Modal */}
-      {showEnvModal && (
-        <div className="modal-backdrop" onClick={() => setShowEnvModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 640 }}>
-            <div className="modal-head">
-              <div className="modal-title">{t("envVars")} — {envContainerName}</div>
-              <div className="modal-actions">
-                <button className="icon-btn" onClick={() => setShowEnvModal(false)} title={t("close")}>&times;</button>
-              </div>
+      <Dialog open={showEnvModal} onOpenChange={setShowEnvModal}>
+        <DialogContent className="sm:max-w-[720px]" data-testid="containers-dialog-env">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className={cn(iconStroke, "text-primary [&_svg]:size-4")}>{I.settings}</span>
+              {t("envVars")} — {envContainerName}
+            </DialogTitle>
+          </DialogHeader>
+
+          {envError && (
+            <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive whitespace-pre-wrap">
+              {envError}
             </div>
-            <div className="modal-body" style={{ padding: "10px 14px" }}>
-              {envError && <div className="hint" style={{ color: "var(--red)", marginBottom: 8 }}>{envError}</div>}
-              {envLoading ? (
-                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: 20, justifyContent: "center", color: "var(--text2)" }}>
-                  <div className="spinner" />{t("loading")}
-                </div>
-              ) : envVars.length === 0 ? (
-                <div style={{ padding: 20, textAlign: "center", color: "var(--text3)" }}>{t("noEnvVars")}</div>
-              ) : (
-                <div style={{ overflowX: "auto" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-                    <thead>
-                      <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                        <th style={{ textAlign: "left", padding: "6px 10px", color: "var(--text2)", fontWeight: 700 }}>{t("envKey")}</th>
-                        <th style={{ textAlign: "left", padding: "6px 10px", color: "var(--text2)", fontWeight: 700 }}>{t("envValue")}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {envVars.map((ev, i) => (
-                        <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
-                          <td style={{ padding: "5px 10px", fontFamily: "'Geist Mono', ui-monospace, monospace", fontWeight: 600, wordBreak: "break-all" }}>{ev.key}</td>
-                          <td style={{ padding: "5px 10px", fontFamily: "'Geist Mono', ui-monospace, monospace", wordBreak: "break-all" }}>{ev.value}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+          )}
+
+          {envLoading ? (
+            <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
+              <Spinner />
+              {t("loading")}
             </div>
-            <div className="modal-footer">
-              <button className="btn" onClick={() => setShowEnvModal(false)}>{t("close")}</button>
+          ) : envVars.length === 0 ? (
+            <div className="py-16 text-center text-sm text-muted-foreground">
+              {t("noEnvVars")}
             </div>
-          </div>
-        </div>
-      )}
+          ) : (
+            <div className="rounded-md border">
+              <ScrollArea className="max-h-[360px]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[220px]">{t("envKey")}</TableHead>
+                      <TableHead>{t("envValue")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {envVars.map((ev, i) => (
+                      <TableRow key={i}>
+                        <TableCell className="font-mono text-xs font-semibold break-all">
+                          {ev.key}
+                        </TableCell>
+                        <TableCell className="font-mono text-xs break-all">
+                          {ev.value}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setShowEnvModal(false)}>
+              {t("close")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Log Viewer Modal */}
-      {showLogModal && (
-        <div className="modal-backdrop" onClick={() => setShowLogModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 720 }}>
-            <div className="modal-head">
-              <div className="modal-title">
-                {t("logs")} — {logContainerName}
-                {logFollowing && (
-                  <span style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 4,
-                    marginLeft: 10,
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: "var(--green, #22c55e)",
-                    background: "rgba(34, 197, 94, 0.1)",
-                    padding: "2px 8px",
-                    borderRadius: 10,
-                  }}>
-                    <span style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: "50%",
-                      background: "var(--green, #22c55e)",
-                      animation: "pulse 1.5s ease-in-out infinite",
-                    }} />
-                    {t("live")}
-                  </span>
-                )}
-              </div>
-              <div className="modal-actions">
-                <button className="icon-btn" onClick={() => setShowLogModal(false)} title={t("close")}>&times;</button>
-              </div>
+      <Dialog open={showLogModal} onOpenChange={setShowLogModal}>
+        <DialogContent className="sm:max-w-[820px]" data-testid="containers-dialog-logs">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <span className={cn(iconStroke, "text-primary [&_svg]:size-4")}>{I.fileText}</span>
+            {t("logs")} — {logContainerName}
+            {logFollowing && (
+              <Badge
+                variant="secondary"
+                className="ml-2 rounded-full border border-brand-green/20 bg-brand-green/10 text-brand-green"
+              >
+                {t("live")}
+              </Badge>
+            )}
+          </DialogTitle>
+          <DialogDescription className="sr-only">{t("viewLogs")}</DialogDescription>
+        </DialogHeader>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-muted-foreground">{t("tailLines")}</span>
+              <Select
+                value={logTail}
+                onValueChange={(value) => {
+                  setLogTail(value)
+                  fetchLogs(logContainerId, value, logTimestamps)
+                }}
+                disabled={logFollowing}
+              >
+                <SelectTrigger size="sm" className="w-[110px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="100">100</SelectItem>
+                  <SelectItem value="200">200</SelectItem>
+                  <SelectItem value="500">500</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <div className="modal-body" style={{ padding: "10px 14px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
-                <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text2)" }}>{t("tailLines")}</label>
-                <select
-                  className="select"
-                  value={logTail}
-                  disabled={logFollowing}
-                  onChange={e => {
-                    setLogTail(e.target.value)
-                    fetchLogs(logContainerId, e.target.value, logTimestamps)
-                  }}
-                >
-                  <option value="100">100</option>
-                  <option value="200">200</option>
-                  <option value="500">500</option>
-                  <option value="all">All</option>
-                </select>
-                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text2)", cursor: "pointer" }}>
-                  <input
-                    type="checkbox"
-                    checked={logTimestamps}
-                    disabled={logFollowing}
-                    onChange={e => {
-                      setLogTimestamps(e.target.checked)
-                      fetchLogs(logContainerId, logTail, e.target.checked)
-                    }}
-                    style={{ width: 14, height: 14 }}
-                  />
-                  {t("showTimestamps")}
-                </label>
-                <div style={{ flex: 1 }} />
-                <button
-                  className={`btn sm${logFollowing ? " primary" : ""}`}
-                  onClick={() => {
-                    if (logFollowing) {
-                      stopLogStream()
-                    } else {
-                      startLogStream(logContainerId, logTimestamps)
-                    }
-                  }}
-                >
-                  {logFollowing ? t("stopFollowing") : t("follow")}
-                </button>
-                <button
-                  className="btn sm"
-                  disabled={logLoading || logFollowing}
-                  onClick={() => fetchLogs(logContainerId, logTail, logTimestamps)}
-                >
-                  <span className="icon">{I.refresh}</span>
-                  {t("refreshLogs")}
-                </button>
-              </div>
-              {logFollowing && (
-                <div style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  padding: "4px 8px",
-                  marginBottom: 8,
-                  fontSize: 11,
-                  color: "var(--text2)",
-                  background: "var(--bg2, rgba(0,0,0,0.05))",
-                  borderRadius: 4,
-                }}>
-                  <div className="spinner" style={{ width: 12, height: 12 }} />
-                  {t("streamingLogs")}
-                </div>
-              )}
-              {logStreamEnded && !logFollowing && (
-                <div style={{
-                  padding: "4px 8px",
-                  marginBottom: 8,
-                  fontSize: 11,
-                  color: "var(--text3)",
-                  background: "var(--bg2, rgba(0,0,0,0.05))",
-                  borderRadius: 4,
-                }}>
-                  {t("logStreamEnded")}
-                </div>
-              )}
-              {logError && <div className="hint" style={{ color: "var(--red)", marginBottom: 8 }}>{logError}</div>}
-              <div className="log-viewer">
-                {logLoading && !logContent ? (
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: 20, justifyContent: "center", color: "var(--text2)" }}>
-                    <div className="spinner" />{t("loading")}
-                  </div>
-                ) : logContent ? (
-                  <>
-                    <pre className="log-content">{logContent}</pre>
-                    <div ref={logEndRef} />
-                  </>
-                ) : (
-                  <div style={{ padding: 20, textAlign: "center", color: "var(--text3)" }}>{t("noLogs")}</div>
-                )}
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn" onClick={() => setShowLogModal(false)}>{t("close")}</button>
-            </div>
+
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Checkbox
+                checked={logTimestamps}
+                disabled={logFollowing}
+                onCheckedChange={(v) => {
+                  const next = v === true
+                  setLogTimestamps(next)
+                  fetchLogs(logContainerId, logTail, next)
+                }}
+              />
+              <span>{t("showTimestamps")}</span>
+            </label>
+
+            <div className="flex-1" />
+
+            <Button
+              type="button"
+              size="sm"
+              variant={logFollowing ? "default" : "outline"}
+              onClick={() => {
+                if (logFollowing) {
+                  stopLogStream()
+                } else {
+                  startLogStream(logContainerId, logTimestamps)
+                }
+              }}
+            >
+              {logFollowing ? t("stopFollowing") : t("follow")}
+            </Button>
+
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={logLoading || logFollowing}
+              onClick={() => fetchLogs(logContainerId, logTail, logTimestamps)}
+            >
+              <span className={cn(iconStroke, "[&_svg]:size-4")}>{I.refresh}</span>
+              {t("refreshLogs")}
+            </Button>
           </div>
-        </div>
-      )}
+
+          {logFollowing && (
+            <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+              <Spinner className="size-3" />
+              {t("streamingLogs")}
+            </div>
+          )}
+
+          {logStreamEnded && !logFollowing && (
+            <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+              {t("logStreamEnded")}
+            </div>
+          )}
+
+          {logError && (
+            <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive whitespace-pre-wrap">
+              {logError}
+            </div>
+          )}
+
+          <div className="rounded-md border bg-muted/20">
+            <ScrollArea className="h-[420px]">
+              {logLoading && !logContent ? (
+                <div className="flex items-center justify-center gap-2 py-20 text-muted-foreground">
+                  <Spinner />
+                  {t("loading")}
+                </div>
+              ) : logContent ? (
+                <div className="p-3">
+                  <pre className="text-xs font-mono whitespace-pre break-words">{logContent}</pre>
+                  <div ref={logEndRef} />
+                </div>
+              ) : (
+                <div className="py-20 text-center text-sm text-muted-foreground">{t("noLogs")}</div>
+              )}
+            </ScrollArea>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setShowLogModal(false)}>
+              {t("close")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Exec Terminal Modal */}
-      {execContainer && (
-        <div className="modal-backdrop" onClick={() => setExecContainer(null)}>
-          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 640 }}>
-            <div className="modal-head">
-              <div className="modal-title">{t("terminal")} — {execContainer.name || execContainer.id}</div>
-              <div className="modal-actions">
-                <button className="btn xs" onClick={() => { setExecHistory([]); }} title={t("clear")}>{t("clear")}</button>
-                <button className="icon-btn" onClick={() => setExecContainer(null)} title={t("close")}>&times;</button>
-              </div>
-            </div>
-            <div className="exec-modal-body">
-              <div className="exec-toolbar">
-                <input
-                  className="input"
-                  value={execCmd}
-                  onChange={e => setExecCmd(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter") handleExec() }}
-                  placeholder={t("commandPlaceholder")}
-                  disabled={execRunning}
-                  autoFocus
-                />
-                <button className="btn primary sm" disabled={execRunning || !execCmd.trim()} onClick={handleExec}>
-                  {execRunning ? t("working") : t("runCommand")}
-                </button>
-              </div>
-              <div className="exec-output" ref={execOutputRef}>
-                {execHistory.length === 0 && (
-                  <span style={{ color: "var(--text3)" }}>{t("commandPlaceholder")}</span>
-                )}
-                {execHistory.map((entry, i) => (
-                  <div className="exec-entry" key={i}>
-                    <div><span className="exec-prompt">$ </span>{entry.command}</div>
-                    {entry.isError ? (
-                      <div className="exec-error-text">{entry.output}</div>
-                    ) : (
-                      <div className="exec-result">{entry.output}</div>
-                    )}
-                  </div>
-                ))}
-                {execRunning && <div className="exec-prompt" style={{ opacity: 0.5 }}>...</div>}
-              </div>
-              <div className="exec-copy-bar">
-                <code>{execInteractiveCmd}</code>
-                <button
-                  className="btn xs"
-                  onClick={() => navigator.clipboard.writeText(execInteractiveCmd)}
-                  title={t("copyExecCmd")}
-                >
-                  {I.copy} {t("copy")}
-                </button>
-              </div>
+      <Dialog open={!!execContainer} onOpenChange={(open) => !open && setExecContainer(null)}>
+        <DialogContent className="sm:max-w-[860px]" data-testid="containers-dialog-exec">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className={cn(iconStroke, "text-primary [&_svg]:size-4")}>{I.terminal}</span>
+              {t("terminal")} — {execContainer?.name || execContainer?.id}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
+              value={execCmd}
+              onChange={(e) => setExecCmd(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleExec()
+              }}
+              placeholder={t("commandPlaceholder")}
+              disabled={execRunning}
+              autoFocus
+              className="min-w-[240px] flex-1"
+            />
+            <Button type="button" disabled={execRunning || !execCmd.trim()} onClick={handleExec}>
+              {execRunning ? t("working") : t("runCommand")}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setExecHistory([])}
+              disabled={execRunning}
+              title={t("clear")}
+            >
+              {t("clear")}
+            </Button>
+          </div>
+
+          <div className="rounded-md border bg-muted/20">
+            <div ref={execOutputRef} className="h-[360px] overflow-auto p-3">
+              {execHistory.length === 0 ? (
+                <div className="text-sm text-muted-foreground">{t("commandPlaceholder")}</div>
+              ) : (
+                <div className="space-y-4">
+                  {execHistory.map((entry, i) => (
+                    <div key={i} className="space-y-2">
+                      <div className="text-xs font-mono text-muted-foreground">
+                        <span className="text-foreground">$</span> {entry.command}
+                      </div>
+                      <pre
+                        className={cn(
+                          "text-xs font-mono whitespace-pre-wrap break-words",
+                          entry.isError ? "text-destructive" : "text-foreground"
+                        )}
+                      >
+                        {entry.output}
+                      </pre>
+                    </div>
+                  ))}
+                  {execRunning && (
+                    <div className="text-xs font-mono text-muted-foreground">...</div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
-        </div>
-      )}
+
+          <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/30 px-3 py-2">
+            <code className="text-xs font-mono text-muted-foreground break-all">
+              {execInteractiveCmd}
+            </code>
+            <Button
+              type="button"
+              variant="outline"
+              size="xs"
+              onClick={() => navigator.clipboard.writeText(execInteractiveCmd)}
+              title={t("copyExecCmd")}
+            >
+              <span className={cn(iconStroke, "[&_svg]:size-3")}>{I.copy}</span>
+              {t("copy")}
+            </Button>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setExecContainer(null)}>
+              {t("close")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Confirm Remove Container Modal */}
-      {confirmRemove && (
-        <div className="modal-backdrop" onClick={() => setConfirmRemove("")}>
-          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
-            <div className="modal-head">
-              <div className="modal-title">{t("removeContainer")}</div>
-              <div className="modal-actions">
-                <button className="icon-btn" onClick={() => setConfirmRemove("")} title={t("close")}>&times;</button>
-              </div>
-            </div>
-            <div className="modal-body">
-              <p style={{ margin: 0 }}>{t("confirmRemoveContainer")}</p>
-              <p style={{ margin: "8px 0 0", fontWeight: 600, color: "var(--text)" }}>{containerToRemoveName}</p>
-            </div>
-            <div className="modal-footer">
-              <button className="btn" onClick={() => setConfirmRemove("")}>{t("close")}</button>
-              <button className="btn primary" onClick={() => { onContainerAction("remove_container", confirmRemove); setConfirmRemove("") }} style={{ marginLeft: 8, background: "var(--red)", borderColor: "var(--red)" }}>
-                {t("remove")}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AlertDialog open={!!confirmRemove} onOpenChange={(open) => !open && setConfirmRemove("")}>
+        <AlertDialogContent size="sm" data-testid="containers-dialog-remove">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("removeContainer")}</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <span className="block">{t("confirmRemoveContainer")}</span>
+              <span className="block font-semibold text-foreground break-all">{containerToRemoveName}</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("close")}</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                onContainerAction("remove_container", confirmRemove)
+                setConfirmRemove("")
+              }}
+            >
+              {t("remove")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

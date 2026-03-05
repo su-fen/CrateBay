@@ -1,6 +1,18 @@
 import { invoke } from "@tauri-apps/api/core"
 import { I } from "../icons"
 import type { ModalKind } from "../types"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { cn } from "@/lib/utils"
+import { iconStroke } from "@/lib/styles"
 
 interface AppModalProps {
   modalKind: ModalKind
@@ -26,7 +38,8 @@ export function AppModal({
   packageLoading, setPackageLoading,
   onClose, onCopy, onOpenTextModal, onError, onToast, t,
 }: AppModalProps) {
-  if (!modalTitle && !modalBody) return null
+  const open = Boolean(modalTitle || modalBody)
+  if (!open) return null
 
   const handlePackage = async () => {
     if (!packageContainer || !packageTag.trim()) return
@@ -45,52 +58,81 @@ export function AppModal({
     }
   }
 
+  const copyValue = modalKind === "package" ? packageTag : modalCopyText
+
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
-        <div className="modal-head">
-          <div className="modal-title">{modalTitle}</div>
-          <div className="modal-actions">
-            <button
-              className="icon-btn"
-              onClick={() => onCopy(modalKind === "package" ? packageTag : modalCopyText)}
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) onClose()
+      }}
+    >
+      <DialogContent
+        className={cn(modalKind === "package" ? "sm:max-w-2xl" : "sm:max-w-4xl")}
+        data-testid={modalKind === "package" ? "app-modal-package" : "app-modal-text"}
+      >
+        <DialogHeader className="sm:text-left">
+          <div className="flex items-start justify-between gap-3">
+            <DialogTitle className="text-base">{modalTitle}</DialogTitle>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-xs"
+              onClick={() => onCopy(copyValue)}
               title={t("copy")}
+              disabled={!copyValue}
+              className={cn(iconStroke, "[&_svg]:size-3")}
             >
               {I.copy}
-            </button>
-            <button className="icon-btn" onClick={onClose} title={t("close")}>×</button>
+            </Button>
           </div>
-        </div>
+        </DialogHeader>
+
         {modalKind === "package" ? (
-          <div className="modal-body">
-            <div className="hint">{modalBody}</div>
-            <div className="form" style={{ marginTop: 10 }}>
-              <div className="row">
-                <label>{t("newImageTag")}</label>
-                <input
-                  className="input"
-                  value={packageTag}
-                  onChange={e => setPackageTag(e.target.value)}
-                  placeholder="myimage:latest"
-                />
-              </div>
+          <div className="space-y-4">
+            <div className="text-sm text-muted-foreground whitespace-pre-wrap">{modalBody}</div>
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-muted-foreground">{t("newImageTag")}</div>
+              <Input
+                value={packageTag}
+                onChange={(e) => setPackageTag(e.target.value)}
+                placeholder="myimage:latest"
+              />
             </div>
           </div>
         ) : (
-          <pre className="modal-pre">{modalBody}</pre>
+          <ScrollArea className="max-h-[560px] rounded-lg border bg-muted/30">
+            <pre className="p-4 text-xs font-mono text-foreground whitespace-pre-wrap break-words">
+              {modalBody}
+            </pre>
+          </ScrollArea>
         )}
-        {modalKind === "package" && (
-          <div className="modal-footer">
-            <button
-              className="btn primary"
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose}>
+            {t("close")}
+          </Button>
+          {modalKind === "package" && (
+            <Button
+              type="button"
               disabled={packageLoading || !packageContainer || !packageTag.trim()}
               onClick={handlePackage}
             >
-              {packageLoading ? t("working") : t("package")}
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
+              {packageLoading ? (
+                <>
+                  <div className="size-4 rounded-full border-2 border-primary-foreground/50 border-t-primary-foreground animate-spin" />
+                  {t("working")}
+                </>
+              ) : (
+                <>
+                  <span className={cn(iconStroke, "[&_svg]:size-4")}>{I.box}</span>
+                  {t("package")}
+                </>
+              )}
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

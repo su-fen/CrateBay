@@ -1,3 +1,8 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
 @font-face {
   font-family: 'Geist Sans';
   src: url('./assets/fonts/GeistSans-Variable.woff2') format('woff2-variations');
@@ -15,15 +20,126 @@
 }
 
 :root {
-  font-family: 'Geist Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+  /* shadcn/ui tokens (Light) — mapped from existing CrateBay palette */
+  --background: 210 40% 98%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --popover: 210 40% 96%;
+  --popover-foreground: 222 47% 11%;
+  --primary: 262 83% 58%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222 47% 11%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 19% 35%;
+  --accent: 210 40% 96%;
+  --accent-foreground: 222 47% 11%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 262 83% 58%;
+  --radius: 0.75rem;
+
+  /* Brand accents */
+  --brand-cyan: 192 91% 36%;
+  --brand-green: 161 94% 30%;
+
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html, body { background: #0f111a; }
-body { margin: 0; min-width: 320px; min-height: 100vh; }
-#root { width: 100%; height: 100vh; }
+.dark {
+  /* shadcn/ui tokens (Dark) — mapped from existing CrateBay palette */
+  --background: 229 27% 8%;
+  --foreground: 214 32% 91%;
+  --card: 231 28% 14%;
+  --card-foreground: 214 32% 91%;
+  --popover: 234 29% 19%;
+  --popover-foreground: 214 32% 91%;
+  --primary: 258 90% 66%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 234 29% 19%;
+  --secondary-foreground: 214 32% 91%;
+  --muted: 234 29% 19%;
+  --muted-foreground: 215 20% 65%;
+  --accent: 234 29% 19%;
+  --accent-foreground: 214 32% 91%;
+  --destructive: 0 91% 71%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 233 24% 22%;
+  --input: 233 24% 22%;
+  --ring: 258 90% 66%;
+
+  /* Brand accents */
+  --brand-cyan: 188 86% 53%;
+  --brand-green: 158 64% 52%;
+}
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-brand-cyan: hsl(var(--brand-cyan));
+  --color-brand-green: hsl(var(--brand-green));
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+html {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-background text-foreground font-sans;
+  margin: 0;
+  min-width: 320px;
+  min-height: 100%;
+}
+
+#root {
+  width: 100%;
+}
+
+/* Tauri frameless drag-region helpers (Windows / WebView2) */
+.platform-windows [data-tauri-drag-region] {
+  -webkit-app-region: drag;
+}
+
+.platform-windows [data-tauri-drag-region] a,
+.platform-windows [data-tauri-drag-region] button,
+.platform-windows [data-tauri-drag-region] input,
+.platform-windows [data-tauri-drag-region] select,
+.platform-windows [data-tauri-drag-region] textarea {
+  -webkit-app-region: no-drag;
+}

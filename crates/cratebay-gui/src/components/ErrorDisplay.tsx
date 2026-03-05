@@ -1,4 +1,6 @@
 import { I } from "../icons"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
 
 interface ErrorBannerProps {
   title: string
@@ -9,18 +11,33 @@ interface ErrorBannerProps {
 
 export function ErrorBanner({ title, message, actionLabel, onAction }: ErrorBannerProps) {
   return (
-    <div className="error-msg">
-      <div className="error-msg-icon">{I.alertCircle}</div>
-      <div className="error-msg-title">{title}</div>
-      <div className="error-msg-text">{message}</div>
-      {actionLabel && onAction && (
-        <div className="error-msg-action">
-          <button className="btn" onClick={onAction}>
-            <span className="icon">{I.refresh}</span>{actionLabel}
-          </button>
+    <Alert variant="destructive">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 text-destructive [&_svg]:size-4 [&_svg]:fill-none [&_svg]:stroke-current [&_svg]:[stroke-width:2] [&_svg]:[stroke-linecap:round] [&_svg]:[stroke-linejoin:round]">
+          {I.alertCircle}
         </div>
-      )}
-    </div>
+        <div className="min-w-0 flex-1">
+          <AlertTitle>{title}</AlertTitle>
+          <AlertDescription>
+            <p className="whitespace-pre-wrap">{message}</p>
+          </AlertDescription>
+        </div>
+        {actionLabel && onAction && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="border-destructive/30 text-destructive hover:bg-destructive/10"
+            onClick={onAction}
+          >
+            <span className="mr-1 [&_svg]:size-4 [&_svg]:fill-none [&_svg]:stroke-current [&_svg]:[stroke-width:2] [&_svg]:[stroke-linecap:round] [&_svg]:[stroke-linejoin:round]">
+              {I.refresh}
+            </span>
+            {actionLabel}
+          </Button>
+        )}
+      </div>
+    </Alert>
   )
 }
 
@@ -31,10 +48,27 @@ interface ErrorInlineProps {
 
 export function ErrorInline({ message, onDismiss }: ErrorInlineProps) {
   return (
-    <div className="error-inline">
-      <div className="error-inline-icon">{I.alertCircle}</div>
-      <div className="error-inline-text">{message}</div>
-      <button className="error-inline-dismiss" onClick={onDismiss}>&times;</button>
-    </div>
+    <Alert variant="destructive" className="py-2 pr-10">
+      <div className="absolute right-2 top-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          className="hover:bg-destructive/10 hover:text-destructive"
+          onClick={onDismiss}
+          aria-label="Close"
+          data-testid="error-inline-dismiss"
+        >
+          ×
+        </Button>
+      </div>
+      <div className="text-destructive [&_svg]:size-4 [&_svg]:fill-none [&_svg]:stroke-current [&_svg]:[stroke-width:2] [&_svg]:[stroke-linecap:round] [&_svg]:[stroke-linejoin:round]">
+        {I.alertCircle}
+      </div>
+      <AlertTitle className="sr-only">Error</AlertTitle>
+      <AlertDescription className="text-destructive/90">
+        <p className="whitespace-pre-wrap">{message}</p>
+      </AlertDescription>
+    </Alert>
   )
 }

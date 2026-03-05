@@ -2302,7 +2302,6 @@ mod tests {
     use std::ffi::OsString;
     use std::path::Path;
     use std::sync::{Mutex, OnceLock};
-    use std::time::Duration;
 
     static ENV_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
 

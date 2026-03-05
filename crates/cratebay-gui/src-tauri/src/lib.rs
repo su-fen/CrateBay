@@ -2532,11 +2532,7 @@ pub fn run() {
     // Enable MCP debug plugin only in debug builds
     #[cfg(debug_assertions)]
     {
-        builder = builder.plugin(tauri_plugin_mcp::init_with_config(
-            tauri_plugin_mcp::PluginConfig::new("CrateBay".to_string())
-                .start_socket_server(true)
-                .socket_path("/tmp/tauri-mcp-cratebay.sock".into()),
-        ));
+        builder = builder.plugin(tauri_plugin_mcp_bridge::init());
     }
 
     builder

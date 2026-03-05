@@ -7,11 +7,16 @@ import { useContainers } from "./hooks/useContainers"
 import { useImageSearch } from "./hooks/useImageSearch"
 import { useVms } from "./hooks/useVms"
 import { useVolumes } from "./hooks/useVolumes"
-import { useToast } from "./hooks/useToast"
 import { useModal } from "./hooks/useModal"
 import { AppModal } from "./components/AppModal"
 import { EmptyState } from "./components/EmptyState"
 import { UpdateChecker } from "./components/UpdateChecker"
+import { toast } from "sonner"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Toaster } from "@/components/ui/sonner"
+import { cn } from "@/lib/utils"
 import { Dashboard } from "./pages/Dashboard"
 import { Containers } from "./pages/Containers"
 import { Images } from "./pages/Images"
@@ -20,7 +25,6 @@ import { Volumes } from "./pages/Volumes"
 import { Settings } from "./pages/Settings"
 import { Kubernetes } from "./pages/Kubernetes"
 import type { NavPage, Theme, VmInfoDto, LocalImageInfo } from "./types"
-import "./App.css"
 
 function App() {
   const [activePage, setActivePage] = useState<NavPage>("dashboard")
@@ -51,13 +55,14 @@ function App() {
   }, [theme])
 
   useEffect(() => {
-    document.documentElement.style.background = effective === "light" ? "#f8fafc" : "#0f111a"
+    document.documentElement.classList.toggle("dark", effective === "dark")
+    document.documentElement.style.colorScheme = effective
     // Sync native window theme (affects macOS title bar color)
     invoke("set_window_theme", { theme: effective }).catch(() => {})
   }, [effective])
   useEffect(() => { localStorage.setItem("lang", lang) }, [lang])
 
-  const { toast, showToast } = useToast()
+  const showToast = useCallback((msg: string) => toast(msg), [])
   const modal = useModal(t)
   const containers = useContainers()
   const images = useImageSearch()
@@ -315,6 +320,7 @@ function App() {
             onCreateVm={async () => {
               const ok = await vmHook.createVm()
               if (ok) showToast(t("vmCreated"))
+              return Boolean(ok)
             }}
             onLoginCmd={async (vm: VmInfoDto) => {
               const cmd = await vmHook.getLoginCmd(vm)
@@ -364,7 +370,7 @@ function App() {
   }
 
   return (
-    <div className={`app ${effective === "light" ? "light" : ""} ${isWindows ? "platform-windows" : ""}`}>
+    <div className={cn("h-full w-full flex", isWindows && "platform-windows")}>
       <AppModal
         {...modal}
         onClose={modal.closeModal}
@@ -374,65 +380,172 @@ function App() {
         onToast={showToast}
         t={t}
       />
-      {toast && <div className="toast">{toast}</div>}
+      <Toaster theme={effective} />
       <UpdateChecker t={t} />
-      <div className="sidebar">
-        <div className="sidebar-header" data-tauri-drag-region>
-          <img src="/logo.png" alt={t("appName")} />
-          <span className="brand-name">{t("appName")}</span>
-          <span className="brand-version">v1.0.0</span>
+      <aside className="w-[220px] shrink-0 border-r border-border/70 bg-card flex flex-col select-none">
+        <div className="h-[42px] px-4 flex items-center gap-2.5 border-b border-border/70" data-tauri-drag-region>
+          <img
+            src="/logo.png"
+            alt={t("appName")}
+            className="size-8 rounded-lg"
+          />
+          <span className="text-[15px] font-bold tracking-tight text-foreground">
+            {t("appName")}
+          </span>
+          <Badge
+            variant="secondary"
+            className="ml-auto rounded-md px-1.5 py-0 text-[10px] text-muted-foreground"
+          >
+            v1.0.0
+          </Badge>
         </div>
-        <div className="sidebar-nav">
-          {navItems.map(item => (
-            <div
-              key={item.page}
-              className={`nav-item ${activePage === item.page ? "active" : ""}`}
-              onClick={() => setActivePage(item.page)}
-            >
-              <span className="nav-icon">{item.icon}</span>
-              <span className="nav-label">{pageNames[item.page]}</span>
-              {item.count != null && item.count > 0 && <span className="nav-count">{item.count}</span>}
-              {item.soon && <span className="nav-badge">{t("soon")}</span>}
-            </div>
-          ))}
-          <div style={{ flex: 1 }} />
-          <div
-            className={`nav-item ${activePage === "settings" ? "active" : ""}`}
+
+        <ScrollArea className="flex-1 px-2 py-3">
+          <nav className="flex flex-col gap-1">
+            {navItems.map((item) => (
+              <Button
+                key={item.page}
+                type="button"
+                variant="ghost"
+                size="sm"
+                data-testid={`nav-${item.page}`}
+                className={cn(
+                  "w-full justify-start gap-2 px-3 text-sm font-medium text-muted-foreground hover:text-foreground",
+                  activePage === item.page && "bg-primary/10 text-primary hover:bg-primary/15"
+                )}
+                onClick={() => setActivePage(item.page)}
+              >
+                <span className="size-5 shrink-0 flex items-center justify-center [&>svg]:size-[18px] [&>svg]:fill-none [&>svg]:stroke-current [&>svg]:stroke-2 [&>svg]:stroke-linecap-round [&>svg]:stroke-linejoin-round">
+                  {item.icon}
+                </span>
+                <span className="flex-1 text-left">
+                  {pageNames[item.page]}
+                </span>
+                {item.count != null && item.count > 0 && (
+                  <Badge
+                    variant="secondary"
+                    className="rounded-md border border-brand-cyan/15 bg-brand-cyan/10 px-1.5 py-0 text-[11px] text-brand-cyan"
+                  >
+                    {item.count}
+                  </Badge>
+                )}
+                {item.soon && (
+                  <Badge
+                    variant="secondary"
+                    className="rounded-md px-1.5 py-0 text-[10px] text-muted-foreground"
+                  >
+                    {t("soon")}
+                  </Badge>
+                )}
+              </Button>
+            ))}
+          </nav>
+        </ScrollArea>
+
+        <div className="px-2 pb-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            data-testid="nav-settings"
+            className={cn(
+              "w-full justify-start gap-2 px-3 text-sm font-medium text-muted-foreground hover:text-foreground",
+              activePage === "settings" && "bg-primary/10 text-primary hover:bg-primary/15"
+            )}
             onClick={() => setActivePage("settings")}
           >
-            <span className="nav-icon">{I.settings}</span>
-            <span className="nav-label">{t("settings")}</span>
-          </div>
+            <span className="size-5 shrink-0 flex items-center justify-center [&>svg]:size-[18px] [&>svg]:fill-none [&>svg]:stroke-current [&>svg]:stroke-2 [&>svg]:stroke-linecap-round [&>svg]:stroke-linejoin-round">
+              {I.settings}
+            </span>
+            <span className="flex-1 text-left">
+              {t("settings")}
+            </span>
+          </Button>
         </div>
-      </div>
+      </aside>
 
-      <div className="main">
-        <div className="topbar" data-tauri-drag-region>
-          <div className="topbar-left">
-            <h1>{pageNames[activePage]}</h1>
+      <div className="flex-1 min-w-0 flex flex-col">
+        <header className="h-[42px] px-6 flex items-center justify-between border-b border-border/70 bg-card" data-tauri-drag-region>
+          <div className="flex items-center gap-3">
+            <h1 className="text-base font-bold text-foreground">
+              {pageNames[activePage]}
+            </h1>
             {activePage === "containers" && containers.running.length > 0 && (
-              <span className="count-chip">{containers.running.length} {t("runningCount")}</span>
+              <Badge
+                variant="secondary"
+                className="rounded-md border border-primary/15 bg-primary/10 text-primary"
+              >
+                {containers.running.length} {t("runningCount")}
+              </Badge>
             )}
             {activePage === "vms" && vmHook.running.length > 0 && (
-              <span className="count-chip">{vmHook.running.length} {t("runningCount")}</span>
+              <Badge
+                variant="secondary"
+                className="rounded-md border border-primary/15 bg-primary/10 text-primary"
+              >
+                {vmHook.running.length} {t("runningCount")}
+              </Badge>
             )}
           </div>
-          <div className="topbar-right">
-            <div className="status-pill">
-              <span className={`dot ${containers.connected ? "on" : "off"}`} />
+
+          <div className="flex items-center gap-2">
+            <Badge
+              variant="secondary"
+              className={cn(
+                "rounded-full gap-2 px-3 py-1 text-xs font-medium text-muted-foreground border border-border/60 bg-popover/40"
+              )}
+            >
+              <span
+                className={cn(
+                  "size-1.5 rounded-full",
+                  containers.connected
+                    ? "bg-brand-green shadow-[0_0_10px_hsl(var(--brand-green)/0.6)]"
+                    : "bg-destructive"
+                )}
+              />
               {containers.connected ? t("connected") : t("disconnected")}
-            </div>
+            </Badge>
+
             {isWindows && (
-              <div className="window-controls">
-                <button type="button" className="win-btn" onClick={handleMinimize} aria-label="Minimize">{I.winMinimize}</button>
-                <button type="button" className="win-btn" onClick={handleMaximize} aria-label={maximized ? "Restore" : "Maximize"}>{maximized ? I.winRestore : I.winMaximize}</button>
-                <button type="button" className="win-btn win-btn-close" onClick={handleClose} aria-label="Close">{I.winClose}</button>
+              <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={handleMinimize}
+                  aria-label="Minimize"
+                >
+                  {I.winMinimize}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={handleMaximize}
+                  aria-label={maximized ? "Restore" : "Maximize"}
+                >
+                  {maximized ? I.winRestore : I.winMaximize}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  className="hover:bg-destructive/10 hover:text-destructive"
+                  onClick={handleClose}
+                  aria-label="Close"
+                >
+                  {I.winClose}
+                </Button>
               </div>
             )}
           </div>
-        </div>
-        <div className="content">
-          <div key={activePage} className="page-transition">
+        </header>
+
+        <div className="flex-1 overflow-hidden min-[1600px]:max-w-[1440px] min-[1600px]:mx-auto w-full">
+          <div
+            key={activePage}
+            className="h-full overflow-auto px-6 py-5 animate-in fade-in-0 slide-in-from-top-1 duration-200"
+          >
             {renderPage()}
           </div>
         </div>

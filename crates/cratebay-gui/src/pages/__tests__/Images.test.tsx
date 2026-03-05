@@ -63,9 +63,7 @@ const renderImages = (props: Partial<typeof defaultProps> = {}) => {
 }
 
 const openSearchTab = async (user: ReturnType<typeof userEvent.setup>) => {
-  await user.click(
-    screen.getByRole("button", { name: new RegExp(t("searchImages"), "i") })
-  )
+  await user.click(screen.getByTestId("images-tab-search"))
 }
 
 describe("Images", () => {
@@ -86,9 +84,7 @@ describe("Images", () => {
   it("shows the local images section header", () => {
     renderImages()
 
-    expect(
-      screen.getByRole("button", { name: new RegExp(t("localImages"), "i") })
-    ).toBeInTheDocument()
+    expect(screen.getByTestId("images-tab-local")).toBeInTheDocument()
   })
 
   it("shows empty search state with hint", async () => {
@@ -247,10 +243,8 @@ describe("Images", () => {
     const setImgError = vi.fn()
     renderImages({ imgError: "Some error", setImgError })
 
-    // The error inline has a dismiss button (x)
-    const dismissBtns = document.querySelectorAll(".error-inline-dismiss")
-    expect(dismissBtns.length).toBe(1)
-    await user.click(dismissBtns[0] as HTMLElement)
+    const dismissBtn = screen.getByTestId("error-inline-dismiss")
+    await user.click(dismissBtn)
 
     expect(setImgError).toHaveBeenCalledWith("")
   })

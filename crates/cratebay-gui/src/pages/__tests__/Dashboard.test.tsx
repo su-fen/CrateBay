@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { invoke } from "@tauri-apps/api/core"
 import { Dashboard } from "../Dashboard"
@@ -51,26 +51,29 @@ describe("Dashboard", () => {
     vi.mocked(invoke).mockResolvedValue(null)
   })
 
-  it("renders three dashboard cards", () => {
+  it("renders four dashboard cards", () => {
     render(<Dashboard {...defaultProps} />)
 
     expect(screen.getByText(t("containers"))).toBeInTheDocument()
     expect(screen.getByText(t("vms"))).toBeInTheDocument()
     expect(screen.getByText(t("images"))).toBeInTheDocument()
+    expect(screen.getByText(t("volumes"))).toBeInTheDocument()
   })
 
   it("shows container count on the containers card", () => {
     const containers = [mockContainer(), mockContainer({ id: "def456", name: "api" })]
     render(<Dashboard {...defaultProps} containers={containers} />)
 
-    expect(screen.getByText("2")).toBeInTheDocument()
+    const containersCard = screen.getByTestId("dashboard-card-containers")
+    expect(within(containersCard).getByText("2")).toBeInTheDocument()
   })
 
   it("shows VM count on the VMs card", () => {
     render(<Dashboard {...defaultProps} vmsCount={3} vmsRunningCount={1} />)
 
-    expect(screen.getByText("3")).toBeInTheDocument()
-    expect(screen.getByText(/1 running/)).toBeInTheDocument()
+    const vmsCard = screen.getByTestId("dashboard-card-vms")
+    expect(within(vmsCard).getByText("3")).toBeInTheDocument()
+    expect(within(vmsCard).getByText(/1 running/)).toBeInTheDocument()
   })
 
   it("navigates to containers page when containers card is clicked", async () => {
@@ -78,7 +81,7 @@ describe("Dashboard", () => {
     const onNavigate = vi.fn()
     render(<Dashboard {...defaultProps} onNavigate={onNavigate} />)
 
-    const containersCard = screen.getByText(t("containers")).closest(".dash-card")!
+    const containersCard = screen.getByTestId("dashboard-card-containers")
     await user.click(containersCard)
 
     expect(onNavigate).toHaveBeenCalledWith("containers")
@@ -89,7 +92,7 @@ describe("Dashboard", () => {
     const onNavigate = vi.fn()
     render(<Dashboard {...defaultProps} onNavigate={onNavigate} />)
 
-    const vmsCard = screen.getByText(t("vms")).closest(".dash-card")!
+    const vmsCard = screen.getByTestId("dashboard-card-vms")
     await user.click(vmsCard)
 
     expect(onNavigate).toHaveBeenCalledWith("vms")
@@ -100,7 +103,7 @@ describe("Dashboard", () => {
     const onNavigate = vi.fn()
     render(<Dashboard {...defaultProps} onNavigate={onNavigate} />)
 
-    const imagesCard = screen.getByText(t("images")).closest(".dash-card")!
+    const imagesCard = screen.getByTestId("dashboard-card-images")
     await user.click(imagesCard)
 
     expect(onNavigate).toHaveBeenCalledWith("images")
@@ -118,13 +121,13 @@ describe("Dashboard", () => {
     expect(screen.getByText("web-server")).toBeInTheDocument()
     expect(screen.getByText("api-server")).toBeInTheDocument()
     expect(screen.getByText(t("running"))).toBeInTheDocument()
-    expect(screen.getByText("2", { selector: ".dash-section-count" })).toBeInTheDocument()
+    expect(screen.getAllByTestId("dashboard-running-item")).toHaveLength(2)
   })
 
   it("does not show running containers section when none are running", () => {
     render(<Dashboard {...defaultProps} />)
 
-    expect(screen.queryByText(/Running \(/)).not.toBeInTheDocument()
+    expect(screen.queryByTestId("dashboard-running-item")).not.toBeInTheDocument()
   })
 
   it("shows 'view all' link when more than 5 containers are running", async () => {
@@ -158,8 +161,7 @@ describe("Dashboard", () => {
     )
 
     // Should only render 5 running-item elements in the running section
-    const containerCards = document.querySelectorAll(".dash-running-item")
-    expect(containerCards.length).toBe(5)
+    expect(screen.getAllByTestId("dashboard-running-item")).toHaveLength(5)
   })
 
   it("shows resource panel when containers or VMs are running", () => {
@@ -180,27 +182,15 @@ describe("Dashboard", () => {
   })
 
   it("shows image results count", () => {
-    const { container } = render(
+    render(
       <Dashboard {...defaultProps} imgResultsCount={15} installedImagesCount={8} />
     )
 
-    // Find the images card by its label
-    const allCards = container.querySelectorAll(".dash-card")
-    let imagesCard: Element | null = null
-    allCards.forEach(card => {
-      const label = card.querySelector(".dash-card-label")
-      if (label?.textContent === t("images")) {
-        imagesCard = card
-      }
-    })
-    expect(imagesCard).toBeTruthy()
-
-    // The card value shows installed images count
-    const value = imagesCard!.querySelector(".dash-card-value")!
-    expect(value.textContent).toBe("8")
-
-    // The sub-text shows search results count
-    expect(screen.getByText(/15 Search results/)).toBeInTheDocument()
+    const imagesCard = screen.getByTestId("dashboard-card-images")
+    expect(within(imagesCard).getByText("8")).toBeInTheDocument()
+    expect(
+      within(imagesCard).getByText(new RegExp(`15\\s+${t("searchResults")}`, "i"))
+    ).toBeInTheDocument()
   })
 
   it("fetches stats for running containers", () => {

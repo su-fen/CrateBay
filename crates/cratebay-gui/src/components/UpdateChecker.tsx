@@ -1,5 +1,9 @@
 import { useState, useEffect } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { I } from "../icons"
+import { Alert, AlertTitle } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 interface UpdateInfo {
   available: boolean
@@ -43,23 +47,33 @@ export function UpdateChecker({ t }: UpdateCheckerProps) {
   }
 
   return (
-    <div className="update-banner">
-      <div className="update-banner-content">
-        <svg className="update-banner-icon" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="10" />
-          <line x1="12" y1="16" x2="12" y2="12" />
-          <line x1="12" y1="8" x2="12.01" y2="8" />
-        </svg>
-        <span className="update-banner-text">
-          {t("updateAvailable")}: <strong>v{update.latest_version}</strong>
-        </span>
-        <button className="update-banner-link" onClick={handleViewRelease}>
-          {t("viewRelease")}
-        </button>
-      </div>
-      <button className="update-banner-dismiss" onClick={() => setDismissed(true)}>
-        &times;
-      </button>
+    <div className="fixed top-[42px] left-[220px] right-0 z-50 px-6 py-2 pointer-events-none">
+      <Alert className="pointer-events-auto border-primary/20 bg-card/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/70">
+        <div className="flex items-start gap-3">
+          <div className={cn("mt-0.5 text-primary", "[&_svg]:size-4", "[&_svg]:fill-none", "[&_svg]:stroke-current", "[&_svg]:stroke-2")}>
+            {I.alertCircle}
+          </div>
+          <div className="min-w-0 flex-1">
+            <AlertTitle>
+              {t("updateAvailable")}: v{update.latest_version}
+            </AlertTitle>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="secondary" size="sm" onClick={handleViewRelease}>
+              {t("viewRelease")}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              onClick={() => setDismissed(true)}
+              aria-label="Close"
+            >
+              ×
+            </Button>
+          </div>
+        </div>
+      </Alert>
     </div>
   )
 }

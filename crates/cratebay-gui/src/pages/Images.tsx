@@ -2,7 +2,37 @@ import { useState, useEffect, useCallback } from "react"
 import { invoke } from "@tauri-apps/api/core"
 import { open } from "@tauri-apps/plugin-dialog"
 import { I } from "../icons"
+import { EmptyState } from "../components/EmptyState"
 import { ErrorInline } from "../components/ErrorDisplay"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Separator } from "@/components/ui/separator"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { cn } from "@/lib/utils"
+import { iconStroke, cardActionSecondary, cardActionOutline, cardActionGhost } from "@/lib/styles"
 import type { ImageSearchResult, RunContainerResult, LocalImageInfo, ImageInspectInfo } from "../types"
 
 interface ImagesProps {
@@ -43,6 +73,19 @@ interface ImagesProps {
   onPush: () => void
   onCopy: (text: string) => void
   t: (key: string) => string
+}
+
+
+function Spinner({ className }: { className?: string }) {
+  return (
+    <div
+      className={cn(
+        "size-4 rounded-full border-2 border-border border-t-primary animate-spin",
+        className
+      )}
+      aria-hidden="true"
+    />
+  )
 }
 
 export function Images({
@@ -176,427 +219,550 @@ export function Images({
   }
 
   return (
-    <div className="page">
-      {/* Tab Navigation */}
-      <div className="tabs">
-        <button
-          className={`tab ${activeTab === "local" ? "active" : ""}`}
-          onClick={() => setActiveTab("local")}
-        >
-          <span className="icon">{I.layers}</span>
-          {t("localImages")} ({localImages.length})
-        </button>
-        <button
-          className={`tab ${activeTab === "search" ? "active" : ""}`}
-          onClick={() => setActiveTab("search")}
-        >
-          <span className="icon">{I.globe}</span>
-          {t("searchImages")}
-        </button>
-      </div>
+    <div className="space-y-4">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "local" | "search")}>
+        <TabsList variant="line">
+          <TabsTrigger value="local" data-testid="images-tab-local">
+            <span className={cn(iconStroke, "[&_svg]:size-4")}>{I.layers}</span>
+            {t("localImages")}
+            <Badge
+              variant="secondary"
+              className="ml-1 rounded-md border border-brand-cyan/15 bg-brand-cyan/10 px-2 py-0.5 text-[11px] text-brand-cyan"
+            >
+              {localImages.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="search" data-testid="images-tab-search">
+            <span className={cn(iconStroke, "[&_svg]:size-4")}>{I.globe}</span>
+            {t("searchImages")}
+          </TabsTrigger>
+        </TabsList>
 
       {imgError && <ErrorInline message={imgError} onDismiss={() => setImgError("")} />}
 
-      {/* ---- Local Images Section ---- */}
-      {activeTab === "local" && (
-        <>
-          <div className="toolbar">
-            <input
-              className="input toolbar-search"
-              placeholder={t("filterLocalImages")}
-              value={localFilter}
-              onChange={e => setLocalFilter(e.target.value)}
-            />
-            <div className="toolbar-spacer" />
-            <button className="btn" onClick={() => setShowImportModal(true)}>
-              <span className="icon">{I.plus}</span>{t("importImage")}
-            </button>
-            <button className="btn" onClick={fetchLocalImages} disabled={localLoading}>
-              <span className="icon">{I.refresh}</span>{t("refresh")}
-            </button>
+      <TabsContent value="local" className="space-y-4">
+          <div className="flex items-center gap-2">
+            <div className="w-[420px] max-w-[60vw]">
+              <Input
+                placeholder={t("filterLocalImages")}
+                value={localFilter}
+                onChange={(e) => setLocalFilter(e.target.value)}
+              />
+            </div>
+            <div className="flex-1" />
+            <Button type="button" variant="outline" onClick={() => setShowImportModal(true)}>
+              <span className={cn("mr-1", iconStroke, "[&_svg]:size-4")}>{I.plus}</span>
+              {t("importImage")}
+            </Button>
+            <Button type="button" variant="outline" onClick={fetchLocalImages} disabled={localLoading}>
+              <span className={cn("mr-1", iconStroke, "[&_svg]:size-4")}>{I.refresh}</span>
+              {t("refresh")}
+            </Button>
           </div>
 
-          <div className="page-scroll">
           {localLoading ? (
-            <div className="loading"><div className="spinner" />{t("loading")}</div>
+            <div className="flex items-center justify-center gap-2 py-20 text-muted-foreground">
+              <Spinner />
+              {t("loading")}
+            </div>
           ) : filteredImages.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">{I.layers}</div>
-              <h3>{t("noLocalImages")}</h3>
-            </div>
+            <EmptyState icon={I.layers} title={t("noLocalImages")} />
           ) : (
-            <div className="image-list">
-              {filteredImages.map((img, idx) => (
-                <div className="image-item" key={`${img.id}-${idx}`}>
-                  <div className="image-item-main">
-                    <div className="image-item-icon">{I.layers}</div>
-                    <div className="image-item-body">
-                      <div className="image-item-name">
-                        {img.repo_tags.length > 0
-                          ? img.repo_tags.join(", ")
-                          : "<none>:<none>"}
+            <div className="space-y-3">
+              {filteredImages.map((img) => {
+                const primaryRef = img.repo_tags[0] || img.id
+                return (
+                  <Card key={img.id} className="py-0">
+                    <CardContent className="py-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex min-w-0 items-start gap-3">
+                          <div
+                            className={cn(
+                              "size-10 shrink-0 rounded-lg bg-primary/10 text-primary flex items-center justify-center",
+                              iconStroke,
+                              "[&_svg]:size-[18px]"
+                            )}
+                          >
+                            {I.layers}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-semibold text-foreground truncate">
+                              {img.repo_tags.length > 0 ? img.repo_tags.join(", ") : "<none>:<none>"}
+                            </div>
+                            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                              <span className="font-mono">
+                                {t("imageId")}: {img.id.slice(0, 16)}
+                              </span>
+                              <span className="text-muted-foreground/50">•</span>
+                              <span>{img.size_human}</span>
+                              <span className="text-muted-foreground/50">•</span>
+                              <span>{formatCreated(img.created)}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          <Button
+                            type="button"
+                            size="xs"
+                            variant="secondary"
+                            className={cardActionSecondary}
+                            title={t("run")}
+                            onClick={() => openRunWithImage(primaryRef)}
+                          >
+                            <span className={cn(iconStroke, "[&_svg]:size-3")}>{I.play}</span>
+                            {t("run")}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="xs"
+                            variant="secondary"
+                            className={cardActionSecondary}
+                            title={t("inspectImage")}
+                            onClick={() => handleInspect(primaryRef)}
+                            disabled={inspectLoading}
+                          >
+                            <span className={cn(iconStroke, "[&_svg]:size-3")}>{I.fileText}</span>
+                            {t("inspectImage")}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="xs"
+                            variant="secondary"
+                            className={cardActionSecondary}
+                            title={t("tagImage")}
+                            onClick={() => openTagModal(primaryRef)}
+                          >
+                            <span className={cn(iconStroke, "[&_svg]:size-3")}>{I.plus}</span>
+                            {t("tagImage")}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="icon-xs"
+                            variant="ghost"
+                            title={t("copyId")}
+                            onClick={() => onCopy(img.id)}
+                            className={cn(cardActionGhost, iconStroke, "[&_svg]:size-3")}
+                          >
+                            {I.copy}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="icon-xs"
+                            variant="ghost"
+                            title={t("removeImage")}
+                            onClick={() => setConfirmRemove(primaryRef)}
+                            className={cn(
+                              cardActionGhost,
+                              "hover:border-destructive/45 hover:bg-destructive/10 hover:text-destructive",
+                              iconStroke,
+                              "[&_svg]:size-3"
+                            )}
+                          >
+                            {I.trash}
+                          </Button>
+                        </div>
                       </div>
-                      <div className="image-item-meta">
-                        <span>{t("imageId")}: {img.id.slice(0, 16)}</span>
-                        <span className="meta-sep" />
-                        <span>{img.size_human}</span>
-                        <span className="meta-sep" />
-                        <span>{formatCreated(img.created)}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="image-item-actions">
-                    <div className="image-item-actions-group">
-                      <button
-                        className="action-btn"
-                        onClick={() => openRunWithImage(img.repo_tags[0] || img.id)}
-                        title={t("run")}
-                      >
-                        {I.play}<span className="action-label">{t("run")}</span>
-                      </button>
-                      <button
-                        className="action-btn"
-                        onClick={() => handleInspect(img.repo_tags[0] || img.id)}
-                        title={t("inspectImage")}
-                        disabled={inspectLoading}
-                      >
-                        {I.fileText}<span className="action-label">{t("inspectImage")}</span>
-                      </button>
-                      <button
-                        className="action-btn"
-                        onClick={() => openTagModal(img.repo_tags[0] || img.id)}
-                        title={t("tagImage")}
-                      >
-                        {I.plus}<span className="action-label">{t("tagImage")}</span>
-                      </button>
-                      <button
-                        className="action-btn"
-                        onClick={() => onCopy(img.id)}
-                        title={t("copyId")}
-                      >
-                        {I.copy}
-                      </button>
-                    </div>
-                    <div className="image-item-actions-sep" />
-                    <button
-                      className="action-btn danger"
-                      onClick={() => setConfirmRemove(img.repo_tags[0] || img.id)}
-                      title={t("removeImage")}
-                    >
-                      {I.trash}
-                    </button>
-                  </div>
-                </div>
-              ))}
+                    </CardContent>
+                  </Card>
+                )
+              })}
             </div>
           )}
-          </div>
-        </>
-      )}
+      </TabsContent>
 
-      {/* ---- Registry Search Section ---- */}
-      {activeTab === "search" && (
-        <>
-          <div className="toolbar">
-            <input
-              className="input toolbar-search"
-              placeholder={t("searchImages")}
-              value={imgQuery}
-              onChange={e => setImgQuery(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && onSearch()}
-            />
-            <select className="select" value={imgSource} onChange={e => setImgSource(e.target.value)}>
-              <option value="all">{t("sourceAll")}</option>
-              <option value="dockerhub">{t("sourceDockerHub")}</option>
-              <option value="quay">{t("sourceQuay")}</option>
-            </select>
-            <button className="btn primary" disabled={imgSearching || !imgQuery.trim()} onClick={onSearch}>
+      <TabsContent value="search" className="space-y-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="min-w-[280px] flex-1">
+              <Input
+                placeholder={t("searchImages")}
+                value={imgQuery}
+                onChange={(e) => setImgQuery(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && onSearch()}
+              />
+            </div>
+            <div className="w-[220px]">
+              <Select value={imgSource} onValueChange={setImgSource}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t("sourceAll")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("sourceAll")}</SelectItem>
+                  <SelectItem value="dockerhub">{t("sourceDockerHub")}</SelectItem>
+                  <SelectItem value="quay">{t("sourceQuay")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button type="button" disabled={imgSearching || !imgQuery.trim()} onClick={onSearch}>
               {imgSearching ? t("searching") : t("search")}
-            </button>
+            </Button>
           </div>
 
-          <div className="page-scroll">
-          {/* Tags bar */}
           {imgTags.length > 0 && (
-            <div className="img-tags-bar">
-              <span className="img-tags-label">{t("tags")} ({imgTagsRef}):</span>
-              <div className="tags">
-                {imgTags.map(tag => (
-                  <div className="tag" key={tag} onClick={() => openRunWithImage(`${imgTagsRef}:${tag}`)}>
-                    {tag}
+            <Card className="py-0">
+              <CardContent className="py-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="text-xs text-muted-foreground">
+                    {t("tags")} ({imgTagsRef}):
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {imgTagsLoading && <div className="hint">{t("loading")}</div>}
-
-          {/* Search results - card list */}
-          {imgResults.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">{I.globe}</div>
-              <h3>{t("searchHint")}</h3>
-              <p>Docker Hub · Quay.io · GitHub Container Registry</p>
-            </div>
-          ) : (
-            <div className="img-grid">
-              {imgResults.map((r, idx) => (
-                <div className="img-card" key={`${r.source}-${r.reference}-${idx}`}>
-                  <div className="img-card-top">
-                    <div className="img-card-header">
-                      <span className="badge">{r.source}</span>
-                      {r.official && <span className="img-official">{t("official")}</span>}
-                    </div>
-                    <div className="img-card-name">{r.reference}</div>
-                    {r.description && <div className="img-card-desc">{r.description}</div>}
-                  </div>
-                  <div className="img-card-bottom">
-                    <div className="img-card-stats">
-                      <span className="img-stat">
-                        <svg viewBox="0 0 24 24" className="img-stat-icon"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                        {r.stars ?? "-"}
-                      </span>
-                      <span className="img-stat">
-                        <svg viewBox="0 0 24 24" className="img-stat-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                        {formatPulls(r.pulls)}
-                      </span>
-                    </div>
-                    <div className="img-card-actions">
-                      <button className="btn sm" onClick={() => openRunWithImage(r.reference)}>
-                        <span className="icon">{I.play}</span>{t("run")}
-                      </button>
-                      <button className="btn sm" disabled={!canTags(r.reference)} onClick={() => onTags(r.reference)}>{t("tags")}</button>
-                    </div>
+                  <div className="flex flex-wrap gap-2">
+                    {imgTags.map((tag) => (
+                      <Badge
+                        key={tag}
+                        variant="secondary"
+                        className="cursor-pointer border border-border/60 bg-popover/40 hover:bg-accent/30"
+                        onClick={() => openRunWithImage(`${imgTagsRef}:${tag}`)}
+                      >
+                        {tag}
+                      </Badge>
+                    ))}
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          )}
+          {imgTagsLoading && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Spinner className="size-3" />
+              {t("loading")}
+            </div>
+          )}
+
+          {imgResults.length === 0 ? (
+            <EmptyState
+              icon={I.globe}
+              title={t("searchHint")}
+              description={"Docker Hub · Quay.io · GitHub Container Registry"}
+            />
+          ) : (
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
+              {imgResults.map((r, idx) => (
+                <Card key={`${r.source}-${r.reference}-${idx}`} className="py-0">
+                  <CardContent className="py-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex flex-col gap-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant="secondary"
+                            className="rounded-md border border-border/60 bg-popover/40 text-xs"
+                          >
+                            {r.source}
+                          </Badge>
+                          {r.official && (
+                            <Badge className="rounded-md bg-primary/10 text-primary border border-primary/15 text-[11px]">
+                              {t("official")}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="font-semibold text-foreground truncate">{r.reference}</div>
+                        {r.description && (
+                          <div className="text-xs text-muted-foreground line-clamp-2">
+                            {r.description}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <span className="inline-flex items-center gap-1">
+                          <svg viewBox="0 0 24 24" className="size-3.5 fill-none stroke-current stroke-[1.5]">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                          </svg>
+                          {r.stars ?? "-"}
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <svg viewBox="0 0 24 24" className="size-3.5 fill-none stroke-current stroke-[1.5]">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="7 10 12 15 17 10" />
+                            <line x1="12" y1="15" x2="12" y2="3" />
+                          </svg>
+                          {formatPulls(r.pulls)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          size="xs"
+                          variant="secondary"
+                          className={cardActionSecondary}
+                          onClick={() => openRunWithImage(r.reference)}
+                        >
+                          <span className={cn(iconStroke, "[&_svg]:size-3")}>{I.play}</span>
+                          {t("run")}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="xs"
+                          variant="outline"
+                          className={cardActionOutline}
+                          disabled={!canTags(r.reference)}
+                          onClick={() => onTags(r.reference)}
+                        >
+                          {t("tags")}
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           )}
-          </div>
-        </>
-      )}
+      </TabsContent>
 
-      {/* Run Container Modal */}
-      {showRunModal && (
-        <div className="modal-backdrop" onClick={() => setShowRunModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 480 }}>
-            <div className="modal-head">
-              <div className="modal-title">{t("runContainer")}</div>
-              <div className="modal-actions">
-                <button className="icon-btn" onClick={() => setShowRunModal(false)} title={t("close")}>x</button>
+      {/* Run Container */}
+      <Dialog open={showRunModal} onOpenChange={setShowRunModal}>
+        <DialogContent className="sm:max-w-[520px]" data-testid="images-dialog-run">
+          <DialogHeader>
+            <DialogTitle>{t("runContainer")}</DialogTitle>
+            <DialogDescription className="sr-only">{t("runContainer")}</DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4">
+            <div className="grid gap-2">
+              <div className="text-sm font-medium">{t("image")}</div>
+              <Input value={runImage} onChange={(e) => setRunImage(e.target.value)} placeholder="nginx:latest" />
+            </div>
+            <div className="grid gap-2">
+              <div className="text-sm font-medium">{t("nameOptional")}</div>
+              <Input value={runName} onChange={(e) => setRunName(e.target.value)} placeholder="web" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-2">
+                <div className="text-sm font-medium">{t("cpus")}</div>
+                <Input
+                  type="number"
+                  min={1}
+                  value={runCpus}
+                  onChange={(e) => setRunCpus(e.target.value === "" ? "" : Number(e.target.value))}
+                />
+              </div>
+              <div className="grid gap-2">
+                <div className="text-sm font-medium">{t("memoryMb")}</div>
+                <Input
+                  type="number"
+                  min={64}
+                  value={runMem}
+                  onChange={(e) => setRunMem(e.target.value === "" ? "" : Number(e.target.value))}
+                />
               </div>
             </div>
-            <div className="modal-body">
-              <div className="form">
-                <div className="row">
-                  <label>{t("image")}</label>
-                  <input className="input" value={runImage} onChange={e => setRunImage(e.target.value)} placeholder="nginx:latest" autoFocus />
-                </div>
-                <div className="row">
-                  <label>{t("nameOptional")}</label>
-                  <input className="input" value={runName} onChange={e => setRunName(e.target.value)} placeholder="web" />
-                </div>
-                <div className="row two">
-                  <div>
-                    <label>{t("cpus")}</label>
-                    <input className="input" type="number" min={1} value={runCpus} onChange={e => setRunCpus(e.target.value === "" ? "" : Number(e.target.value))} />
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Checkbox checked={runPull} onCheckedChange={(v) => setRunPull(Boolean(v))} />
+              {t("pullBeforeRun")}
+            </label>
+
+            {runResult && (
+              <Card className="py-0">
+                <CardContent className="py-4">
+                  <div className="text-sm font-medium">{t("loginCommand")}</div>
+                  <div className="mt-2 flex items-start gap-2">
+                    <code className="flex-1 rounded-md border bg-muted px-2 py-1 text-xs font-mono text-foreground break-all">
+                      {runResult.login_cmd}
+                    </code>
+                    <Button
+                      type="button"
+                      size="icon-xs"
+                      variant="outline"
+                      title={t("copy")}
+                      onClick={() => onCopy(runResult.login_cmd)}
+                      className={cn(iconStroke, "[&_svg]:size-3")}
+                    >
+                      {I.copy}
+                    </Button>
                   </div>
-                  <div>
-                    <label>{t("memoryMb")}</label>
-                    <input className="input" type="number" min={64} value={runMem} onChange={e => setRunMem(e.target.value === "" ? "" : Number(e.target.value))} />
-                  </div>
-                </div>
-                <div className="row inline">
-                  <input type="checkbox" checked={runPull} onChange={e => setRunPull(e.target.checked)} />
-                  <span>{t("pullBeforeRun")}</span>
-                </div>
-              </div>
-              {runResult && (
-                <div className="result" style={{ marginTop: 14 }}>
-                  <div className="result-title">{t("loginCommand")}</div>
-                  <div className="result-code">
-                    <code>{runResult.login_cmd}</code>
-                    <button className="icon-btn" onClick={() => onCopy(runResult.login_cmd)} title={t("copy")}>{I.copy}</button>
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="modal-footer">
-              <button className="btn" onClick={() => setShowRunModal(false)}>{t("close")}</button>
-              <button className="btn primary" disabled={runLoading || !runImage.trim()} onClick={onRun} style={{ marginLeft: 8 }}>
-                {runLoading ? t("creating") : t("create")}
-              </button>
-            </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
-        </div>
-      )}
 
-      {/* Import / Push Modal */}
-      {showImportModal && (
-        <div className="modal-backdrop" onClick={() => setShowImportModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 480 }}>
-            <div className="modal-head">
-              <div className="modal-title">{t("importImage")} / {t("pushImage")}</div>
-              <div className="modal-actions">
-                <button className="icon-btn" onClick={() => setShowImportModal(false)} title={t("close")}>x</button>
-              </div>
-            </div>
-            <div className="modal-body">
-              <div className="form">
-                <div className="row">
-                  <label>{t("imageArchivePath")}</label>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <input className="input" style={{ flex: 1 }} value={loadPath} onChange={e => setLoadPath(e.target.value)} placeholder="/path/to/image.tar" autoFocus />
-                    <button className="btn" onClick={browseFile}>{t("browse")}</button>
-                  </div>
-                </div>
-                <div className="row">
-                  <button className="btn primary" disabled={loadLoading || !loadPath.trim()} onClick={onLoad}>
-                    {loadLoading ? t("working") : t("load")}
-                  </button>
-                </div>
-                <div className="hint">{t("importHint")}</div>
-                <div style={{ borderTop: "1px solid var(--border)", margin: "8px 0" }} />
-                <div className="row">
-                  <label>{t("imageRef")}</label>
-                  <input className="input" value={pushRef} onChange={e => setPushRef(e.target.value)} placeholder="ghcr.io/org/image:tag" />
-                </div>
-                <div className="row">
-                  <button className="btn" disabled={pushLoading || !pushRef.trim()} onClick={onPush}>
-                    {pushLoading ? t("working") : t("push")}
-                  </button>
-                </div>
-                <div className="hint">{t("pushHint")}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setShowRunModal(false)}>
+              {t("close")}
+            </Button>
+            <Button type="button" disabled={runLoading || !runImage.trim()} onClick={onRun}>
+              {runLoading ? t("creating") : t("create")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      {/* Inspect Image Modal */}
-      {inspectInfo && (
-        <div className="modal-backdrop" onClick={() => setInspectInfo(null)}>
-          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 640 }}>
-            <div className="modal-head">
-              <div className="modal-title">{t("inspectImage")} -- {inspectInfo.id}</div>
-              <div className="modal-actions">
-                <button className="icon-btn" onClick={() => setInspectInfo(null)} title={t("close")}>x</button>
-              </div>
-            </div>
-            <div className="modal-body">
-              <div className="form">
-                <div className="row">
-                  <label>{t("imageId")}</label>
-                  <div>{inspectInfo.id}</div>
-                </div>
-                <div className="row">
-                  <label>{t("repoTags")}</label>
-                  <div>{inspectInfo.repo_tags.length > 0 ? inspectInfo.repo_tags.join(", ") : "-"}</div>
-                </div>
-                <div className="row">
-                  <label>{t("imageSize")}</label>
-                  <div>{(inspectInfo.size_bytes / (1024 * 1024)).toFixed(1)} MB</div>
-                </div>
-                <div className="row">
-                  <label>{t("imageCreated")}</label>
-                  <div>{inspectInfo.created || "-"}</div>
-                </div>
-                <div className="row">
-                  <label>{t("architecture")}</label>
-                  <div>{inspectInfo.architecture || "-"}</div>
-                </div>
-                <div className="row">
-                  <label>OS</label>
-                  <div>{inspectInfo.os || "-"}</div>
-                </div>
-                <div className="row">
-                  <label>Docker Version</label>
-                  <div>{inspectInfo.docker_version || "-"}</div>
-                </div>
-                <div className="row">
-                  <label>{t("layers")}</label>
-                  <div>{inspectInfo.layers}</div>
-                </div>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn" onClick={() => setInspectInfo(null)}>{t("close")}</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Import / Push */}
+      <Dialog open={showImportModal} onOpenChange={setShowImportModal}>
+        <DialogContent className="sm:max-w-[560px]" data-testid="images-dialog-import">
+          <DialogHeader>
+            <DialogTitle>
+              {t("importImage")} / {t("pushImage")}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("importImage")} / {t("pushImage")}
+            </DialogDescription>
+          </DialogHeader>
 
-      {/* Tag Image Modal */}
-      {showTagModal && (
-        <div className="modal-backdrop" onClick={() => setShowTagModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 480 }}>
-            <div className="modal-head">
-              <div className="modal-title">{t("tagImage")}</div>
-              <div className="modal-actions">
-                <button className="icon-btn" onClick={() => setShowTagModal(false)} title={t("close")}>x</button>
+          <div className="grid gap-4">
+            <div className="grid gap-2">
+              <div className="text-sm font-medium">{t("imageArchivePath")}</div>
+              <div className="flex gap-2">
+                <Input
+                  value={loadPath}
+                  onChange={(e) => setLoadPath(e.target.value)}
+                  placeholder="/path/to/image.tar"
+                />
+                <Button type="button" variant="outline" onClick={browseFile}>
+                  {t("browse")}
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button type="button" disabled={loadLoading || !loadPath.trim()} onClick={onLoad}>
+                  {loadLoading ? t("working") : t("load")}
+                </Button>
+                <div className="text-xs text-muted-foreground">{t("importHint")}</div>
               </div>
             </div>
-            <div className="modal-body">
-              <div className="form">
-                <div className="row">
-                  <label>{t("sourceRef")}</label>
-                  <div style={{ color: "var(--text-secondary)" }}>{tagSource}</div>
-                </div>
-                <div className="row">
-                  <label>{t("targetTag")} (repository)</label>
-                  <input
-                    className="input"
-                    value={tagRepo}
-                    onChange={e => setTagRepo(e.target.value)}
-                    placeholder="myrepo/myimage"
-                    autoFocus
-                    onKeyDown={e => { if (e.key === "Enter") handleTag() }}
-                  />
-                </div>
-                <div className="row">
-                  <label>{t("targetTag")} (tag)</label>
-                  <input
-                    className="input"
-                    value={tagTag}
-                    onChange={e => setTagTag(e.target.value)}
-                    placeholder="latest"
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn" onClick={() => setShowTagModal(false)}>{t("close")}</button>
-              <button className="btn primary" disabled={tagLoading || !tagRepo.trim()} onClick={handleTag} style={{ marginLeft: 8 }}>
-                {tagLoading ? t("working") : t("tagImage")}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Confirm Remove Image Modal */}
-      {confirmRemove && (
-        <div className="modal-backdrop" onClick={() => setConfirmRemove("")}>
-          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
-            <div className="modal-head">
-              <div className="modal-title">{t("removeImage")}</div>
-              <div className="modal-actions">
-                <button className="icon-btn" onClick={() => setConfirmRemove("")} title={t("close")}>x</button>
+            <Separator />
+
+            <div className="grid gap-2">
+              <div className="text-sm font-medium">{t("imageRef")}</div>
+              <Input
+                value={pushRef}
+                onChange={(e) => setPushRef(e.target.value)}
+                placeholder="ghcr.io/org/image:tag"
+              />
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={pushLoading || !pushRef.trim()}
+                  onClick={onPush}
+                >
+                  {pushLoading ? t("working") : t("push")}
+                </Button>
+                <div className="text-xs text-muted-foreground">{t("pushHint")}</div>
               </div>
             </div>
-            <div className="modal-body">
-              <p style={{ margin: 0 }}>{t("confirmRemoveImage")}</p>
-              <p style={{ margin: "8px 0 0", fontWeight: 600, color: "var(--text)" }}>{confirmRemove}</p>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setShowImportModal(false)}>
+              {t("close")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Inspect Image */}
+      <Dialog open={!!inspectInfo} onOpenChange={(open) => !open && setInspectInfo(null)}>
+        <DialogContent className="sm:max-w-[720px]" data-testid="images-dialog-inspect">
+          <DialogHeader>
+            <DialogTitle>
+              {t("inspectImage")} — {inspectInfo?.id || ""}
+            </DialogTitle>
+            <DialogDescription className="sr-only">{t("inspectImage")}</DialogDescription>
+          </DialogHeader>
+
+          <ScrollArea className="max-h-[60vh] pr-2">
+            <div className="grid gap-2 text-sm">
+              <div className="grid grid-cols-[160px_1fr] gap-x-4 gap-y-2">
+                <div className="text-muted-foreground">{t("imageId")}</div>
+                <div className="font-mono break-all">{inspectInfo?.id}</div>
+
+                <div className="text-muted-foreground">{t("repoTags")}</div>
+                <div className="break-words">
+                  {inspectInfo?.repo_tags?.length ? inspectInfo.repo_tags.join(", ") : "-"}
+                </div>
+
+                <div className="text-muted-foreground">{t("imageSize")}</div>
+                <div>{inspectInfo ? (inspectInfo.size_bytes / (1024 * 1024)).toFixed(1) : "-"} MB</div>
+
+                <div className="text-muted-foreground">{t("imageCreated")}</div>
+                <div>{inspectInfo?.created || "-"}</div>
+
+                <div className="text-muted-foreground">{t("architecture")}</div>
+                <div>{inspectInfo?.architecture || "-"}</div>
+
+                <div className="text-muted-foreground">OS</div>
+                <div>{inspectInfo?.os || "-"}</div>
+
+                <div className="text-muted-foreground">Docker Version</div>
+                <div>{inspectInfo?.docker_version || "-"}</div>
+
+                <div className="text-muted-foreground">{t("layers")}</div>
+                <div>{inspectInfo?.layers ?? "-"}</div>
+              </div>
             </div>
-            <div className="modal-footer">
-              <button className="btn" onClick={() => setConfirmRemove("")}>{t("close")}</button>
-              <button className="btn primary" onClick={() => handleRemoveImage(confirmRemove)} style={{ marginLeft: 8, background: "var(--red)", borderColor: "var(--red)" }}>
-                {t("remove")}
-              </button>
+          </ScrollArea>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setInspectInfo(null)}>
+              {t("close")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Tag Image */}
+      <Dialog open={showTagModal} onOpenChange={setShowTagModal}>
+        <DialogContent className="sm:max-w-[560px]" data-testid="images-dialog-tag">
+          <DialogHeader>
+            <DialogTitle>{t("tagImage")}</DialogTitle>
+            <DialogDescription className="sr-only">{t("tagImage")}</DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4">
+            <div className="grid gap-1">
+              <div className="text-sm font-medium">{t("sourceRef")}</div>
+              <div className="text-xs text-muted-foreground break-all">{tagSource}</div>
+            </div>
+
+            <div className="grid gap-2">
+              <div className="text-sm font-medium">{t("targetTag")} (repository)</div>
+              <Input
+                value={tagRepo}
+                onChange={(e) => setTagRepo(e.target.value)}
+                placeholder="myrepo/myimage"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleTag()
+                }}
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <div className="text-sm font-medium">{t("targetTag")} (tag)</div>
+              <Input value={tagTag} onChange={(e) => setTagTag(e.target.value)} placeholder="latest" />
             </div>
           </div>
-        </div>
-      )}
-    </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setShowTagModal(false)}>
+              {t("close")}
+            </Button>
+            <Button type="button" disabled={tagLoading || !tagRepo.trim()} onClick={handleTag}>
+              {tagLoading ? t("working") : t("tagImage")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm Remove */}
+      <AlertDialog open={!!confirmRemove} onOpenChange={(open) => !open && setConfirmRemove("")}>
+        <AlertDialogContent size="sm" data-testid="images-dialog-remove">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("removeImage")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("confirmRemoveImage")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="rounded-md border bg-muted px-2 py-1 text-xs font-mono text-foreground break-all">
+            {confirmRemove}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConfirmRemove("")}>{t("close")}</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={() => handleRemoveImage(confirmRemove)}>
+              {t("remove")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </Tabs>
+  </div>
   )
 }
