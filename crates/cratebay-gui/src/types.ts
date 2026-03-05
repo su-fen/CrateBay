@@ -133,9 +133,21 @@ export interface AiSecurityPolicy {
   cli_command_allowlist: string[]
 }
 
+export interface AiSkillDefinition {
+  id: string
+  display_name: string
+  description: string
+  tags: string[]
+  executor: string
+  target: string
+  input_schema: Record<string, unknown>
+  enabled: boolean
+}
+
 export interface AiSettings {
   profiles: AiProviderProfile[]
   active_profile_id: string
+  skills: AiSkillDefinition[]
   security_policy: AiSecurityPolicy
 }
 

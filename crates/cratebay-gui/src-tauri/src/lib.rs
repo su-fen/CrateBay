@@ -2434,6 +2434,10 @@ fn default_true() -> bool {
     true
 }
 
+fn default_skill_input_schema() -> serde_json::Value {
+    serde_json::json!({})
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AiProviderProfile {
     id: String,
@@ -2458,6 +2462,21 @@ pub struct AiSecurityPolicy {
     mcp_audit_enabled: bool,
     #[serde(default)]
     cli_command_allowlist: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AiSkillDefinition {
+    id: String,
+    display_name: String,
+    description: String,
+    #[serde(default)]
+    tags: Vec<String>,
+    executor: String,
+    target: String,
+    #[serde(default = "default_skill_input_schema")]
+    input_schema: serde_json::Value,
+    #[serde(default = "default_true")]
+    enabled: bool,
 }
 
 impl Default for AiSecurityPolicy {
@@ -2488,6 +2507,8 @@ impl Default for AiSecurityPolicy {
 pub struct AiSettings {
     profiles: Vec<AiProviderProfile>,
     active_profile_id: String,
+    #[serde(default = "default_ai_skills")]
+    skills: Vec<AiSkillDefinition>,
     #[serde(default)]
     security_policy: AiSecurityPolicy,
 }
@@ -2608,6 +2629,76 @@ fn default_ai_profiles() -> Vec<AiProviderProfile> {
     ]
 }
 
+fn ai_skill(
+    id: &str,
+    display_name: &str,
+    description: &str,
+    tags: &[&str],
+    executor: &str,
+    target: &str,
+    input_schema: serde_json::Value,
+) -> AiSkillDefinition {
+    AiSkillDefinition {
+        id: id.to_string(),
+        display_name: display_name.to_string(),
+        description: description.to_string(),
+        tags: tags.iter().map(|item| item.to_string()).collect(),
+        executor: executor.to_string(),
+        target: target.to_string(),
+        input_schema,
+        enabled: true,
+    }
+}
+
+fn default_ai_skills() -> Vec<AiSkillDefinition> {
+    vec![
+        ai_skill(
+            "assistant-container-diagnose",
+            "Container Diagnose",
+            "Run safe assistant read flow for container status and baseline diagnosis.",
+            &["assistant", "containers", "read"],
+            "assistant_step",
+            "list_containers",
+            serde_json::json!({
+                "type": "object",
+                "properties": {},
+                "additionalProperties": false
+            }),
+        ),
+        ai_skill(
+            "mcp-k8s-pods-read",
+            "Kubernetes Pods Read",
+            "Use MCP allowlisted action to fetch pod status for troubleshooting.",
+            &["mcp", "k8s", "read"],
+            "mcp_action",
+            "k8s_list_pods",
+            serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "namespace": { "type": "string" }
+                },
+                "additionalProperties": false
+            }),
+        ),
+        ai_skill(
+            "agent-cli-openclaw-plan",
+            "OpenClaw CLI Plan",
+            "Invoke OpenClaw CLI preset to generate multi-step task plans.",
+            &["agent-cli", "openclaw", "planning"],
+            "agent_cli_preset",
+            "openclaw",
+            serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "prompt": { "type": "string" }
+                },
+                "required": ["prompt"],
+                "additionalProperties": false
+            }),
+        ),
+    ]
+}
+
 fn default_ai_settings() -> AiSettings {
     let profiles = default_ai_profiles();
     let active_profile_id = profiles
@@ -2617,6 +2708,7 @@ fn default_ai_settings() -> AiSettings {
     AiSettings {
         profiles,
         active_profile_id,
+        skills: default_ai_skills(),
         security_policy: AiSecurityPolicy::default(),
     }
 }
@@ -2718,6 +2810,32 @@ fn normalize_ai_settings(mut settings: AiSettings) -> AiSettings {
         if let Some(profile) = settings.profiles.first() {
             settings.active_profile_id = profile.id.clone();
         }
+    }
+
+    let mut skill_seen = std::collections::HashSet::new();
+    settings.skills.retain(|skill| {
+        let id = skill.id.trim();
+        !id.is_empty() && skill_seen.insert(id.to_string())
+    });
+    for skill in &mut settings.skills {
+        skill.id = skill.id.trim().to_string();
+        skill.display_name = skill.display_name.trim().to_string();
+        skill.description = skill.description.trim().to_string();
+        skill.executor = skill.executor.trim().to_string();
+        skill.target = skill.target.trim().to_string();
+        skill.tags.retain(|tag| !tag.trim().is_empty());
+        if skill.display_name.is_empty() {
+            skill.display_name = skill.id.clone();
+        }
+        if skill.description.is_empty() {
+            skill.description = "Skill scaffold entry".to_string();
+        }
+        if skill.executor.is_empty() {
+            skill.executor = "assistant_step".to_string();
+        }
+    }
+    if settings.skills.is_empty() {
+        settings.skills = default_ai_skills();
     }
 
     settings
@@ -4085,7 +4203,8 @@ async fn agent_cli_run(
 mod ai_tests {
     use super::{
         assistant_arg_optional_string, assistant_arg_string, assistant_command_policy,
-        infer_assistant_steps, is_command_allowed, redact_sensitive,
+        default_ai_settings, infer_assistant_steps, is_command_allowed, normalize_ai_settings,
+        redact_sensitive,
     };
 
     #[test]
@@ -4153,6 +4272,24 @@ mod ai_tests {
         let allowlist = vec!["openclaw".to_string(), "codex".to_string()];
         assert!(is_command_allowed(&allowlist, "/usr/local/bin/openclaw"));
         assert!(!is_command_allowed(&allowlist, "/usr/local/bin/bash"));
+    }
+
+    #[test]
+    fn default_ai_settings_exposes_skill_scaffold_entries() {
+        let settings = default_ai_settings();
+        assert!(!settings.skills.is_empty());
+        assert!(settings
+            .skills
+            .iter()
+            .any(|skill| skill.id == "agent-cli-openclaw-plan"));
+    }
+
+    #[test]
+    fn normalize_ai_settings_rebuilds_skills_when_empty() {
+        let mut settings = default_ai_settings();
+        settings.skills.clear();
+        let normalized = normalize_ai_settings(settings);
+        assert!(!normalized.skills.is_empty());
     }
 
     #[derive(Clone, Copy)]

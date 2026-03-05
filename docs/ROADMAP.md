@@ -52,6 +52,7 @@
 - ✅ Plugin system
 - ✅ Performance optimization (<20MB install, <200MB idle RAM, <3s startup)
 - ✅ AI release-readiness gate script (core scenarios, UI smoke, wording guard)
+- ✅ AI skills scaffold (registry model + settings toggle + OpenClaw preset binding)
 - ⬜ Final cross-platform release validation (macOS/Linux/Windows installers)
 - ⬜ Final onboarding and upgrade path verification
 - ⬜ Final docs + website consistency pass before GA announcement

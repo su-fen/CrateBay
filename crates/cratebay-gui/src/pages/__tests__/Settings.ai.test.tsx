@@ -21,6 +21,21 @@ const baseAiSettings: AiSettings = {
       headers: {},
     },
   ],
+  skills: [
+    {
+      id: "agent-cli-openclaw-plan",
+      display_name: "OpenClaw CLI Plan",
+      description: "Invoke openclaw preset for planning",
+      tags: ["agent-cli", "openclaw"],
+      executor: "agent_cli_preset",
+      target: "openclaw",
+      input_schema: {
+        type: "object",
+        properties: { prompt: { type: "string" } },
+      },
+      enabled: true,
+    },
+  ],
   security_policy: {
     destructive_action_confirmation: true,
     mcp_remote_enabled: false,
@@ -137,5 +152,38 @@ describe("Settings AI section", () => {
       })
     )
     expect(screen.getByText(/openclaw run --prompt/)).toBeInTheDocument()
+  })
+
+  it("toggles skill scaffold and saves settings", async () => {
+    const user = userEvent.setup()
+    vi.mocked(invoke).mockImplementation(async (command, args) => {
+      if (command === "load_ai_settings") return baseAiSettings
+      if (command === "agent_cli_list_presets") return []
+      if (command === "ai_secret_exists") return true
+      if (command === "save_ai_settings") return (args as { settings: AiSettings }).settings
+      return null
+    })
+
+    render(<Settings {...defaultProps} />)
+    const skillLabel = await screen.findByText(/OpenClaw CLI Plan/)
+    await user.click(skillLabel)
+
+    await user.click(screen.getByRole("button", { name: t("aiSaveSettings") }))
+
+    await waitFor(() =>
+      expect(invoke).toHaveBeenCalledWith(
+        "save_ai_settings",
+        expect.objectContaining({
+          settings: expect.objectContaining({
+            skills: expect.arrayContaining([
+              expect.objectContaining({
+                id: "agent-cli-openclaw-plan",
+                enabled: false,
+              }),
+            ]),
+          }),
+        })
+      )
+    )
   })
 })

@@ -20,6 +20,7 @@ import type {
   AgentCliPreset,
   AgentCliRunResult,
   AiConnectionTestResult,
+  AiSkillDefinition,
   AiProfileValidationResult,
   AiProviderProfile,
   AiSettings,
@@ -198,6 +199,21 @@ export function Settings({ theme, setTheme, lang, setLang, t }: SettingsProps) {
         ...prev,
         profiles: prev.profiles.map((profile) =>
           profile.id === prev.active_profile_id ? updater(profile) : profile
+        ),
+      }
+    })
+  }
+
+  const updateSkill = (
+    skillId: string,
+    updater: (skill: AiSkillDefinition) => AiSkillDefinition
+  ) => {
+    setAiSettings((prev) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        skills: (prev.skills ?? []).map((skill) =>
+          skill.id === skillId ? updater(skill) : skill
         ),
       }
     })
@@ -744,6 +760,46 @@ export function Settings({ theme, setTheme, lang, setLang, t }: SettingsProps) {
                       spellCheck={false}
                       className="mt-1 min-h-24 w-full rounded-md border border-border bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     />
+                  </div>
+                </div>
+
+                <div className="space-y-2 rounded-md border border-border/70 bg-card px-3 py-3">
+                  <div className="text-xs font-semibold text-muted-foreground">
+                    {t("aiSkills")}
+                  </div>
+                  <div className="text-xs text-muted-foreground">{t("aiSkillsDesc")}</div>
+                  {(aiSettings.skills ?? []).length === 0 && (
+                    <div className="text-xs text-muted-foreground">{t("aiSkillsEmpty")}</div>
+                  )}
+                  {(aiSettings.skills ?? []).map((skill) => (
+                    <div
+                      key={skill.id}
+                      className="space-y-1 rounded-md border border-border/60 bg-background px-3 py-2"
+                    >
+                      <label className="flex items-center gap-2 text-sm text-foreground">
+                        <Checkbox
+                          checked={skill.enabled}
+                          onCheckedChange={(value) =>
+                            updateSkill(skill.id, (item) => ({
+                              ...item,
+                              enabled: value === true,
+                            }))
+                          }
+                        />
+                        <span className="font-medium">{skill.display_name}</span>
+                        <Badge variant={skill.enabled ? "secondary" : "outline"}>
+                          {skill.enabled ? t("aiSkillEnabled") : t("stopped")}
+                        </Badge>
+                      </label>
+                      <div className="text-xs text-muted-foreground">
+                        {t("aiSkillExecutor")}: {skill.executor} · {t("aiSkillTarget")}:{" "}
+                        {skill.target}
+                      </div>
+                      <div className="text-xs text-muted-foreground">{skill.description}</div>
+                    </div>
+                  ))}
+                  <div className="text-xs text-muted-foreground">
+                    {t("aiSkillsPreviewHint")}
                   </div>
                 </div>
 
