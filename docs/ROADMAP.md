@@ -38,9 +38,12 @@
 - ✅ Auto-update checker (GitHub releases)
 - ✅ Official website (GitHub Pages)
 
-## v1.0.0 — GA Readiness (In Progress, Coming Soon)
+## Current Stage — Pre-v1 Development (In Progress)
 
-- ⚠️ Core feature scope is mostly complete, but GA release is not announced yet.
+- ⚠️ CrateBay is still in development preview and **not GA yet**.
+- ⚠️ `v1.0.0` will be declared only after all pre-v1 milestones are complete and validated on macOS/Linux/Windows.
+
+## v0.5.0 — Core Hardening (Done)
 
 - ✅ ACPI graceful shutdown (VZ bridge 3-phase: requestStop → poll → force stop)
 - ✅ CI/CD pipeline (GitHub Actions: CI + release builds)
@@ -51,16 +54,48 @@
 - ✅ Linux (KVM) VM backend (kvm-ioctls, vCPU, memory, kernel loading, serial console)
 - ✅ Security audit & hardening (input validation, path traversal prevention, log sanitization)
 - ✅ Windows (Hyper-V) VM backend
-- ✅ Plugin system
+- ✅ Plugin system base
 - ✅ Performance optimization (<20MB install, <200MB idle RAM, <3s startup)
+
+## v0.6.0 — AI Infra Foundation (Done)
+
+- ✅ AI hub navigation scaffold: `Overview / Models / Sandboxes / MCP / Assistant`
+- ✅ Ollama phase 1: runtime status check + local model listing in GUI
+- ✅ AI bootstrap tooling: `scripts/setup-ai.sh` + OpenSandbox local config scaffold
 - ✅ AI release-readiness gate script (core scenarios, UI smoke, wording guard)
 - ✅ AI skills scaffold (registry model + settings toggle + OpenClaw preset binding)
 - ✅ Settings UX split (General vs AI tabs) and assistant AI icon refresh
+
+## v0.7.0 — Agent Sandboxes MVP (In Progress)
+
+- ✅ Sandbox templates (Node/Python/Rust dev images)
+- ✅ Sandbox lifecycle UI + backend (`create/start/stop/delete/inspect`)
+- ✅ Resource limit + TTL metadata + local JSONL audit trail
+- ⬜ TTL auto-cleanup worker (periodic reclaim)
+- ⬜ Assistant/Skills sandbox executor (opt-in)
+- ⬜ OpenSandbox runtime adapter (optional backend path)
+
+## v0.8.0 — MCP Manager MVP (Planned)
+
+- ⬜ MCP server registry (name, command/container, env, secret refs)
+- ⬜ Start/stop/status/logs for multiple MCP servers
+- ⬜ Export client configuration (Codex/Claude/Cursor presets)
+- ⬜ Policy/audit integration with existing AI security settings
+
+## v0.9.0 — Release Candidate & GA Gate (Planned)
+
 - ⬜ Final cross-platform release validation (macOS/Linux/Windows installers)
 - ⬜ Final onboarding and upgrade path verification
 - ⬜ Final docs + website consistency pass before GA announcement
+- ⬜ Run full `docs/RELEASE_SMOKE_CHECKLIST.md` and sign-off
 
-## v1.1.0 — Ecosystem & Polish (Planned)
+## v1.0.0 — Official GA (Target)
+
+- ⬜ Complete all `v0.7.0`–`v0.9.0` milestones
+- ⬜ Freeze release notes/changelog and publish signed binaries
+- ⬜ Announce GA only after release smoke checks pass on all target platforms
+
+## Post-v1 — Ecosystem & Polish (Planned)
 
 - ⬜ Plugin system enhancements (marketplace, versioning, sandboxed execution)
 - ⬜ Expanded OS image catalog (Fedora, Arch Linux, NixOS, FreeBSD)
@@ -70,25 +105,4 @@
 - ⬜ Remote Docker host connections
 - ⬜ GPU passthrough (macOS Metal, Linux VFIO)
 - ⬜ Telemetry-free analytics dashboard (local-only usage stats)
-
-## v1.2.0 — AI Infrastructure MVP (In Progress)
-
-- ✅ AI hub navigation scaffold: `Overview / Models / Sandboxes / MCP / Assistant`
-- ✅ Ollama phase 1: runtime status check + local model listing in GUI
-- ✅ AI bootstrap tooling: `scripts/setup-ai.sh` + OpenSandbox local config scaffold
-- ⬜ Managed Services abstraction: install/configure/start/stop/status/logs
-- ⬜ Ollama phase 2: pull/delete models and richer storage management
-- ⬜ MCP Server Manager MVP (registry, start/stop/logs, export client config)
-
-## v1.3.0 — Agent Sandbox v1 (Planned)
-
-- ⬜ Sandbox templates (dev env images) + lifecycle UI (create/start/stop/inspect)
-- ⬜ OpenSandbox integration path (optional local runtime backend)
-- ⬜ Network policy presets, TTL cleanup, secrets refs, workspace mounts
-- ⬜ Assistant/Skills: sandbox executor (opt-in) + audit events
-
-## v1.4.0 — Local Models & GPU Observability (Planned)
-
-- ⬜ Model runtime profiles (model sets, per-workflow presets)
-- ⬜ GPU visibility (best-effort per OS) and basic VRAM usage snapshots
-- ⬜ Multi-runtime support (Ollama first; extend later)
+- ⬜ Model runtime profiles + richer multi-runtime support

@@ -167,13 +167,19 @@ Shipped in current preview:
 
 - Top-level **AI Hub** page with `Overview / Models / Sandboxes / MCP / Assistant`.
 - **Ollama phase 1** integration: runtime status probe + local model list in GUI.
+- **Agent Sandboxes MVP**: template-based sandbox lifecycle (`create/start/stop/delete/inspect`) with resource limits, TTL metadata, and local audit log.
 - Local bootstrap assets: `scripts/setup-ai.sh` and `tools/opensandbox/`.
 
 Next execution focus (short horizon):
 
-- Agent Sandbox MVP: template-based sandbox lifecycle (`create/start/stop/inspect`).
 - MCP Manager MVP: server registry + start/stop/logs + client config export.
 - Ollama phase 2: model pull/delete actions and richer storage controls.
+- Sandbox TTL auto-cleanup + Assistant/Skills sandbox executor integration.
+
+Release posture:
+
+- CrateBay remains in **pre-v1 development**.
+- `v1.0.0` will be announced only after Models/Sandboxes/MCP scope and release validation are fully complete.
 
 ---
 

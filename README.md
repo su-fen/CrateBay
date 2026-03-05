@@ -107,7 +107,7 @@ OrbStack is great, but it's **closed-source and macOS-only**. Docker Desktop is 
 
 ## Quick Start
 
-> CrateBay v1.0.0 GA is coming soon. Preview builds are available from source.
+> CrateBay is in pre-v1 development. `v1.0.0` GA will be announced after the full release scope is completed and validated.
 
 ```bash
 # Build from source
@@ -139,13 +139,14 @@ AI infrastructure progress in current preview:
 
 - New top-level **AI Hub** page with `Overview / Models / Sandboxes / MCP / Assistant` tabs.
 - `Models` tab now includes **Ollama phase 1**: runtime status + local model listing.
+- `Sandboxes` tab now includes **MVP lifecycle management**: template-based create/start/stop/delete/inspect with local audit log.
 - `scripts/setup-ai.sh` and `tools/opensandbox/` provide local bootstrap scaffolding.
 
 ## AI Infrastructure (Roadmap)
 
 CrateBay is evolving into a **self-hosted AI infrastructure desktop** on top of the existing Docker/VM foundation:
 
-- **Agent Sandboxes**: one-click isolated execution environments (OpenSandbox-compatible path planned)
+- **Agent Sandboxes**: MVP available now; continue toward OpenSandbox-compatible backend path
 - **Local Model Runtime**: Ollama-first model lifecycle + runtime visibility
 - **MCP Server Manager**: manage multiple MCP servers and export client configs
 

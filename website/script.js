@@ -57,7 +57,7 @@
         'Built-in K3s integration with pod, service, and deployment dashboards. Manage namespaces and workloads effortlessly.',
       feat7Title: 'AI Infrastructure Hub',
       feat7Desc:
-        'A single place for local models (Ollama-first), agent sandboxes (planned), MCP server management (planned), and safe execution workflows.',
+        'A single place for local models (Ollama-first), agent sandboxes (MVP available), MCP server management (planned), and safe execution workflows.',
       feat8Title: 'Agent / CLI Bridge',
       feat8Desc:
         'Run Codex, Claude, Gemini, Qwen and OpenClaw workflows with allowlist, dry-run, timeout control, command audit, and tabbed AI settings.',
@@ -198,7 +198,7 @@
       feat6Title: 'Kubernetes (K3s)',
       feat6Desc: '内置 K3s 集成，提供 Pod、Service 和 Deployment 仪表盘。轻松管理命名空间和工作负载。',
       feat7Title: 'AI 基础设施中心',
-      feat7Desc: '一个入口统一管理本地模型（Ollama-first）、Agent 沙箱（规划中）、MCP Server（规划中）以及安全执行工作流。',
+      feat7Desc: '一个入口统一管理本地模型（Ollama-first）、Agent 沙箱（MVP 已可用）、MCP Server（规划中）以及安全执行工作流。',
       feat8Title: 'Agent / CLI 桥接',
       feat8Desc: '支持 Codex、Claude、Gemini、Qwen、OpenClaw 工作流，提供白名单、dry-run、超时、审计控制与 AI 设置标签页。',
       demoLabel: '界面',

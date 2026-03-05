@@ -2661,10 +2661,699 @@ async fn ollama_list_models() -> Result<Vec<OllamaModelDto>, String> {
     Ok(out)
 }
 
+// ── Agent sandboxes (MVP) ──────────────────────────────────────────
+
+const SANDBOX_LABEL_MANAGED: &str = "com.cratebay.sandbox.managed";
+const SANDBOX_LABEL_TEMPLATE_ID: &str = "com.cratebay.sandbox.template_id";
+const SANDBOX_LABEL_OWNER: &str = "com.cratebay.sandbox.owner";
+const SANDBOX_LABEL_CREATED_AT: &str = "com.cratebay.sandbox.created_at";
+const SANDBOX_LABEL_EXPIRES_AT: &str = "com.cratebay.sandbox.expires_at";
+const SANDBOX_LABEL_TTL_HOURS: &str = "com.cratebay.sandbox.ttl_hours";
+const SANDBOX_LABEL_CPU_CORES: &str = "com.cratebay.sandbox.cpu_cores";
+const SANDBOX_LABEL_MEMORY_MB: &str = "com.cratebay.sandbox.memory_mb";
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SandboxTemplateDto {
+    id: String,
+    name: String,
+    description: String,
+    image: String,
+    default_command: String,
+    cpu_default: u32,
+    memory_mb_default: u64,
+    ttl_hours_default: u32,
+    tags: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+struct SandboxTemplateDef {
+    id: &'static str,
+    name: &'static str,
+    description: &'static str,
+    image: &'static str,
+    default_command: &'static str,
+    cpu_default: u32,
+    memory_mb_default: u64,
+    ttl_hours_default: u32,
+    tags: &'static [&'static str],
+    default_env: &'static [&'static str],
+}
+
+fn sandbox_template_defs() -> Vec<SandboxTemplateDef> {
+    vec![
+        SandboxTemplateDef {
+            id: "node-dev",
+            name: "Node.js Dev",
+            description: "Node 20 development runtime for coding agents and MCP tasks",
+            image: "node:20-bookworm",
+            default_command: "sleep infinity",
+            cpu_default: 2,
+            memory_mb_default: 2048,
+            ttl_hours_default: 8,
+            tags: &["node", "javascript", "typescript"],
+            default_env: &["CRATEBAY_SANDBOX=1", "NODE_ENV=development"],
+        },
+        SandboxTemplateDef {
+            id: "python-dev",
+            name: "Python Dev",
+            description: "Python 3.11 runtime for agent tools, scripts, and notebooks",
+            image: "python:3.11-bookworm",
+            default_command: "sleep infinity",
+            cpu_default: 2,
+            memory_mb_default: 3072,
+            ttl_hours_default: 8,
+            tags: &["python", "llm-tools", "automation"],
+            default_env: &["CRATEBAY_SANDBOX=1", "PYTHONUNBUFFERED=1"],
+        },
+        SandboxTemplateDef {
+            id: "rust-dev",
+            name: "Rust Dev",
+            description: "Rust toolchain runtime for compile/test oriented agent workflows",
+            image: "rust:1.77-bookworm",
+            default_command: "sleep infinity",
+            cpu_default: 2,
+            memory_mb_default: 4096,
+            ttl_hours_default: 8,
+            tags: &["rust", "cargo", "systems"],
+            default_env: &["CRATEBAY_SANDBOX=1", "CARGO_TERM_COLOR=always"],
+        },
+    ]
+}
+
+fn sandbox_templates_catalog() -> Vec<SandboxTemplateDto> {
+    sandbox_template_defs()
+        .into_iter()
+        .map(|it| SandboxTemplateDto {
+            id: it.id.to_string(),
+            name: it.name.to_string(),
+            description: it.description.to_string(),
+            image: it.image.to_string(),
+            default_command: it.default_command.to_string(),
+            cpu_default: it.cpu_default,
+            memory_mb_default: it.memory_mb_default,
+            ttl_hours_default: it.ttl_hours_default,
+            tags: it.tags.iter().map(|v| v.to_string()).collect(),
+        })
+        .collect()
+}
+
+fn sandbox_find_template(template_id: &str) -> Option<SandboxTemplateDef> {
+    sandbox_template_defs()
+        .into_iter()
+        .find(|it| it.id == template_id)
+}
+
+fn sandbox_short_id(id: &str) -> String {
+    id.chars().take(12).collect::<String>()
+}
+
+fn sandbox_parse_u32_label(labels: &HashMap<String, String>, key: &str, default: u32) -> u32 {
+    labels
+        .get(key)
+        .and_then(|v| v.parse::<u32>().ok())
+        .unwrap_or(default)
+}
+
+fn sandbox_parse_u64_label(labels: &HashMap<String, String>, key: &str, default: u64) -> u64 {
+    labels
+        .get(key)
+        .and_then(|v| v.parse::<u64>().ok())
+        .unwrap_or(default)
+}
+
+fn sandbox_is_managed(labels: &HashMap<String, String>) -> bool {
+    labels
+        .get(SANDBOX_LABEL_MANAGED)
+        .map(|v| v == "true")
+        .unwrap_or(false)
+}
+
+fn sandbox_is_expired(expires_at: &str) -> bool {
+    chrono::DateTime::parse_from_rfc3339(expires_at)
+        .map(|dt| dt.with_timezone(&chrono::Utc) <= chrono::Utc::now())
+        .unwrap_or(false)
+}
+
+fn sandbox_default_owner() -> String {
+    std::env::var("USER")
+        .or_else(|_| std::env::var("USERNAME"))
+        .unwrap_or_else(|_| "local-user".to_string())
+}
+
+fn sandbox_normalize_owner(owner: Option<String>) -> String {
+    let mut value = owner
+        .map(|v| v.trim().to_string())
+        .filter(|v| !v.is_empty())
+        .unwrap_or_else(sandbox_default_owner);
+    if value.len() > 64 {
+        value = value.chars().take(64).collect();
+    }
+    value
+}
+
+fn sandbox_normalize_env(env: Option<Vec<String>>) -> Result<Vec<String>, String> {
+    let mut out = Vec::new();
+    for item in env.unwrap_or_default() {
+        let trimmed = item.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        if trimmed.len() > 512 {
+            return Err("sandbox env entry is too long".to_string());
+        }
+        if trimmed.contains('\0') {
+            return Err("sandbox env entry contains null byte".to_string());
+        }
+        if !trimmed.contains('=') {
+            return Err(format!(
+                "sandbox env entry '{}' must follow KEY=VALUE",
+                trimmed
+            ));
+        }
+        let key = trimmed.split('=').next().unwrap_or_default().trim();
+        if key.is_empty() {
+            return Err(format!("sandbox env entry '{}' has empty key", trimmed));
+        }
+        if !key
+            .chars()
+            .all(|ch| ch.is_ascii_alphanumeric() || ch == '_' || ch == '-')
+        {
+            return Err(format!(
+                "sandbox env key '{}' contains invalid characters",
+                key
+            ));
+        }
+        out.push(trimmed.to_string());
+    }
+    if out.len() > 64 {
+        return Err("sandbox env has too many entries (max 64)".to_string());
+    }
+    Ok(out)
+}
+
+fn sandbox_generate_name(template_id: &str) -> String {
+    let suffix = SANDBOX_SEQ.fetch_add(1, Ordering::Relaxed) % 10_000;
+    let stamp = chrono::Utc::now().format("%m%d%H%M%S");
+    let mut name = format!("cbx-{}-{}-{:04}", template_id, stamp, suffix);
+    if name.len() > 128 {
+        name = name.chars().take(128).collect();
+    }
+    name
+}
+
+fn sandbox_audit_path() -> PathBuf {
+    cratebay_core::config_dir()
+        .join("audit")
+        .join("sandboxes.jsonl")
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SandboxAuditEventDto {
+    timestamp: String,
+    action: String,
+    sandbox_id: String,
+    sandbox_name: String,
+    level: String,
+    detail: String,
+}
+
+fn sandbox_audit_log(
+    action: &str,
+    sandbox_id: &str,
+    sandbox_name: &str,
+    level: &str,
+    detail: &str,
+) {
+    let path = sandbox_audit_path();
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    let event = SandboxAuditEventDto {
+        timestamp: chrono::Utc::now().to_rfc3339(),
+        action: action.to_string(),
+        sandbox_id: sandbox_id.to_string(),
+        sandbox_name: sandbox_name.to_string(),
+        level: level.to_string(),
+        detail: cratebay_core::validation::sanitize_log_string(detail),
+    };
+    if let Ok(line) = serde_json::to_string(&event) {
+        if let Ok(mut file) = OpenOptions::new().create(true).append(true).open(path) {
+            let _ = writeln!(file, "{}", line);
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct SandboxCreateRequest {
+    template_id: String,
+    #[serde(default)]
+    name: Option<String>,
+    #[serde(default)]
+    image: Option<String>,
+    #[serde(default)]
+    command: Option<String>,
+    #[serde(default)]
+    env: Option<Vec<String>>,
+    #[serde(default)]
+    cpu_cores: Option<u32>,
+    #[serde(default)]
+    memory_mb: Option<u64>,
+    #[serde(default)]
+    ttl_hours: Option<u32>,
+    #[serde(default)]
+    owner: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SandboxCreateResultDto {
+    id: String,
+    short_id: String,
+    name: String,
+    image: String,
+    login_cmd: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SandboxInfoDto {
+    id: String,
+    short_id: String,
+    name: String,
+    image: String,
+    state: String,
+    status: String,
+    template_id: String,
+    owner: String,
+    created_at: String,
+    expires_at: String,
+    ttl_hours: u32,
+    cpu_cores: u32,
+    memory_mb: u64,
+    is_expired: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SandboxInspectDto {
+    id: String,
+    short_id: String,
+    name: String,
+    image: String,
+    template_id: String,
+    owner: String,
+    created_at: String,
+    expires_at: String,
+    ttl_hours: u32,
+    cpu_cores: u32,
+    memory_mb: u64,
+    running: bool,
+    command: String,
+    env: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+struct SandboxMeta {
+    template_id: String,
+    owner: String,
+    created_at: String,
+    expires_at: String,
+    ttl_hours: u32,
+    cpu_cores: u32,
+    memory_mb: u64,
+}
+
+fn sandbox_meta_from_labels(labels: &HashMap<String, String>) -> SandboxMeta {
+    SandboxMeta {
+        template_id: labels
+            .get(SANDBOX_LABEL_TEMPLATE_ID)
+            .cloned()
+            .unwrap_or_else(|| "custom".to_string()),
+        owner: labels
+            .get(SANDBOX_LABEL_OWNER)
+            .cloned()
+            .unwrap_or_else(sandbox_default_owner),
+        created_at: labels
+            .get(SANDBOX_LABEL_CREATED_AT)
+            .cloned()
+            .unwrap_or_default(),
+        expires_at: labels
+            .get(SANDBOX_LABEL_EXPIRES_AT)
+            .cloned()
+            .unwrap_or_default(),
+        ttl_hours: sandbox_parse_u32_label(labels, SANDBOX_LABEL_TTL_HOURS, 8),
+        cpu_cores: sandbox_parse_u32_label(labels, SANDBOX_LABEL_CPU_CORES, 2),
+        memory_mb: sandbox_parse_u64_label(labels, SANDBOX_LABEL_MEMORY_MB, 2048),
+    }
+}
+
+async fn sandbox_require_managed(
+    docker: &Docker,
+    id: &str,
+) -> Result<(HashMap<String, String>, String), String> {
+    let inspect = docker
+        .inspect_container(id, None::<InspectContainerOptions>)
+        .await
+        .map_err(|e| format!("Failed to inspect sandbox {}: {}", id, e))?;
+
+    let labels = inspect
+        .config
+        .as_ref()
+        .and_then(|cfg| cfg.labels.clone())
+        .unwrap_or_default();
+    if !sandbox_is_managed(&labels) {
+        return Err("Target container is not a CrateBay-managed sandbox".to_string());
+    }
+
+    let name = inspect
+        .name
+        .unwrap_or_else(|| id.to_string())
+        .trim_start_matches('/')
+        .to_string();
+
+    Ok((labels, name))
+}
+
+#[tauri::command]
+fn sandbox_templates() -> Vec<SandboxTemplateDto> {
+    sandbox_templates_catalog()
+}
+
+#[tauri::command]
+async fn sandbox_list() -> Result<Vec<SandboxInfoDto>, String> {
+    let docker = connect_docker()?;
+
+    let opts = ListContainersOptions::<String> {
+        all: true,
+        ..Default::default()
+    };
+    let containers = docker
+        .list_containers(Some(opts))
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let mut sandboxes = containers
+        .into_iter()
+        .filter_map(|item| {
+            let labels = item.labels.unwrap_or_default();
+            if !sandbox_is_managed(&labels) {
+                return None;
+            }
+            let id = item.id.unwrap_or_default();
+            let short_id = sandbox_short_id(&id);
+            let name = item
+                .names
+                .unwrap_or_default()
+                .first()
+                .unwrap_or(&String::new())
+                .trim_start_matches('/')
+                .to_string();
+            let meta = sandbox_meta_from_labels(&labels);
+            Some(SandboxInfoDto {
+                id,
+                short_id,
+                name,
+                image: item.image.unwrap_or_default(),
+                state: item.state.unwrap_or_default(),
+                status: item.status.unwrap_or_default(),
+                template_id: meta.template_id,
+                owner: meta.owner,
+                created_at: meta.created_at.clone(),
+                expires_at: meta.expires_at.clone(),
+                ttl_hours: meta.ttl_hours,
+                cpu_cores: meta.cpu_cores,
+                memory_mb: meta.memory_mb,
+                is_expired: sandbox_is_expired(&meta.expires_at),
+            })
+        })
+        .collect::<Vec<_>>();
+
+    sandboxes.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+    Ok(sandboxes)
+}
+
+#[tauri::command]
+async fn sandbox_create(request: SandboxCreateRequest) -> Result<SandboxCreateResultDto, String> {
+    let template_id = request.template_id.trim().to_string();
+    let template = sandbox_find_template(&template_id)
+        .ok_or_else(|| format!("Unknown sandbox template '{}'", template_id))?;
+
+    let image = request
+        .image
+        .map(|v| v.trim().to_string())
+        .filter(|v| !v.is_empty())
+        .unwrap_or_else(|| template.image.to_string());
+    validation::validate_image_reference(&image)
+        .map_err(|e| format!("Invalid sandbox image '{}': {}", image, e))?;
+
+    let command = request
+        .command
+        .map(|v| v.trim().to_string())
+        .filter(|v| !v.is_empty())
+        .unwrap_or_else(|| template.default_command.to_string());
+
+    let name = request
+        .name
+        .map(|v| v.trim().to_string())
+        .filter(|v| !v.is_empty())
+        .unwrap_or_else(|| sandbox_generate_name(&template_id));
+    validation::validate_container_name(&name)
+        .map_err(|e| format!("Invalid sandbox name '{}': {}", name, e))?;
+
+    let owner = sandbox_normalize_owner(request.owner);
+    let cpu_cores = request
+        .cpu_cores
+        .unwrap_or(template.cpu_default)
+        .clamp(1, 16);
+    let memory_mb = request
+        .memory_mb
+        .unwrap_or(template.memory_mb_default)
+        .clamp(256, 65536);
+    let ttl_hours = request
+        .ttl_hours
+        .unwrap_or(template.ttl_hours_default)
+        .clamp(1, 168);
+
+    let created_at = chrono::Utc::now();
+    let expires_at = created_at + chrono::Duration::hours(ttl_hours as i64);
+
+    let mut env = template
+        .default_env
+        .iter()
+        .map(|v| v.to_string())
+        .collect::<Vec<_>>();
+    let mut custom_env = sandbox_normalize_env(request.env)?;
+    env.append(&mut custom_env);
+
+    let mut labels = HashMap::new();
+    labels.insert(SANDBOX_LABEL_MANAGED.to_string(), "true".to_string());
+    labels.insert(SANDBOX_LABEL_TEMPLATE_ID.to_string(), template_id.clone());
+    labels.insert(SANDBOX_LABEL_OWNER.to_string(), owner.clone());
+    labels.insert(
+        SANDBOX_LABEL_CREATED_AT.to_string(),
+        created_at.to_rfc3339(),
+    );
+    labels.insert(
+        SANDBOX_LABEL_EXPIRES_AT.to_string(),
+        expires_at.to_rfc3339(),
+    );
+    labels.insert(SANDBOX_LABEL_TTL_HOURS.to_string(), ttl_hours.to_string());
+    labels.insert(SANDBOX_LABEL_CPU_CORES.to_string(), cpu_cores.to_string());
+    labels.insert(SANDBOX_LABEL_MEMORY_MB.to_string(), memory_mb.to_string());
+
+    let mut host_config = HostConfig::default();
+    host_config.nano_cpus = Some((cpu_cores as i64) * 1_000_000_000);
+    host_config.memory = Some((memory_mb as i64).saturating_mul(1024).saturating_mul(1024));
+
+    let config = Config::<String> {
+        image: Some(image.clone()),
+        cmd: Some(vec![
+            "/bin/sh".to_string(),
+            "-lc".to_string(),
+            command.clone(),
+        ]),
+        host_config: Some(host_config),
+        labels: Some(labels),
+        env: if env.is_empty() { None } else { Some(env) },
+        tty: Some(true),
+        open_stdin: Some(true),
+        ..Default::default()
+    };
+
+    let docker = connect_docker()?;
+    let created = docker
+        .create_container(
+            Some(CreateContainerOptions {
+                name: name.clone(),
+                platform: None,
+            }),
+            config,
+        )
+        .await
+        .map_err(|e| format!("Failed to create sandbox: {}", e))?;
+
+    docker
+        .start_container(&created.id, None::<StartContainerOptions<String>>)
+        .await
+        .map_err(|e| format!("Failed to start sandbox {}: {}", name, e))?;
+
+    let short_id = sandbox_short_id(&created.id);
+    sandbox_audit_log(
+        "create",
+        &short_id,
+        &name,
+        "ok",
+        &format!(
+            "template={} image={} ttl={}h cpu={} mem={}MB",
+            template_id, image, ttl_hours, cpu_cores, memory_mb
+        ),
+    );
+
+    let login_cmd = if let Some(host) = docker_host_for_cli() {
+        format!("DOCKER_HOST={} docker exec -it {} /bin/sh", host, name)
+    } else {
+        format!("docker exec -it {} /bin/sh", name)
+    };
+
+    Ok(SandboxCreateResultDto {
+        id: created.id,
+        short_id,
+        name,
+        image,
+        login_cmd,
+    })
+}
+
+#[tauri::command]
+async fn sandbox_start(id: String) -> Result<(), String> {
+    let docker = connect_docker()?;
+    let (_, name) = sandbox_require_managed(&docker, &id).await?;
+    docker
+        .start_container(&id, None::<StartContainerOptions<String>>)
+        .await
+        .map_err(|e| format!("Failed to start sandbox {}: {}", id, e))?;
+    sandbox_audit_log("start", &id, &name, "ok", "sandbox started");
+    Ok(())
+}
+
+#[tauri::command]
+async fn sandbox_stop(id: String) -> Result<(), String> {
+    let docker = connect_docker()?;
+    let (_, name) = sandbox_require_managed(&docker, &id).await?;
+    docker
+        .stop_container(&id, Some(StopContainerOptions { t: 10 }))
+        .await
+        .map_err(|e| format!("Failed to stop sandbox {}: {}", id, e))?;
+    sandbox_audit_log("stop", &id, &name, "ok", "sandbox stopped");
+    Ok(())
+}
+
+#[tauri::command]
+async fn sandbox_delete(id: String) -> Result<(), String> {
+    let docker = connect_docker()?;
+    let (_, name) = sandbox_require_managed(&docker, &id).await?;
+    let _ = docker
+        .stop_container(&id, Some(StopContainerOptions { t: 5 }))
+        .await;
+    docker
+        .remove_container(
+            &id,
+            Some(RemoveContainerOptions {
+                force: true,
+                ..Default::default()
+            }),
+        )
+        .await
+        .map_err(|e| format!("Failed to delete sandbox {}: {}", id, e))?;
+    sandbox_audit_log("delete", &id, &name, "ok", "sandbox removed");
+    Ok(())
+}
+
+#[tauri::command]
+async fn sandbox_inspect(id: String) -> Result<SandboxInspectDto, String> {
+    let docker = connect_docker()?;
+    let inspect = docker
+        .inspect_container(&id, None::<InspectContainerOptions>)
+        .await
+        .map_err(|e| format!("Failed to inspect sandbox {}: {}", id, e))?;
+
+    let labels = inspect
+        .config
+        .as_ref()
+        .and_then(|cfg| cfg.labels.clone())
+        .unwrap_or_default();
+    if !sandbox_is_managed(&labels) {
+        return Err("Target container is not a CrateBay-managed sandbox".to_string());
+    }
+    let meta = sandbox_meta_from_labels(&labels);
+
+    let running = inspect
+        .state
+        .as_ref()
+        .and_then(|s| s.running)
+        .unwrap_or(false);
+    let image = inspect
+        .config
+        .as_ref()
+        .and_then(|cfg| cfg.image.clone())
+        .unwrap_or_default();
+    let command = inspect
+        .config
+        .as_ref()
+        .and_then(|cfg| cfg.cmd.clone())
+        .unwrap_or_default()
+        .join(" ");
+    let env = inspect
+        .config
+        .as_ref()
+        .and_then(|cfg| cfg.env.clone())
+        .unwrap_or_default();
+    let name = inspect
+        .name
+        .unwrap_or_else(|| id.clone())
+        .trim_start_matches('/')
+        .to_string();
+
+    Ok(SandboxInspectDto {
+        id: id.clone(),
+        short_id: sandbox_short_id(&id),
+        name,
+        image,
+        template_id: meta.template_id,
+        owner: meta.owner,
+        created_at: meta.created_at,
+        expires_at: meta.expires_at,
+        ttl_hours: meta.ttl_hours,
+        cpu_cores: meta.cpu_cores,
+        memory_mb: meta.memory_mb,
+        running,
+        command,
+        env,
+    })
+}
+
+#[tauri::command]
+fn sandbox_audit_list(limit: Option<usize>) -> Result<Vec<SandboxAuditEventDto>, String> {
+    let path = sandbox_audit_path();
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+    let raw = std::fs::read_to_string(&path)
+        .map_err(|e| format!("Failed to read sandbox audit log {}: {}", path.display(), e))?;
+    let limit = limit.unwrap_or(60).clamp(1, 500);
+    let mut events = raw
+        .lines()
+        .filter_map(|line| serde_json::from_str::<SandboxAuditEventDto>(line).ok())
+        .collect::<Vec<_>>();
+    if events.len() > limit {
+        events = events.split_off(events.len() - limit);
+    }
+    events.reverse();
+    Ok(events)
+}
+
 // ── AI settings commands ───────────────────────────────────────────
 
 const AI_SECRET_SERVICE: &str = "com.cratebay.app.ai";
 static AI_REQUEST_SEQ: AtomicU64 = AtomicU64::new(1);
+static SANDBOX_SEQ: AtomicU64 = AtomicU64::new(1);
 
 fn default_true() -> bool {
     true
@@ -5284,6 +5973,14 @@ pub fn run() {
             k8s_pod_logs,
             ollama_status,
             ollama_list_models,
+            sandbox_templates,
+            sandbox_list,
+            sandbox_create,
+            sandbox_start,
+            sandbox_stop,
+            sandbox_delete,
+            sandbox_inspect,
+            sandbox_audit_list,
             load_ai_settings,
             save_ai_settings,
             validate_ai_profile,

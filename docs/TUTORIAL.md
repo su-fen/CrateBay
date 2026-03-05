@@ -182,7 +182,7 @@ Docker volume management:
 
 ### Virtual Machines (虚拟机)
 
-Available in the current v1.0.0 preview (GA coming soon):
+Available in current pre-v1 preview builds:
 
 - **Create / start / stop / delete / list** with full lifecycle management
 - **CPU / Memory / Disk** parameters on creation
@@ -198,7 +198,7 @@ Available in the current v1.0.0 preview (GA coming soon):
 
 ### Images (镜像)
 
-Also available in the current v1.0.0 preview:
+Also available in current pre-v1 preview builds:
 
 - **Search images** across **Docker Hub** and **Quay**
 - **List tags** for registry-domain references (e.g. `quay.io/org/image`, `ghcr.io/org/image`)
@@ -217,12 +217,14 @@ Settings are split into two tabs:
 
 Preferences are saved in `localStorage` (GUI) and AI settings are persisted to `ai-settings.json`.
 
-Current AI preview surface:
+Current AI development surface (pre-v1):
 
 - **AI Hub** page with tabs: `Overview / Models / Sandboxes / MCP / Assistant`
 - **Models** tab includes Ollama phase 1: runtime status and local model list
+- **Sandboxes** tab includes an MVP: template-based `create/start/stop/delete/inspect`, resource limits, TTL metadata, and local audit log
+- **MCP** tab remains a scaffold for the upcoming MCP Manager MVP
 
-> Roadmap note: CrateBay is expanding the AI surface into **Models / Sandboxes / MCP Manager**. See [Vision](VISION.md) for the proposal and milestones.
+> Roadmap note: CrateBay is still in pre-v1 development. `v1.0.0` is targeted only after the full **Models / Sandboxes / MCP Manager** scope is completed and validated.
 
 ---
 
@@ -458,7 +460,9 @@ Error logs are written to the Logs directory as `cratebay-error.log.YYYY-MM-DD` 
 | **v0.2** | VM & Networking | VM lifecycle, VirtioFS, port forwarding, resource monitoring |
 | **v0.3** | Developer Experience | Container logs/terminal, image management, volumes, env vars |
 | **v0.4** | Kubernetes | K3s integration, K8s dashboard, auto-update |
-| **v1.0.0-rc** (GA coming soon) | GA Readiness | Real VM execution, cross-platform, testing, security audit |
+| **v0.5** | Core hardening | Real VM execution, cross-platform backend completion, security audit |
+| **v0.6** | AI foundation | AI Hub, Ollama phase 1, AI setup tooling |
+| **v0.7** (in progress) | Agent Sandboxes MVP | Template lifecycle, resource limits, TTL metadata, local audit |
 
 ---
 

@@ -315,3 +315,78 @@ export interface OllamaModelDto {
   parameter_size: string
   quantization_level: string
 }
+
+export interface SandboxTemplateDto {
+  id: string
+  name: string
+  description: string
+  image: string
+  default_command: string
+  cpu_default: number
+  memory_mb_default: number
+  ttl_hours_default: number
+  tags: string[]
+}
+
+export interface SandboxCreateRequest {
+  template_id: string
+  name?: string | null
+  image?: string | null
+  command?: string | null
+  env?: string[] | null
+  cpu_cores?: number | null
+  memory_mb?: number | null
+  ttl_hours?: number | null
+  owner?: string | null
+}
+
+export interface SandboxCreateResultDto {
+  id: string
+  short_id: string
+  name: string
+  image: string
+  login_cmd: string
+}
+
+export interface SandboxInfoDto {
+  id: string
+  short_id: string
+  name: string
+  image: string
+  state: string
+  status: string
+  template_id: string
+  owner: string
+  created_at: string
+  expires_at: string
+  ttl_hours: number
+  cpu_cores: number
+  memory_mb: number
+  is_expired: boolean
+}
+
+export interface SandboxInspectDto {
+  id: string
+  short_id: string
+  name: string
+  image: string
+  template_id: string
+  owner: string
+  created_at: string
+  expires_at: string
+  ttl_hours: number
+  cpu_cores: number
+  memory_mb: number
+  running: boolean
+  command: string
+  env: string[]
+}
+
+export interface SandboxAuditEventDto {
+  timestamp: string
+  action: string
+  sandbox_id: string
+  sandbox_name: string
+  level: string
+  detail: string
+}

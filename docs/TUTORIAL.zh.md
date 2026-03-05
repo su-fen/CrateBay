@@ -182,7 +182,7 @@ Docker 存储卷管理：
 
 ### Virtual Machines（虚拟机）
 
-当前 v1.0.0 预览版已支持（GA 即将发布）：
+当前 pre-v1 预览构建已支持：
 
 - **创建 / 启动 / 停止 / 删除 / 列表**，完整生命周期管理
 - 创建时可设置 **CPU / 内存 / 磁盘**
@@ -198,7 +198,7 @@ Docker 存储卷管理：
 
 ### Images（镜像）
 
-当前 v1.0.0 预览版同样支持：
+当前 pre-v1 预览构建同样支持：
 
 - **镜像搜索**：Docker Hub、Quay
 - **标签列表**：对带域名的镜像引用列出 tags（如 `quay.io/org/image`、`ghcr.io/org/image`）
@@ -217,12 +217,14 @@ Docker 存储卷管理：
 
 其中 GUI 偏好保存在 `localStorage`，AI 配置持久化在 `ai-settings.json`。
 
-当前 AI 预览能力：
+当前 AI 开发能力（pre-v1）：
 
 - **AI Hub** 页面标签：`Overview / Models / Sandboxes / MCP / Assistant`
 - **Models** 标签已接入 Ollama 第一阶段：运行状态与本地模型列表
+- **Sandboxes** 标签已接入 MVP：支持模板化 `create/start/stop/delete/inspect`、资源限制、TTL 元数据与本地审计日志
+- **MCP** 标签当前仍为脚手架，后续进入 MCP Manager MVP
 
-> 规划说明：CrateBay 会把 AI 能力扩展为 **Models / Sandboxes / MCP Manager** 三大模块。见 [愿景](VISION.zh.md) 了解提案与里程碑。
+> 规划说明：CrateBay 仍处于 pre-v1 开发阶段。只有在 **Models / Sandboxes / MCP Manager** 全部范围完成并验证后，才会进入 `v1.0.0` 正式发布。
 
 ---
 
@@ -458,7 +460,9 @@ VM 元数据文件位于 `<config>/vms.json`。
 | **v0.2** | VM & 网络 | VM 生命周期、VirtioFS、端口转发、资源监控 |
 | **v0.3** | 开发者体验 | 容器日志/终端、镜像管理、存储卷、环境变量 |
 | **v0.4** | Kubernetes | K3s 集成、K8s 仪表盘、自动更新 |
-| **v1.0.0-rc**（GA 即将发布） | 发布前冲刺 | 真实 VM 执行、跨平台、测试、安全审计 |
+| **v0.5** | Core 加固 | 真实 VM 执行、跨平台后端完成、安全审计 |
+| **v0.6** | AI 基础能力 | AI Hub、Ollama 第一阶段、AI 引导脚本 |
+| **v0.7**（进行中） | Agent Sandboxes MVP | 模板生命周期、资源限制、TTL 元数据、本地审计 |
 
 ---
 
