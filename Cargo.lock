@@ -927,7 +927,7 @@ dependencies = [
 
 [[package]]
 name = "cratebay-cli"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "bollard",
  "clap",
@@ -943,7 +943,7 @@ dependencies = [
 
 [[package]]
 name = "cratebay-core"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "criterion",
  "futures-util",
@@ -968,7 +968,7 @@ dependencies = [
 
 [[package]]
 name = "cratebay-daemon"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "cratebay-core",
  "tokio",
@@ -979,7 +979,7 @@ dependencies = [
 
 [[package]]
 name = "cratebay-gui"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "bollard",
  "chrono",
@@ -1002,7 +1002,7 @@ dependencies = [
 
 [[package]]
 name = "cratebay-vz"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "cratebay-core",
  "libc",

@@ -4,10 +4,10 @@
 
 <h1 align="center">CrateBay</h1>
 
-<p align="center"><strong>预览版 v0.7.0 · Coming Soon</strong></p>
+<p align="center"><strong>Coming Soon</strong></p>
 
 <p align="center">
-  面向容器、虚拟机、Kubernetes 与 AI Hub 的自由开源桌面基础设施应用。
+  面向容器、虚拟机、Kubernetes 与 AI 工作流的自由开源桌面基础设施应用。
 </p>
 
 <p align="center">
@@ -15,16 +15,15 @@
   <strong>中文</strong>
 </p>
 
-## 当前状态
+## 公开说明
 
-- 当前公开预览版本线：`v0.7.0`
-- 只有在 AI Hub 的完整范围（`Models / Sandboxes / MCP / Assistant`）全部完成，并通过 pre-v1 发布门槛后，才会进入 `v1.0.0`。
-- 在此之前，对外口径持续保持 `Coming Soon`。
+- CrateBay 正在持续开发中。
+- 详细产品规划、发布时间安排与内部验证状态均在私有环境维护，不在公开仓库披露。
+- 对外更新会在合适时机通过用户文档、公开版本说明与 changelog 体现。
 
 ## 相关文档
 
-- 路线图：`docs/ROADMAP.md`
-- 愿景：`docs/VISION.zh.md`
 - 教程：`docs/TUTORIAL.zh.md`
+- 架构：`docs/ARCHITECTURE.md`
 - AI Skills 架子：`docs/AI_SKILLS.md`
 - 官网源码：`website/`

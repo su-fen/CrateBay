@@ -144,11 +144,52 @@ export interface AiSkillDefinition {
   enabled: boolean
 }
 
+export interface McpServerConfigDto {
+  id: string
+  name: string
+  command: string
+  args: string[]
+  env: string[]
+  working_dir: string
+  enabled: boolean
+  notes: string
+}
+
+export interface McpServerDto extends McpServerConfigDto {
+  running?: boolean
+  status?: string
+  pid?: number | null
+  last_exit_code?: number | null
+  last_started_at?: string | null
+}
+
+export interface McpExportClientConfigDto {
+  content: string
+  format?: string | null
+  file_name?: string | null
+}
+
+export interface OpenSandboxConfigDto {
+  enabled: boolean
+  base_url: string
+  config_path: string
+}
+
+export interface OpenSandboxStatusDto extends OpenSandboxConfigDto {
+  installed: boolean
+  configured: boolean
+  reachable: boolean
+  version?: string | null
+  message?: string | null
+}
+
 export interface AiSettings {
   profiles: AiProviderProfile[]
   active_profile_id: string
   skills: AiSkillDefinition[]
   security_policy: AiSecurityPolicy
+  mcp_servers?: McpServerConfigDto[]
+  opensandbox?: OpenSandboxConfigDto
 }
 
 export interface AiProfileValidationResult {
@@ -316,6 +357,19 @@ export interface OllamaModelDto {
   quantization_level: string
 }
 
+export interface AiHubActionResultDto {
+  ok: boolean
+  message: string
+}
+
+export interface OllamaStorageInfoDto {
+  path: string
+  exists: boolean
+  model_count: number
+  total_size_bytes: number
+  total_size_human: string
+}
+
 export interface SandboxTemplateDto {
   id: string
   name: string
@@ -389,4 +443,24 @@ export interface SandboxAuditEventDto {
   sandbox_name: string
   level: string
   detail: string
+}
+
+
+export type McpServerEntry = McpServerConfigDto
+
+export interface McpServerStatusDto extends McpServerDto {
+  started_at: string
+  exit_code?: number | null
+  notes: string
+}
+
+export interface SandboxCleanupResultDto {
+  removed_count: number
+  removed_names: string[]
+  message: string
+}
+
+export interface SandboxExecResultDto {
+  ok: boolean
+  output: string
 }

@@ -44,6 +44,12 @@ const baseAiSettings: AiSettings = {
     mcp_audit_enabled: true,
     cli_command_allowlist: ["codex", "openclaw"],
   },
+  mcp_servers: [],
+  opensandbox: {
+    enabled: false,
+    base_url: "http://127.0.0.1:8080",
+    config_path: "~/.cratebay/opensandbox.toml",
+  },
 }
 
 const defaultProps = {

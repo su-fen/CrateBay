@@ -12,13 +12,13 @@ use futures_util::stream::TryStreamExt;
 use keyring::Entry;
 use reqwest::header::WWW_AUTHENTICATE;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::fs::OpenOptions;
-use std::io::Write;
+use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tauri::async_runtime::JoinHandle;
 use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem};
@@ -31,12 +31,20 @@ use cratebay_core::proto;
 use cratebay_core::proto::vm_service_client::VmServiceClient;
 use cratebay_core::validation;
 
+struct McpServerRuntime {
+    child: Option<Child>,
+    logs: Arc<Mutex<VecDeque<String>>>,
+    started_at: Option<String>,
+    exit_code: Option<i32>,
+}
+
 pub struct AppState {
     hv: Box<dyn cratebay_core::hypervisor::Hypervisor>,
     grpc_addr: String,
     daemon: Mutex<Option<Child>>,
     daemon_ready: Mutex<bool>,
     log_stream_handles: Mutex<HashMap<String, JoinHandle<()>>>,
+    mcp_runtimes: Mutex<HashMap<String, McpServerRuntime>>,
 }
 
 impl AppState {
@@ -92,6 +100,15 @@ impl AppState {
 
 impl Drop for AppState {
     fn drop(&mut self) {
+        if let Ok(mut runtimes) = self.mcp_runtimes.lock() {
+            for runtime in runtimes.values_mut() {
+                if let Some(mut child) = runtime.child.take() {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                }
+            }
+        }
+
         let Ok(mut guard) = self.daemon.lock() else {
             return;
         };
@@ -2669,6 +2686,110 @@ async fn ollama_list_models() -> Result<Vec<OllamaModelDto>, String> {
     Ok(out)
 }
 
+#[derive(Debug, Serialize)]
+pub struct AiHubActionResultDto {
+    ok: bool,
+    message: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct OllamaStorageInfoDto {
+    path: String,
+    exists: bool,
+    model_count: usize,
+    total_size_bytes: u64,
+    total_size_human: String,
+}
+
+fn ollama_models_path() -> PathBuf {
+    if let Ok(value) = std::env::var("OLLAMA_MODELS") {
+        let trimmed = value.trim();
+        if !trimmed.is_empty() {
+            return PathBuf::from(trimmed);
+        }
+    }
+
+    let home = std::env::var("HOME")
+        .or_else(|_| std::env::var("USERPROFILE"))
+        .unwrap_or_default();
+    PathBuf::from(home).join(".ollama").join("models")
+}
+
+async fn run_local_cli(command: &str, args: Vec<String>) -> Result<String, String> {
+    let cmd = command.to_string();
+    tokio::task::spawn_blocking(move || {
+        let output = Command::new(&cmd)
+            .args(&args)
+            .env("PATH", runtime_setup_path())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .map_err(|e| format!("Failed to run {}: {}", cmd, e))?;
+        let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        if output.status.success() {
+            Ok(if stdout.is_empty() { stderr } else { stdout })
+        } else {
+            let detail = if stderr.is_empty() { stdout } else { stderr };
+            Err(if detail.is_empty() {
+                format!("{} exited with status {}", cmd, output.status)
+            } else {
+                detail
+            })
+        }
+    })
+    .await
+    .map_err(|e| format!("{} task failed: {}", command, e))?
+}
+
+#[tauri::command]
+async fn ollama_storage_info() -> Result<OllamaStorageInfoDto, String> {
+    let models = ollama_list_models().await.unwrap_or_default();
+    let path = ollama_models_path();
+    let total_size_bytes = models.iter().map(|item| item.size_bytes).sum::<u64>();
+    Ok(OllamaStorageInfoDto {
+        path: path.display().to_string(),
+        exists: path.exists(),
+        model_count: models.len(),
+        total_size_bytes,
+        total_size_human: format_bytes_human(total_size_bytes),
+    })
+}
+
+#[tauri::command]
+async fn ollama_pull_model(name: String) -> Result<AiHubActionResultDto, String> {
+    let trimmed = name.trim();
+    if trimmed.is_empty() {
+        return Err("Model name is required".to_string());
+    }
+    let output = run_local_cli("ollama", vec!["pull".to_string(), trimmed.to_string()]).await?;
+    Ok(AiHubActionResultDto {
+        ok: true,
+        message: if output.is_empty() {
+            format!("Pulled model {}", trimmed)
+        } else {
+            output
+        },
+    })
+}
+
+#[tauri::command]
+async fn ollama_delete_model(name: String) -> Result<AiHubActionResultDto, String> {
+    let trimmed = name.trim();
+    if trimmed.is_empty() {
+        return Err("Model name is required".to_string());
+    }
+    let output = run_local_cli("ollama", vec!["rm".to_string(), trimmed.to_string()]).await?;
+    Ok(AiHubActionResultDto {
+        ok: true,
+        message: if output.is_empty() {
+            format!("Removed model {}", trimmed)
+        } else {
+            output
+        },
+    })
+}
+
 // ── Agent sandboxes (MVP) ──────────────────────────────────────────
 
 const SANDBOX_LABEL_MANAGED: &str = "com.cratebay.sandbox.managed";
@@ -3357,6 +3478,135 @@ fn sandbox_audit_list(limit: Option<usize>) -> Result<Vec<SandboxAuditEventDto>,
     Ok(events)
 }
 
+#[derive(Debug, Serialize)]
+pub struct SandboxCleanupResultDto {
+    removed_count: usize,
+    removed_names: Vec<String>,
+    message: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SandboxExecResultDto {
+    ok: bool,
+    output: String,
+}
+
+async fn sandbox_cleanup_expired_internal() -> Result<SandboxCleanupResultDto, String> {
+    let docker = connect_docker()?;
+    let opts = ListContainersOptions::<String> {
+        all: true,
+        ..Default::default()
+    };
+    let containers = docker
+        .list_containers(Some(opts))
+        .await
+        .map_err(|e| format!("Failed to list sandboxes for cleanup: {}", e))?;
+
+    let mut removed_names = Vec::new();
+    for item in containers {
+        let id = item.id.unwrap_or_default();
+        if id.is_empty() {
+            continue;
+        }
+        let labels = item.labels.unwrap_or_default();
+        if !sandbox_is_managed(&labels) {
+            continue;
+        }
+        let expires_at = labels
+            .get(SANDBOX_LABEL_EXPIRES_AT)
+            .cloned()
+            .unwrap_or_default();
+        if !sandbox_is_expired(&expires_at) {
+            continue;
+        }
+        let name = item
+            .names
+            .and_then(|mut names| names.drain(..).next())
+            .unwrap_or_else(|| sandbox_short_id(&id));
+        let normalized_name = name.trim_start_matches('/').to_string();
+        let _ = docker
+            .stop_container(&id, Some(StopContainerOptions { t: 5 }))
+            .await;
+        docker
+            .remove_container(
+                &id,
+                Some(RemoveContainerOptions {
+                    force: true,
+                    ..Default::default()
+                }),
+            )
+            .await
+            .map_err(|e| {
+                format!(
+                    "Failed to remove expired sandbox {}: {}",
+                    normalized_name, e
+                )
+            })?;
+        sandbox_audit_log(
+            "cleanup",
+            &sandbox_short_id(&id),
+            &normalized_name,
+            "ok",
+            "expired sandbox reclaimed",
+        );
+        removed_names.push(normalized_name);
+    }
+
+    Ok(SandboxCleanupResultDto {
+        removed_count: removed_names.len(),
+        message: if removed_names.is_empty() {
+            "No expired sandboxes found".to_string()
+        } else {
+            format!("Removed {} expired sandboxes", removed_names.len())
+        },
+        removed_names,
+    })
+}
+
+#[tauri::command]
+async fn sandbox_cleanup_expired() -> Result<SandboxCleanupResultDto, String> {
+    sandbox_cleanup_expired_internal().await
+}
+
+#[tauri::command]
+async fn sandbox_exec(id: String, command: String) -> Result<SandboxExecResultDto, String> {
+    let trimmed = command.trim();
+    if trimmed.is_empty() {
+        return Err("Sandbox command is required".to_string());
+    }
+    let docker = connect_docker()?;
+    sandbox_require_managed(&docker, &id).await?;
+    let cmd_parts: Vec<&str> = trimmed.split_whitespace().collect();
+    let exec = docker
+        .create_exec(
+            &id,
+            CreateExecOptions {
+                attach_stdout: Some(true),
+                attach_stderr: Some(true),
+                cmd: Some(cmd_parts.into_iter().map(String::from).collect()),
+                ..Default::default()
+            },
+        )
+        .await
+        .map_err(|e| format!("Failed to create sandbox exec: {}", e))?;
+    let output = docker
+        .start_exec(&exec.id, None)
+        .await
+        .map_err(|e| format!("Failed to start sandbox exec: {}", e))?;
+
+    let mut result = String::new();
+    if let StartExecResults::Attached { mut output, .. } = output {
+        while let Some(chunk) = output.try_next().await.map_err(|e| e.to_string())? {
+            result.push_str(&chunk.to_string());
+        }
+    }
+
+    Ok(SandboxExecResultDto {
+        ok: true,
+        output: result,
+    })
+}
+
 // ── AI settings commands ───────────────────────────────────────────
 
 const AI_SECRET_SERVICE: &str = "com.cratebay.app.ai";
@@ -3412,6 +3662,52 @@ pub struct AiSkillDefinition {
     enabled: bool,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct McpServerEntry {
+    id: String,
+    name: String,
+    command: String,
+    #[serde(default)]
+    args: Vec<String>,
+    #[serde(default)]
+    env: Vec<String>,
+    #[serde(default)]
+    working_dir: String,
+    #[serde(default = "default_true")]
+    enabled: bool,
+    #[serde(default)]
+    notes: String,
+}
+
+fn default_opensandbox_base_url() -> String {
+    "http://127.0.0.1:8080".to_string()
+}
+
+fn default_opensandbox_config_path() -> String {
+    let home = std::env::var("HOME").unwrap_or_else(|_| "~".to_string());
+    format!("{}/.cratebay/opensandbox.toml", home)
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OpenSandboxConfig {
+    #[serde(default)]
+    enabled: bool,
+    #[serde(default = "default_opensandbox_base_url")]
+    base_url: String,
+    #[serde(default = "default_opensandbox_config_path")]
+    config_path: String,
+}
+
+impl Default for OpenSandboxConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            base_url: default_opensandbox_base_url(),
+            config_path: default_opensandbox_config_path(),
+        }
+    }
+}
+
 impl Default for AiSecurityPolicy {
     fn default() -> Self {
         Self {
@@ -3444,6 +3740,10 @@ pub struct AiSettings {
     skills: Vec<AiSkillDefinition>,
     #[serde(default)]
     security_policy: AiSecurityPolicy,
+    #[serde(default)]
+    mcp_servers: Vec<McpServerEntry>,
+    #[serde(default)]
+    opensandbox: OpenSandboxConfig,
 }
 
 impl Default for AiSettings {
@@ -3643,6 +3943,8 @@ fn default_ai_settings() -> AiSettings {
         active_profile_id,
         skills: default_ai_skills(),
         security_policy: AiSecurityPolicy::default(),
+        mcp_servers: Vec::new(),
+        opensandbox: OpenSandboxConfig::default(),
     }
 }
 
@@ -3771,6 +4073,32 @@ fn normalize_ai_settings(mut settings: AiSettings) -> AiSettings {
         settings.skills = default_ai_skills();
     }
 
+    let mut mcp_seen = std::collections::HashSet::new();
+    settings.mcp_servers.retain(|server| {
+        let id = server.id.trim();
+        !id.is_empty() && mcp_seen.insert(id.to_string())
+    });
+    for server in &mut settings.mcp_servers {
+        server.id = server.id.trim().to_string();
+        server.name = server.name.trim().to_string();
+        server.command = server.command.trim().to_string();
+        server.working_dir = server.working_dir.trim().to_string();
+        server.notes = server.notes.trim().to_string();
+        server.args.retain(|arg| !arg.trim().is_empty());
+        if server.name.is_empty() {
+            server.name = server.id.clone();
+        }
+    }
+
+    settings.opensandbox.base_url = settings.opensandbox.base_url.trim().to_string();
+    if settings.opensandbox.base_url.is_empty() {
+        settings.opensandbox.base_url = default_opensandbox_base_url();
+    }
+    settings.opensandbox.config_path = settings.opensandbox.config_path.trim().to_string();
+    if settings.opensandbox.config_path.is_empty() {
+        settings.opensandbox.config_path = default_opensandbox_config_path();
+    }
+
     settings
 }
 
@@ -3821,9 +4149,355 @@ fn save_ai_settings(settings: AiSettings) -> Result<AiSettings, String> {
         }
     }
 
+    for server in &normalized.mcp_servers {
+        if server.id.trim().is_empty() {
+            return Err("MCP server id is required".to_string());
+        }
+        if server.command.trim().is_empty() {
+            return Err(format!("MCP server '{}' command is required", server.id));
+        }
+        sandbox_normalize_env(Some(server.env.clone()))?;
+    }
+
     let path = ai_settings_path();
     persist_ai_settings(&path, &normalized)?;
     Ok(normalized)
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct McpServerStatusDto {
+    id: String,
+    name: String,
+    command: String,
+    args: Vec<String>,
+    enabled: bool,
+    running: bool,
+    status: String,
+    pid: Option<u32>,
+    started_at: String,
+    exit_code: Option<i32>,
+    notes: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct OpenSandboxStatusDto {
+    installed: bool,
+    enabled: bool,
+    configured: bool,
+    reachable: bool,
+    base_url: String,
+    config_path: String,
+}
+
+fn mcp_runtime_logs() -> Arc<Mutex<VecDeque<String>>> {
+    Arc::new(Mutex::new(VecDeque::new()))
+}
+
+fn mcp_push_log(logs: &Arc<Mutex<VecDeque<String>>>, line: String) {
+    if let Ok(mut guard) = logs.lock() {
+        guard.push_back(format!(
+            "{} {}",
+            chrono::Local::now().format("%H:%M:%S"),
+            line
+        ));
+        while guard.len() > 400 {
+            guard.pop_front();
+        }
+    }
+}
+
+fn mcp_env_map(entries: &[String]) -> HashMap<String, String> {
+    entries
+        .iter()
+        .filter_map(|item| item.split_once('='))
+        .map(|(key, value)| (key.to_string(), value.to_string()))
+        .collect()
+}
+
+fn mcp_refresh_runtime(runtime: &mut McpServerRuntime) {
+    if let Some(child) = runtime.child.as_mut() {
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                runtime.exit_code = status.code();
+                runtime.child = None;
+                mcp_push_log(
+                    &runtime.logs,
+                    format!("[runtime] process exited with {:?}", runtime.exit_code),
+                );
+            }
+            Ok(None) => {}
+            Err(err) => {
+                mcp_push_log(
+                    &runtime.logs,
+                    format!("[runtime] status check failed: {}", err),
+                );
+            }
+        }
+    }
+}
+
+fn mcp_spawn_log_reader<R: std::io::Read + Send + 'static>(
+    logs: Arc<Mutex<VecDeque<String>>>,
+    stream_name: &'static str,
+    reader: R,
+) {
+    std::thread::spawn(move || {
+        let buf = BufReader::new(reader);
+        for line in buf.lines() {
+            match line {
+                Ok(line) => mcp_push_log(&logs, format!("[{}] {}", stream_name, line)),
+                Err(err) => {
+                    mcp_push_log(&logs, format!("[{}] read error: {}", stream_name, err));
+                    break;
+                }
+            }
+        }
+    });
+}
+
+fn mcp_runtime_status_from_settings(
+    state: &AppState,
+    settings: &AiSettings,
+) -> Vec<McpServerStatusDto> {
+    let mut runtimes = state.mcp_runtimes.lock().unwrap_or_else(|e| e.into_inner());
+    let mut out = Vec::new();
+    for server in &settings.mcp_servers {
+        let runtime = runtimes
+            .entry(server.id.clone())
+            .or_insert_with(|| McpServerRuntime {
+                child: None,
+                logs: mcp_runtime_logs(),
+                started_at: None,
+                exit_code: None,
+            });
+        mcp_refresh_runtime(runtime);
+        let pid = runtime.child.as_ref().map(|child| child.id());
+        let running = runtime.child.is_some();
+        out.push(McpServerStatusDto {
+            id: server.id.clone(),
+            name: server.name.clone(),
+            command: server.command.clone(),
+            args: server.args.clone(),
+            enabled: server.enabled,
+            running,
+            status: if running {
+                "running".to_string()
+            } else if runtime.exit_code.is_some() {
+                "exited".to_string()
+            } else {
+                "stopped".to_string()
+            },
+            pid,
+            started_at: runtime.started_at.clone().unwrap_or_default(),
+            exit_code: runtime.exit_code,
+            notes: server.notes.clone(),
+        });
+    }
+    out.sort_by(|a, b| a.name.cmp(&b.name));
+    out
+}
+
+#[tauri::command]
+fn mcp_list_servers(state: State<'_, AppState>) -> Result<Vec<McpServerStatusDto>, String> {
+    let settings = load_ai_settings()?;
+    Ok(mcp_runtime_status_from_settings(state.inner(), &settings))
+}
+
+#[tauri::command]
+fn mcp_save_servers(servers: Vec<McpServerEntry>) -> Result<Vec<McpServerEntry>, String> {
+    let mut settings = load_ai_settings()?;
+    settings.mcp_servers = servers;
+    let saved = save_ai_settings(settings)?;
+    Ok(saved.mcp_servers)
+}
+
+#[tauri::command]
+async fn mcp_start_server(
+    state: State<'_, AppState>,
+    id: String,
+) -> Result<AiHubActionResultDto, String> {
+    let settings = load_ai_settings()?;
+    let server = settings
+        .mcp_servers
+        .into_iter()
+        .find(|item| item.id == id)
+        .ok_or_else(|| format!("Unknown MCP server '{}'", id))?;
+    if !server.enabled {
+        return Err(format!("MCP server '{}' is disabled", server.name));
+    }
+    sandbox_normalize_env(Some(server.env.clone()))?;
+
+    let mut runtimes = state.mcp_runtimes.lock().unwrap_or_else(|e| e.into_inner());
+    let runtime = runtimes
+        .entry(server.id.clone())
+        .or_insert_with(|| McpServerRuntime {
+            child: None,
+            logs: mcp_runtime_logs(),
+            started_at: None,
+            exit_code: None,
+        });
+    mcp_refresh_runtime(runtime);
+    if runtime.child.is_some() {
+        return Ok(AiHubActionResultDto {
+            ok: true,
+            message: format!("{} is already running", server.name),
+        });
+    }
+
+    let mut command = Command::new(&server.command);
+    command.args(&server.args);
+    command.env("PATH", runtime_setup_path());
+    for (key, value) in mcp_env_map(&server.env) {
+        command.env(key, value);
+    }
+    if !server.working_dir.trim().is_empty() {
+        command.current_dir(server.working_dir.trim());
+    }
+    command.stdout(Stdio::piped()).stderr(Stdio::piped());
+
+    let mut child = command
+        .spawn()
+        .map_err(|e| format!("Failed to start MCP server {}: {}", server.name, e))?;
+    let pid = child.id();
+    if let Some(stdout) = child.stdout.take() {
+        mcp_spawn_log_reader(runtime.logs.clone(), "stdout", stdout);
+    }
+    if let Some(stderr) = child.stderr.take() {
+        mcp_spawn_log_reader(runtime.logs.clone(), "stderr", stderr);
+    }
+    runtime.started_at = Some(chrono::Utc::now().to_rfc3339());
+    runtime.exit_code = None;
+    runtime.child = Some(child);
+    mcp_push_log(
+        &runtime.logs,
+        format!(
+            "[runtime] started pid={} cmd={} {}",
+            pid,
+            server.command,
+            server.args.join(" ")
+        ),
+    );
+    Ok(AiHubActionResultDto {
+        ok: true,
+        message: format!("Started {} (pid {})", server.name, pid),
+    })
+}
+
+#[tauri::command]
+async fn mcp_stop_server(
+    state: State<'_, AppState>,
+    id: String,
+) -> Result<AiHubActionResultDto, String> {
+    let mut runtimes = state.mcp_runtimes.lock().unwrap_or_else(|e| e.into_inner());
+    let Some(runtime) = runtimes.get_mut(&id) else {
+        return Ok(AiHubActionResultDto {
+            ok: true,
+            message: format!("MCP server {} is not running", id),
+        });
+    };
+    mcp_refresh_runtime(runtime);
+    let Some(mut child) = runtime.child.take() else {
+        return Ok(AiHubActionResultDto {
+            ok: true,
+            message: format!("MCP server {} is already stopped", id),
+        });
+    };
+    child
+        .kill()
+        .map_err(|e| format!("Failed to stop MCP server {}: {}", id, e))?;
+    let status = child
+        .wait()
+        .map_err(|e| format!("Failed to wait for MCP server {}: {}", id, e))?;
+    runtime.exit_code = status.code();
+    mcp_push_log(
+        &runtime.logs,
+        format!("[runtime] stopped with {:?}", runtime.exit_code),
+    );
+    Ok(AiHubActionResultDto {
+        ok: true,
+        message: format!("Stopped MCP server {}", id),
+    })
+}
+
+#[tauri::command]
+fn mcp_server_logs(
+    state: State<'_, AppState>,
+    id: String,
+    limit: Option<usize>,
+) -> Result<Vec<String>, String> {
+    let runtimes = state.mcp_runtimes.lock().unwrap_or_else(|e| e.into_inner());
+    let Some(runtime) = runtimes.get(&id) else {
+        return Ok(Vec::new());
+    };
+    let logs = runtime.logs.lock().unwrap_or_else(|e| e.into_inner());
+    let limit = limit.unwrap_or(80).clamp(1, 400);
+    let len = logs.len();
+    let start = len.saturating_sub(limit);
+    Ok(logs.iter().skip(start).cloned().collect())
+}
+
+#[tauri::command]
+fn mcp_export_client_config(client: String) -> Result<String, String> {
+    let normalized_client = client.trim().to_ascii_lowercase();
+    if !matches!(normalized_client.as_str(), "codex" | "claude" | "cursor") {
+        return Err(format!("Unsupported MCP client '{}'", client));
+    }
+    let settings = load_ai_settings()?;
+    let mut servers = serde_json::Map::new();
+    for server in settings.mcp_servers.into_iter().filter(|item| item.enabled) {
+        let env_map = mcp_env_map(&server.env);
+        servers.insert(
+            server.id.clone(),
+            serde_json::json!({
+                "command": server.command,
+                "args": server.args,
+                "cwd": if server.working_dir.trim().is_empty() { serde_json::Value::Null } else { serde_json::Value::String(server.working_dir) },
+                "env": env_map,
+            }),
+        );
+    }
+    serde_json::to_string_pretty(&serde_json::json!({
+        "client": normalized_client,
+        "mcpServers": servers,
+    }))
+    .map_err(|e| format!("Failed to encode MCP export config: {}", e))
+}
+
+#[tauri::command]
+async fn opensandbox_status() -> Result<OpenSandboxStatusDto, String> {
+    let settings = load_ai_settings()?;
+    let config = settings.opensandbox;
+    let installed = tokio::task::spawn_blocking(|| {
+        Command::new("opensandbox-server")
+            .arg("--help")
+            .env("PATH", runtime_setup_path())
+            .output()
+            .is_ok()
+    })
+    .await
+    .unwrap_or(false);
+    let configured = Path::new(&config.config_path).exists();
+    let reachable = if config.base_url.trim().is_empty() {
+        false
+    } else {
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_millis(500))
+            .build()
+            .map_err(|e| format!("Failed to build OpenSandbox client: {}", e))?;
+        let url = format!("{}/docs", config.base_url.trim_end_matches('/'));
+        match client.get(&url).send().await {
+            Ok(resp) => resp.status().is_success() || resp.status().is_redirection(),
+            Err(_) => false,
+        }
+    };
+    Ok(OpenSandboxStatusDto {
+        installed,
+        enabled: config.enabled,
+        configured,
+        reachable,
+        base_url: config.base_url,
+        config_path: config.config_path,
+    })
 }
 
 #[tauri::command]
@@ -3955,7 +4629,13 @@ struct McpActionPolicy {
 
 fn assistant_command_policy(command: &str) -> Option<AssistantCommandPolicy> {
     match command {
-        "list_containers" | "vm_list" | "k8s_list_pods" => Some(AssistantCommandPolicy {
+        "list_containers"
+        | "vm_list"
+        | "k8s_list_pods"
+        | "ollama_list_models"
+        | "mcp_list_servers"
+        | "mcp_export_client_config"
+        | "sandbox_list" => Some(AssistantCommandPolicy {
             risk_level: "read",
             always_confirm: false,
         }),
@@ -3963,14 +4643,23 @@ fn assistant_command_policy(command: &str) -> Option<AssistantCommandPolicy> {
         | "stop_container"
         | "vm_start"
         | "vm_stop"
-        | "docker_runtime_quick_setup" => Some(AssistantCommandPolicy {
+        | "docker_runtime_quick_setup"
+        | "ollama_pull_model"
+        | "mcp_start_server"
+        | "mcp_stop_server"
+        | "sandbox_start"
+        | "sandbox_stop"
+        | "sandbox_cleanup_expired"
+        | "sandbox_exec" => Some(AssistantCommandPolicy {
             risk_level: "write",
             always_confirm: false,
         }),
-        "remove_container" | "vm_delete" => Some(AssistantCommandPolicy {
-            risk_level: "destructive",
-            always_confirm: true,
-        }),
+        "remove_container" | "vm_delete" | "ollama_delete_model" | "sandbox_delete" => {
+            Some(AssistantCommandPolicy {
+                risk_level: "destructive",
+                always_confirm: true,
+            })
+        }
         _ => None,
     }
 }
@@ -4633,7 +5322,17 @@ fn infer_assistant_steps(prompt: &str, require_confirm: bool) -> Vec<AssistantPl
 fn command_needs_docker_runtime(command: &str) -> bool {
     matches!(
         command,
-        "list_containers" | "start_container" | "stop_container" | "remove_container"
+        "list_containers"
+            | "start_container"
+            | "stop_container"
+            | "remove_container"
+            | "sandbox_list"
+            | "sandbox_create"
+            | "sandbox_start"
+            | "sandbox_stop"
+            | "sandbox_delete"
+            | "sandbox_exec"
+            | "sandbox_cleanup_expired"
     )
 }
 
@@ -4755,6 +5454,164 @@ fn infer_assistant_steps_with_runtime(
             requires_confirmation: false,
             explain: "Queries pod status for diagnosis.".to_string(),
         });
+    }
+
+    if lower.contains("ollama") || lower.contains("model") || prompt.contains("模型") {
+        if lower.contains("pull")
+            || lower.contains("download")
+            || prompt.contains("拉取")
+            || prompt.contains("下载")
+        {
+            steps.push(AssistantPlanStep {
+                id: format!("step-{}", steps.len() + 1),
+                title: "Pull Ollama model".to_string(),
+                command: "ollama_pull_model".to_string(),
+                args: serde_json::json!({ "name": "<model-name>" }),
+                risk_level: "write".to_string(),
+                requires_confirmation: require_confirm,
+                explain: "Pulls a local model into Ollama.".to_string(),
+            });
+        } else if lower.contains("delete")
+            || lower.contains("remove")
+            || prompt.contains("删除")
+            || prompt.contains("移除")
+        {
+            steps.push(AssistantPlanStep {
+                id: format!("step-{}", steps.len() + 1),
+                title: "Delete Ollama model".to_string(),
+                command: "ollama_delete_model".to_string(),
+                args: serde_json::json!({ "name": "<model-name>" }),
+                risk_level: "destructive".to_string(),
+                requires_confirmation: true,
+                explain: "Removes a local Ollama model.".to_string(),
+            });
+        } else {
+            steps.push(AssistantPlanStep {
+                id: format!("step-{}", steps.len() + 1),
+                title: "List Ollama models".to_string(),
+                command: "ollama_list_models".to_string(),
+                args: serde_json::json!({}),
+                risk_level: "read".to_string(),
+                requires_confirmation: false,
+                explain: "Lists available local models.".to_string(),
+            });
+        }
+    }
+
+    if lower.contains("sandbox") || prompt.contains("沙箱") {
+        if lower.contains("cleanup")
+            || lower.contains("expire")
+            || prompt.contains("清理")
+            || prompt.contains("过期")
+        {
+            steps.push(AssistantPlanStep {
+                id: format!("step-{}", steps.len() + 1),
+                title: "Cleanup expired sandboxes".to_string(),
+                command: "sandbox_cleanup_expired".to_string(),
+                args: serde_json::json!({}),
+                risk_level: "write".to_string(),
+                requires_confirmation: require_confirm,
+                explain: "Reclaims expired managed sandboxes.".to_string(),
+            });
+        } else if lower.contains("delete")
+            || lower.contains("remove")
+            || prompt.contains("删除")
+            || prompt.contains("移除")
+        {
+            steps.push(AssistantPlanStep {
+                id: format!("step-{}", steps.len() + 1),
+                title: "Delete sandbox".to_string(),
+                command: "sandbox_delete".to_string(),
+                args: serde_json::json!({ "id": "<sandbox-id>" }),
+                risk_level: "destructive".to_string(),
+                requires_confirmation: true,
+                explain: "Deletes a managed sandbox.".to_string(),
+            });
+        } else if lower.contains("stop") || prompt.contains("停止") {
+            steps.push(AssistantPlanStep {
+                id: format!("step-{}", steps.len() + 1),
+                title: "Stop sandbox".to_string(),
+                command: "sandbox_stop".to_string(),
+                args: serde_json::json!({ "id": "<sandbox-id>" }),
+                risk_level: "write".to_string(),
+                requires_confirmation: require_confirm,
+                explain: "Stops a managed sandbox.".to_string(),
+            });
+        } else if lower.contains("start") || prompt.contains("启动") {
+            steps.push(AssistantPlanStep {
+                id: format!("step-{}", steps.len() + 1),
+                title: "Start sandbox".to_string(),
+                command: "sandbox_start".to_string(),
+                args: serde_json::json!({ "id": "<sandbox-id>" }),
+                risk_level: "write".to_string(),
+                requires_confirmation: require_confirm,
+                explain: "Starts a managed sandbox.".to_string(),
+            });
+        } else if lower.contains("exec") || lower.contains("run") || prompt.contains("执行") {
+            steps.push(AssistantPlanStep {
+                id: format!("step-{}", steps.len() + 1),
+                title: "Execute command in sandbox".to_string(),
+                command: "sandbox_exec".to_string(),
+                args: serde_json::json!({ "id": "<sandbox-id>", "command": "<shell-command>" }),
+                risk_level: "write".to_string(),
+                requires_confirmation: require_confirm,
+                explain: "Runs a command inside a managed sandbox.".to_string(),
+            });
+        } else {
+            steps.push(AssistantPlanStep {
+                id: format!("step-{}", steps.len() + 1),
+                title: "List sandboxes".to_string(),
+                command: "sandbox_list".to_string(),
+                args: serde_json::json!({}),
+                risk_level: "read".to_string(),
+                requires_confirmation: false,
+                explain: "Lists managed sandboxes and current state.".to_string(),
+            });
+        }
+    }
+
+    if lower.contains("mcp") {
+        if lower.contains("stop") || prompt.contains("停止") {
+            steps.push(AssistantPlanStep {
+                id: format!("step-{}", steps.len() + 1),
+                title: "Stop MCP server".to_string(),
+                command: "mcp_stop_server".to_string(),
+                args: serde_json::json!({ "id": "<server-id>" }),
+                risk_level: "write".to_string(),
+                requires_confirmation: require_confirm,
+                explain: "Stops a managed MCP server process.".to_string(),
+            });
+        } else if lower.contains("start") || prompt.contains("启动") {
+            steps.push(AssistantPlanStep {
+                id: format!("step-{}", steps.len() + 1),
+                title: "Start MCP server".to_string(),
+                command: "mcp_start_server".to_string(),
+                args: serde_json::json!({ "id": "<server-id>" }),
+                risk_level: "write".to_string(),
+                requires_confirmation: require_confirm,
+                explain: "Starts a managed MCP server process.".to_string(),
+            });
+        } else if lower.contains("export") || prompt.contains("导出") {
+            steps.push(AssistantPlanStep {
+                id: format!("step-{}", steps.len() + 1),
+                title: "Export MCP client config".to_string(),
+                command: "mcp_export_client_config".to_string(),
+                args: serde_json::json!({ "client": "codex" }),
+                risk_level: "read".to_string(),
+                requires_confirmation: false,
+                explain: "Exports MCP client configuration for the selected client.".to_string(),
+            });
+        } else {
+            steps.push(AssistantPlanStep {
+                id: format!("step-{}", steps.len() + 1),
+                title: "List MCP servers".to_string(),
+                command: "mcp_list_servers".to_string(),
+                args: serde_json::json!({}),
+                risk_level: "read".to_string(),
+                requires_confirmation: false,
+                explain: "Lists MCP registry entries and runtime states.".to_string(),
+            });
+        }
     }
 
     if steps.is_empty() {
@@ -4922,10 +5779,59 @@ async fn assistant_execute_step(
             let items = list_containers().await?;
             serde_json::to_value(items).map_err(|e| e.to_string())?
         }
+        "ollama_list_models" => {
+            let items = ollama_list_models().await?;
+            serde_json::to_value(items).map_err(|e| e.to_string())?
+        }
+        "mcp_list_servers" => {
+            let items = mcp_list_servers(state.clone())?;
+            serde_json::to_value(items).map_err(|e| e.to_string())?
+        }
+        "mcp_export_client_config" => {
+            let client = assistant_arg_optional_string(args_map, "client")?
+                .unwrap_or_else(|| "codex".to_string());
+            serde_json::to_value(mcp_export_client_config(client)?).map_err(|e| e.to_string())?
+        }
+        "sandbox_list" => {
+            let items = sandbox_list().await?;
+            serde_json::to_value(items).map_err(|e| e.to_string())?
+        }
         "start_container" => {
             let id = assistant_arg_string(args_map, "id")?;
             start_container(id).await?;
             serde_json::json!({ "ok": true })
+        }
+        "ollama_pull_model" => {
+            let name = assistant_arg_string(args_map, "name")?;
+            serde_json::to_value(ollama_pull_model(name).await?).map_err(|e| e.to_string())?
+        }
+        "mcp_start_server" => {
+            let id = assistant_arg_string(args_map, "id")?;
+            serde_json::to_value(mcp_start_server(state.clone(), id).await?)
+                .map_err(|e| e.to_string())?
+        }
+        "mcp_stop_server" => {
+            let id = assistant_arg_string(args_map, "id")?;
+            serde_json::to_value(mcp_stop_server(state.clone(), id).await?)
+                .map_err(|e| e.to_string())?
+        }
+        "sandbox_start" => {
+            let id = assistant_arg_string(args_map, "id")?;
+            sandbox_start(id).await?;
+            serde_json::json!({ "ok": true })
+        }
+        "sandbox_stop" => {
+            let id = assistant_arg_string(args_map, "id")?;
+            sandbox_stop(id).await?;
+            serde_json::json!({ "ok": true })
+        }
+        "sandbox_cleanup_expired" => {
+            serde_json::to_value(sandbox_cleanup_expired().await?).map_err(|e| e.to_string())?
+        }
+        "sandbox_exec" => {
+            let id = assistant_arg_string(args_map, "id")?;
+            let command = assistant_arg_string(args_map, "command")?;
+            serde_json::to_value(sandbox_exec(id, command).await?).map_err(|e| e.to_string())?
         }
         "stop_container" => {
             let id = assistant_arg_string(args_map, "id")?;
@@ -4936,6 +5842,10 @@ async fn assistant_execute_step(
             let id = assistant_arg_string(args_map, "id")?;
             remove_container(id).await?;
             serde_json::json!({ "ok": true })
+        }
+        "ollama_delete_model" => {
+            let name = assistant_arg_string(args_map, "name")?;
+            serde_json::to_value(ollama_delete_model(name).await?).map_err(|e| e.to_string())?
         }
         "vm_list" => {
             let items = vm_list_inner(state.inner()).await?;
@@ -4954,6 +5864,11 @@ async fn assistant_execute_step(
         "vm_delete" => {
             let id = assistant_arg_string(args_map, "id")?;
             vm_delete_inner(state.inner(), id).await?;
+            serde_json::json!({ "ok": true })
+        }
+        "sandbox_delete" => {
+            let id = assistant_arg_string(args_map, "id")?;
+            sandbox_delete(id).await?;
             serde_json::json!({ "ok": true })
         }
         "k8s_list_pods" => {
@@ -5872,6 +6787,7 @@ pub fn run() {
             daemon: Mutex::new(None),
             daemon_ready: Mutex::new(false),
             log_stream_handles: Mutex::new(HashMap::new()),
+            mcp_runtimes: Mutex::new(HashMap::new()),
         })
         .setup(|app| {
             // ── System tray ─────────────────────────────────────────────
@@ -5901,6 +6817,16 @@ pub fn run() {
 
             // Initial tray menu refresh (to get real counts)
             refresh_tray_menu(&app_handle);
+
+            tauri::async_runtime::spawn(async move {
+                let mut interval = tokio::time::interval(Duration::from_secs(900));
+                loop {
+                    interval.tick().await;
+                    if let Err(err) = sandbox_cleanup_expired_internal().await {
+                        warn!("sandbox cleanup worker failed: {}", err);
+                    }
+                }
+            });
 
             // Set webview background color to match dark theme (prevents white flash on resize)
             if let Some(window) = app.get_webview_window("main") {
@@ -5981,6 +6907,9 @@ pub fn run() {
             k8s_pod_logs,
             ollama_status,
             ollama_list_models,
+            ollama_storage_info,
+            ollama_pull_model,
+            ollama_delete_model,
             sandbox_templates,
             sandbox_list,
             sandbox_create,
@@ -5989,8 +6918,17 @@ pub fn run() {
             sandbox_delete,
             sandbox_inspect,
             sandbox_audit_list,
+            sandbox_cleanup_expired,
+            sandbox_exec,
             load_ai_settings,
             save_ai_settings,
+            mcp_list_servers,
+            mcp_save_servers,
+            mcp_start_server,
+            mcp_stop_server,
+            mcp_server_logs,
+            mcp_export_client_config,
+            opensandbox_status,
             validate_ai_profile,
             ai_secret_set,
             ai_secret_delete,

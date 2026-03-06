@@ -14,7 +14,7 @@
 4. [CLI 命令参考](#4-cli-命令参考)
 5. [Docker Socket 自动识别](#5-docker-socket-自动识别)
 6. [配置与数据目录](#6-配置与数据目录)
-7. [路线图](#7-路线图)
+7. [补充说明](#7-补充说明)
 
 ---
 
@@ -220,11 +220,12 @@ Docker 存储卷管理：
 当前 AI 开发能力（pre-v1）：
 
 - **AI Hub** 页面标签：`Overview / Models / Sandboxes / MCP / Assistant`
-- **Models** 标签已接入 Ollama 第一阶段：运行状态与本地模型列表
-- **Sandboxes** 标签已接入 MVP：支持模板化 `create/start/stop/delete/inspect`、资源限制、TTL 元数据与本地审计日志
-- **MCP** 标签当前仍为脚手架，后续进入 MCP Manager MVP
+- **Models** 标签已支持 Ollama 运行状态、本地模型列表、拉取 / 删除与存储可见性
+- **Sandboxes** 标签已支持模板生命周期、资源限制、TTL 清理、命令执行与本地审计日志
+- **MCP** 标签已支持注册表、本地进程启停、日志与客户端配置导出
+- **Assistant** 已可覆盖容器 / VM / K8s / 模型 / 沙箱 / MCP 的计划与执行
 
-> 规划说明：CrateBay 仍处于 pre-v1 开发阶段。只有在 **Models / Sandboxes / MCP / Assistant** 全部范围完成，并通过 pre-v1 发布门槛后，才会进入 `v1.0.0` GA。
+> 说明：详细产品规划、版本排期与内部验收门槛均在私有环境维护，不在公开仓库披露。
 
 ---
 
@@ -238,7 +239,7 @@ cratebay status
 
 示例输出：
 ```
-CrateBay v0.7.0
+CrateBay v0.x
 Platform: macOS aarch64 (Virtualization.framework available)
 Rosetta x86_64: available
 Docker: connected (~/.colima/default/docker.sock)
@@ -452,17 +453,9 @@ VM 元数据文件位于 `<config>/vms.json`。
 
 ---
 
-## 7. 路线图
+## 7. 补充说明
 
-| 版本 | 重点 | 关键功能 |
-|---------|-------|-------------|
-| **v0.1** | 基础可用 | Docker 管理、GUI、CLI、i18n（中/英） |
-| **v0.2** | VM & 网络 | VM 生命周期、VirtioFS、端口转发、资源监控 |
-| **v0.3** | 开发者体验 | 容器日志/终端、镜像管理、存储卷、环境变量 |
-| **v0.4** | Kubernetes | K3s 集成、K8s 仪表盘、自动更新 |
-| **v0.5** | Core 加固 | 真实 VM 执行、跨平台后端完成、安全审计 |
-| **v0.6** | AI 基础能力 | AI Hub、Ollama 第一阶段、AI 引导脚本 |
-| **v0.7**（进行中） | Agent Sandboxes MVP | 模板生命周期、资源限制、TTL 元数据、本地审计 |
+详细路线图、版本规划与节奏均在私有环境维护。
 
 ---
 

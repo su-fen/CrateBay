@@ -1,6 +1,6 @@
 # CrateBay UI Design System
 
-> **Version:** 0.7.0 preview · **Last updated:** 2026-03-06
+> **Version:** 0.8.0 preview · **Last updated:** 2026-03-06
 
 This document defines the visual language and component specifications for the CrateBay GUI.
 

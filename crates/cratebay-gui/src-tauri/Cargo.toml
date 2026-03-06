@@ -1,6 +1,6 @@
 [package]
 name = "cratebay-gui"
-version = "0.7.0"
+version = "0.8.0"
 description = "CrateBay desktop GUI — containers and Linux VMs in one app"
 authors = ["coder-hhx <houhaixu_email@163.com>"]
 license = "Apache-2.0"

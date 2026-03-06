@@ -39,10 +39,10 @@ run_check "Tauri GUI check" cargo check -p cratebay-gui
 run_check "Tauri GUI tests" cargo test -p cratebay-gui
 run_check "AI core scenario gate (>=95%)" \
   cargo test -p cratebay-gui ai_tests::assistant_core_scenarios_success_rate
-run_check "AI UI smoke tests (Assistant + Settings)" \
-  bash -lc "cd crates/cratebay-gui && npm run test:unit -- src/pages/__tests__/Assistant.test.tsx src/pages/__tests__/Settings.ai.test.tsx"
-run_check "Release smoke checklist presence" \
-  bash -lc "rg -n 'AI Core Scenario Gate|Cross-platform Installer Smoke|Upgrade Path Validation|coming soon' docs/RELEASE_SMOKE_CHECKLIST.md"
+run_check "AI UI smoke tests (Assistant + Settings + AiHub)" \
+  bash -lc "cd crates/cratebay-gui && npm run test:unit -- src/pages/__tests__/Assistant.test.tsx src/pages/__tests__/Settings.ai.test.tsx src/pages/__tests__/AiHub.test.tsx"
+run_check "Private planning notice presence" \
+  bash -lc "rg -n 'maintained privately|私有环境维护|private' docs/RELEASE_SMOKE_CHECKLIST.md docs/ROADMAP.md docs/VISION.md docs/VISION.zh.md"
 run_check "Release wording guard (must not claim released)" \
   bash -lc "if rg -n '(已发布|正式发布|已上线|正式上线|is now live|now live|officially released|已经发布)' README.md README.zh.md docs/TUTORIAL.md docs/TUTORIAL.zh.md website/index.html website/script.js; then exit 1; fi"
 run_check "Coming-soon wording guard (required)" \

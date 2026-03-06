@@ -6,7 +6,7 @@ import path from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   define: {
-    __APP_VERSION__: JSON.stringify(process.env.npm_package_version ?? '0.7.0'),
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version ?? '0.8.0'),
   },
   plugins: [react(), tailwindcss()],
   resolve: {

@@ -14,7 +14,7 @@
 4. [CLI Reference](#4-cli-reference)
 5. [Docker Socket Detection](#5-docker-socket-detection)
 6. [Configuration](#6-configuration)
-7. [Roadmap](#7-roadmap)
+7. [Additional Notes](#7-additional-notes)
 
 ---
 
@@ -220,11 +220,12 @@ Preferences are saved in `localStorage` (GUI) and AI settings are persisted to `
 Current AI development surface (pre-v1):
 
 - **AI Hub** page with tabs: `Overview / Models / Sandboxes / MCP / Assistant`
-- **Models** tab includes Ollama phase 1: runtime status and local model list
-- **Sandboxes** tab includes an MVP: template-based `create/start/stop/delete/inspect`, resource limits, TTL metadata, and local audit log
-- **MCP** tab remains a scaffold for the upcoming MCP Manager MVP
+- **Models** tab includes Ollama runtime status, local model list, pull, delete, and storage visibility
+- **Sandboxes** tab includes template lifecycle, limits, TTL cleanup, command execution, and local audit log
+- **MCP** tab now includes registry, local process start/stop, logs, and config export
+- **Assistant** can now plan across container / VM / K8s / model / sandbox / MCP workflows
 
-> Roadmap note: CrateBay is still in pre-v1 development. `v1.0.0` remains reserved until the full **Models / Sandboxes / MCP / Assistant** scope is complete and the pre-v1 release gates all pass.
+> Note: detailed product planning and product scheduling are maintained privately and are not published in this repository.
 
 ---
 
@@ -238,7 +239,7 @@ cratebay status
 
 Output:
 ```
-CrateBay v0.7.0
+CrateBay v0.x
 Platform: macOS aarch64 (Virtualization.framework available)
 Rosetta x86_64: available
 Docker: connected (~/.colima/default/docker.sock)
@@ -452,17 +453,9 @@ Error logs are written to the Logs directory as `cratebay-error.log.YYYY-MM-DD` 
 
 ---
 
-## 7. Roadmap
+## 7. Additional Notes
 
-| Version | Focus | Key Features |
-|---------|-------|-------------|
-| **v0.1** | Foundation | Docker management, GUI, CLI, i18n |
-| **v0.2** | VM & Networking | VM lifecycle, VirtioFS, port forwarding, resource monitoring |
-| **v0.3** | Developer Experience | Container logs/terminal, image management, volumes, env vars |
-| **v0.4** | Kubernetes | K3s integration, K8s dashboard, auto-update |
-| **v0.5** | Core hardening | Real VM execution, cross-platform backend completion, security audit |
-| **v0.6** | AI foundation | AI Hub, Ollama phase 1, AI setup tooling |
-| **v0.7** (in progress) | Agent Sandboxes MVP | Template lifecycle, resource limits, TTL metadata, local audit |
+Detailed roadmap, milestone planning, and sequencing are maintained privately.
 
 ---
 
