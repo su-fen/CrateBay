@@ -18,5 +18,5 @@
 ## Public Info
 
 - CrateBay is under active development.
-- Detailed product planning, product scheduling, and internal validation status are maintained privately.
-- Public updates will be reflected through user-facing docs, releases, and changelog entries when appropriate.
+- More features and details are coming soon.
+- Public updates will be shared through releases and changelog entries when they are ready.
