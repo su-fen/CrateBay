@@ -1,190 +1,90 @@
-# CrateBay Vision — Self‑hosted AI Infrastructure Desktop
+# CrateBay AI Hub Vision
 
-CrateBay already ships as a **containers / Linux VMs / Kubernetes GUI** with a lightweight Rust + Tauri stack. The most natural next step is to extend that foundation into a **self‑hosted AI infrastructure desktop**:
+> Product direction note for the public repo.
+> Current public preview line: `v0.7.0`.
 
-- **Agent Sandboxes**: one‑click, isolated execution environments for AI agents (local-first, self-hosted).
-- **Local Model Runtime**: manage on-device model runtimes (start/stop, model lifecycle, GPU visibility).
-- **MCP Server Manager**: make MCP server setup and multi-server operations boring and safe.
+## 1. Positioning
 
-This document is a product + architecture proposal (not a promise of shipped features).
+CrateBay is building an open-source desktop infrastructure app for:
 
----
+- Docker containers
+- Linux VMs
+- Local Kubernetes
+- An upcoming AI Hub that connects models, sandboxes, MCP, and assistant workflows
 
-## 1) Why this direction fits CrateBay
+The AI Hub is not a separate product. It is the next layer on top of CrateBay's existing container / VM / K8s foundation.
 
-CrateBay’s current strengths map directly to “AI infra” primitives:
+## 2. Why the AI Hub matters
 
-- **Lifecycle orchestration**: we already manage Docker + VMs + K3s.
-- **Local-first UX**: desktop GUI with fast feedback loops.
-- **Safety rails**: existing AI settings, audit ideas, and MCP policy scaffolding.
+The current codebase already has strong infrastructure primitives:
 
-AI agent tooling is rapidly moving toward **isolated execution** (for safety, reproducibility, and cost control) and **standardized tool interfaces** (MCP). A self-hosted GUI that makes these pieces approachable is a clear wedge.
+- native desktop UX via Tauri
+- cross-platform VM backends
+- Docker API integration
+- local K3s management
+- policy, audit, and secure settings primitives
 
----
+The AI Hub turns those primitives into a higher-level operator workflow:
 
-## 2) The three pillars (and what “MVP” means)
+- **Models** for local and remote model runtimes
+- **Sandboxes** for isolated execution environments
+- **MCP** for managed tool connectivity
+- **Assistant** for plan / execute / explain flows over existing product capabilities
 
-### Pillar A — Agent Sandboxes (the “Portainer for AI” wedge)
+## 3. Current snapshot (`v0.7.0` preview)
 
-**Goal:** a user can create / start / stop / inspect an “AI Agent Sandbox” in seconds, with predictable isolation and resource limits.
+Shipped in the current preview:
 
-**MVP scope (desktop-first):**
+- Top-level **AI Hub** with `Overview / Models / Sandboxes / MCP / Assistant`
+- **Assistant** plan generation and step execution with policy checks and audit logs
+- **AI settings** for provider profiles, secret references, MCP allowlists, and CLI presets
+- **Ollama phase 1** integration: runtime status and local model listing
+- **Sandboxes MVP**: template-based lifecycle, resource limits, TTL metadata, and local audit log
+- Local bootstrap assets: `scripts/setup-ai.sh` and `tools/opensandbox/`
 
-- One-click sandbox creation from templates (Node/Python/Rust “dev” images).
-- Resource limits (CPU / RAM / disk), TTL / auto cleanup.
-- Volume mounts (workspace in, artifacts out).
-- Network policy presets (offline / allowlist / full).
-- Unified logs + status + audit trail.
+## 4. What is still missing before `v1.0.0`
 
-**Backend strategy:** make sandbox execution pluggable:
+The public release line stays in `v0.x.0` until all of the following are complete and validated:
 
-- **Docker-only (fastest path)**: containers with hardened defaults.
-- **OpenSandbox-compatible runtime (recommended)**: treat OpenSandbox as an optional local service we can manage and talk to via API.
-- Future: VM-based sandboxes for “max isolation”.
+- **Models**: pull / delete actions and clearer local storage controls
+- **Sandboxes**: TTL auto-cleanup, assistant/skills executor, optional OpenSandbox backend path
+- **MCP**: real server registry, lifecycle management, logs, and client config export
+- **Assistant**: full integration across the AI Hub surfaces instead of partial wiring only
+- **Release gates**: cross-platform installer smoke, upgrade path validation, privacy audit, final doc/site consistency
 
-### Pillar B — Local Model Runtime (Ollama-first)
+## 5. Versioning policy
 
-**Goal:** CrateBay becomes the place users go to manage local model runtimes without guesswork.
+- `v0.7.0` = current public preview line
+- `v0.8.0` = AI Hub completion work
+- `v0.9.0` = pre-v1 hardening and validation
+- `v1.0.0` = reserved for the first GA-ready build only
 
-**MVP scope:**
+In short: CrateBay does **not** use `v1.0.0` as a preview label.
 
-- Detect existing local runtime (Ollama first).
-- Model list / pull / delete, storage location and disk usage.
-- “Active model set” presets for switching workflows.
-- GPU visibility and memory snapshot (best-effort by platform).
+## 6. Roadmap (pre-v1 → GA)
 
-**Non-goals for MVP:** full GPU scheduler across multiple apps; deep driver setup automation.
+- **v0.7.0 — AI Hub Preview**
+  - Current preview with assistant, provider settings, Ollama phase 1, sandbox MVP
+- **v0.8.0 — AI Hub Completion**
+  - Models phase 2
+  - Sandboxes completion
+  - MCP Manager MVP
+- **v0.9.0 — Pre-v1 Hardening**
+  - Smoke tests, upgrade validation, privacy audit, wording consistency
+- **v1.0.0 — Official GA**
+  - Only after AI Hub scope is complete and all release gates pass
 
-### Pillar C — MCP Server Manager (reduce JSON hand-edit pain)
+## 7. Tooling bootstrap
 
-**Goal:** manage many MCP servers the same way we manage containers today: discoverable, reproducible, and safe.
+CrateBay already includes local bootstrap assets for the preview line:
 
-**MVP scope:**
+- `scripts/setup-ai.sh` for prerequisite checks and optional best-effort installs
+- `tools/opensandbox/` for local optional sandbox runtime scaffolding
 
-- GUI registry of MCP servers (name, command/container, env, secrets refs).
-- One-click start/stop + health + logs.
-- Export client configs (Claude Code / Cursor / etc.) from a single source of truth.
-- Policies: per-server permissions, network mode, workspace mount rules.
+## 8. Public messaging
 
----
+Until `v1.0.0` is truly ready:
 
-## 3) Architecture proposal (minimal disruption)
-
-### Keep “CrateBay Core” stable
-
-Do not turn the existing container/VM product into a science project. AI should be an **additive layer**:
-
-- Keep the current pages (Dashboard / Containers / Images / Volumes / VMs / Kubernetes).
-- Add an **AI hub** that groups Models / Sandboxes / MCP / Assistant.
-
-### Add “Managed Services” as a unifying concept
-
-AI infra needs background services. Introduce a shared internal abstraction:
-
-- `Service`: install / configure / start / stop / status / logs
-- Examples: **Ollama**, **OpenSandbox server**, **MCP servers**
-
-This also fits existing CrateBay patterns (K3s on-demand download/start/stop).
-
-### Reuse existing AI scaffolding
-
-CrateBay already has an AI settings surface and a skills registry scaffold. Extend (not replace) it:
-
-- Add a new skill executor type like `sandbox_action` (planned) to run steps inside a sandbox.
-- Route “assistant steps” through sandboxes by default when enabled.
-
----
-
-## 4) Naming and positioning
-
-### Keep “CrateBay” (recommended)
-
-Pros:
-
-- Already matches the foundation (containers/VMs) and Rust “crate” identity.
-- Avoids expensive renaming churn (repo, domains, app IDs, release history).
-
-What to change:
-
-- Update the tagline: “containers + VMs + self-hosted AI infrastructure”.
-- Introduce an “AI” section in navigation and documentation.
-
-### Optional: sub-brand the AI layer
-
-If you want clearer AI recall without renaming everything:
-
-- “CrateBay AI” (feature set)
-- “CrateBay Sandbox” (agent runtime)
-- “CrateBay MCP Manager” (MCP tooling)
-
----
-
-## 5) UI layout: evolve, don’t rewrite
-
-Avoid a full redesign until the AI modules have shipped at least one iteration. Recommended layout changes:
-
-- Add top-level **AI** section with 4 sub-pages:
-  - **Models** (runtime + models)
-  - **Sandboxes** (templates + running sandboxes)
-  - **MCP** (servers + export config)
-  - **Assistant** (natural language → plan → sandbox execution)
-- Update Dashboard widgets to include AI runtime status (running sandboxes, active model runtime, MCP servers).
-
----
-
-## 6) Proposed roadmap (post‑GA)
-
-- **v1.0 GA**: finalize cross-platform installers + docs + website consistency.
-- **v1.2 “AI Infra MVP”**:
-  - Managed Services (Ollama/OpenSandbox/MCP as services)
-  - Ollama integration (detect + list/pull/delete)
-  - MCP Server Manager MVP (start/stop/logs + config export)
-- **v1.3 “Agent Sandbox v1”**:
-  - Sandbox templates + lifecycle + audit
-  - OpenSandbox integration path (optional runtime)
-  - Assistant → sandbox execution (opt-in)
-- **v1.4 “GPU + Scale”**:
-  - GPU observability improvements, multi-runtime support
-  - Remote hosts / multi-machine sandbox backends (stretch)
-
----
-
-## 7) Tooling bootstrap
-
-Add a repo script that can **check** and optionally **install** prerequisites:
-
-- Docker (and `docker compose`)
-- Ollama
-- Optional: OpenSandbox server (docker compose)
-
-See `scripts/setup-ai.sh`.
-
----
-
-## 8) Current implementation snapshot (as of 2026-03-06)
-
-Shipped in current preview:
-
-- Top-level **AI Hub** page with `Overview / Models / Sandboxes / MCP / Assistant`.
-- **Ollama phase 1** integration: runtime status probe + local model list in GUI.
-- **Agent Sandboxes MVP**: template-based sandbox lifecycle (`create/start/stop/delete/inspect`) with resource limits, TTL metadata, and local audit log.
-- Local bootstrap assets: `scripts/setup-ai.sh` and `tools/opensandbox/`.
-
-Next execution focus (short horizon):
-
-- MCP Manager MVP: server registry + start/stop/logs + client config export.
-- Ollama phase 2: model pull/delete actions and richer storage controls.
-- Sandbox TTL auto-cleanup + Assistant/Skills sandbox executor integration.
-
-Release posture:
-
-- CrateBay remains in **pre-v1 development**.
-- `v1.0.0` will be announced only after Models/Sandboxes/MCP scope and release validation are fully complete.
-
----
-
-## References (source reading)
-
-- OpenSandbox: `https://github.com/alibaba/OpenSandbox`
-- OpenSandbox docs: `https://docs.open-sandbox.ai/`
-- MCP: `https://modelcontextprotocol.io/`
+- keep the README and website in `Coming Soon` posture
+- use `preview` language for `v0.x.0`
+- avoid implying GA or full product completion

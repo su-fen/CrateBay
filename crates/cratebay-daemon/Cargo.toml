@@ -1,6 +1,6 @@
 [package]
 name = "cratebay-daemon"
-version = "1.0.0"
+version = "0.7.0"
 edition = "2021"
 description = "CrateBay daemon: VM lifecycle, gRPC server"
 

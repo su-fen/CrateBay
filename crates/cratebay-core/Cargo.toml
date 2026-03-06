@@ -1,6 +1,6 @@
 [package]
 name = "cratebay-core"
-version = "1.0.0"
+version = "0.7.0"
 edition = "2021"
 description = "Core library: hypervisor abstraction, VM management"
 

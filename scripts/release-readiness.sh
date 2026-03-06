@@ -31,7 +31,7 @@ run_check() {
   fi
 }
 
-echo "CrateBay v1.0 release-readiness gate"
+echo "CrateBay pre-v1 release-readiness gate"
 echo "Report: $report_file"
 
 run_check "Local CI gate (Rust + frontend)" ./scripts/ci-local.sh

@@ -2,7 +2,13 @@
 
 > **English** · [中文](../README.zh.md)
 >
-> Vision: [AI Infra Proposal](VISION.md) · [中文](VISION.zh.md)
+> Vision: [AI Hub Vision](VISION.md) · [中文](VISION.zh.md)
+
+## Current Stage — Pre-v1 Development
+
+- Current public preview line: `v0.7.0`
+- The public README and website remain `Coming Soon`
+- `v1.0.0` is reserved for the point when the full AI Hub scope (`Models / Sandboxes / MCP / Assistant`) is complete and all pre-v1 release gates pass
 
 ## v0.1.0 — Foundation (Done)
 
@@ -36,73 +42,74 @@
 - ✅ K3s integration (on-demand download, install, start, stop, uninstall)
 - ✅ Kubernetes dashboard (pods, services, deployments, namespace selector, pod logs)
 - ✅ Auto-update checker (GitHub releases)
-- ✅ Official website (GitHub Pages)
-
-## Current Stage — Pre-v1 Development (In Progress)
-
-- ⚠️ CrateBay is still in development preview and **not GA yet**.
-- ⚠️ `v1.0.0` will be declared only after all pre-v1 milestones are complete and validated on macOS/Linux/Windows.
+- ✅ Official website foundation (GitHub Pages)
 
 ## v0.5.0 — Core Hardening (Done)
 
 - ✅ ACPI graceful shutdown (VZ bridge 3-phase: requestStop → poll → force stop)
 - ✅ CI/CD pipeline (GitHub Actions: CI + release builds)
-- ✅ Comprehensive test suite (177 tests across core, CLI, daemon, integration)
+- ✅ Comprehensive test suite (Rust + frontend + integration)
 - ✅ Shell completion (bash, zsh, fish, elvish, powershell)
 - ✅ Real VM execution end-to-end (OS image download → kernel/initrd → boot)
 - ✅ Real VirtioFS mount implementation (tag validation, mount tracking, guest hints)
-- ✅ Linux (KVM) VM backend (kvm-ioctls, vCPU, memory, kernel loading, serial console)
-- ✅ Security audit & hardening (input validation, path traversal prevention, log sanitization)
+- ✅ Linux (KVM) VM backend
 - ✅ Windows (Hyper-V) VM backend
-- ✅ Plugin system base
+- ✅ Security audit & hardening (input validation, path traversal prevention, log sanitization)
 - ✅ Performance optimization (<20MB install, <200MB idle RAM, <3s startup)
 
-## v0.6.0 — AI Infra Foundation (Done)
+## v0.6.0 — AI Foundation (Done)
 
-- ✅ AI hub navigation scaffold: `Overview / Models / Sandboxes / MCP / Assistant`
-- ✅ Ollama phase 1: runtime status check + local model listing in GUI
-- ✅ AI bootstrap tooling: `scripts/setup-ai.sh` + OpenSandbox local config scaffold
-- ✅ AI release-readiness gate script (core scenarios, UI smoke, wording guard)
-- ✅ AI skills scaffold (registry model + settings toggle + OpenClaw preset binding)
-- ✅ Settings UX split (General vs AI tabs) and assistant AI icon refresh
+- ✅ AI Hub navigation scaffold: `Overview / Models / Sandboxes / MCP / Assistant`
+- ✅ Settings split into `General` / `AI`
+- ✅ Multi-provider AI settings and secret storage
+- ✅ Skills scaffold + Agent/CLI preset foundation
+- ✅ Assistant plan → execute → explain flow with audit trail
+- ✅ Docker runtime quick-repair path for container actions
 
-## v0.7.0 — Agent Sandboxes MVP (In Progress)
+## v0.7.0 — AI Hub Preview (Current)
 
-- ✅ Sandbox templates (Node/Python/Rust dev images)
-- ✅ Sandbox lifecycle UI + backend (`create/start/stop/delete/inspect`)
-- ✅ Resource limit + TTL metadata + local JSONL audit trail
-- ⬜ TTL auto-cleanup worker (periodic reclaim)
-- ⬜ Assistant/Skills sandbox executor (opt-in)
-- ⬜ OpenSandbox runtime adapter (optional backend path)
+- ✅ Ollama phase 1: runtime status + local model listing in GUI
+- ✅ Sandboxes MVP: template-based `create/start/stop/delete/inspect`
+- ✅ Sandbox resource limits + TTL metadata + local JSONL audit trail
+- ✅ AI bootstrap tooling: `scripts/setup-ai.sh`
+- ✅ OpenSandbox local scaffold: `tools/opensandbox/`
+- ✅ Local macOS app install flow for preview builds
+- ✅ Public docs + website reset to preview / `Coming Soon` posture
 
-## v0.8.0 — MCP Manager MVP (Planned)
+## v0.8.0 — AI Hub Completion (In Progress)
 
-- ⬜ MCP server registry (name, command/container, env, secret refs)
-- ⬜ Start/stop/status/logs for multiple MCP servers
-- ⬜ Export client configuration (Codex/Claude/Cursor presets)
-- ⬜ Policy/audit integration with existing AI security settings
+- ⬜ Models: Ollama pull/delete actions and richer local storage management
+- ⬜ Sandboxes: TTL auto-cleanup worker (periodic reclaim)
+- ⬜ Sandboxes: Assistant / Skills sandbox executor (opt-in)
+- ⬜ Sandboxes: OpenSandbox runtime adapter (optional backend path)
+- ⬜ MCP Manager: server registry (name, command/container, env, secrets)
+- ⬜ MCP Manager: start/stop/status/logs for multiple MCP servers
+- ⬜ MCP Manager: export client configuration (Codex / Claude / Cursor presets)
+- ⬜ Assistant: deeper AI Hub integration across Models / Sandboxes / MCP surfaces
 
-## v0.9.0 — Release Candidate & GA Gate (Planned)
+## v0.9.0 — Pre-v1 Hardening & Validation (Planned)
 
-- ⬜ Final cross-platform release validation (macOS/Linux/Windows installers)
-- ⬜ Final onboarding and upgrade path verification
-- ⬜ Final docs + website consistency pass before GA announcement
-- ⬜ Run full `docs/RELEASE_SMOKE_CHECKLIST.md` and sign-off
+- ⬜ 100% explicit confirmation coverage for high-risk assistant / MCP actions
+- ⬜ Secret / privacy audit pass (no plaintext leaks in logs, config, crash artifacts)
+- ⬜ Cross-platform installer smoke validation (macOS / Linux / Windows)
+- ⬜ Upgrade path validation across pre-v1 versions
+- ⬜ Final docs + website consistency pass before GA
+- ⬜ Run full `docs/RELEASE_SMOKE_CHECKLIST.md` and sign off
 
 ## v1.0.0 — Official GA (Target)
 
-- ⬜ Complete all `v0.7.0`–`v0.9.0` milestones
-- ⬜ Freeze release notes/changelog and publish signed binaries
-- ⬜ Announce GA only after release smoke checks pass on all target platforms
+- ⬜ Complete the full AI Hub scope (`Models / Sandboxes / MCP / Assistant`)
+- ⬜ Pass release-readiness gate and installer smoke checks on all target platforms
+- ⬜ Freeze release notes / changelog and publish signed binaries
+- ⬜ Keep `v1.0.0` reserved until the above conditions are fully satisfied
 
 ## Post-v1 — Ecosystem & Polish (Planned)
 
 - ⬜ Plugin system enhancements (marketplace, versioning, sandboxed execution)
 - ⬜ Expanded OS image catalog (Fedora, Arch Linux, NixOS, FreeBSD)
-- ⬜ Container compose / multi-container orchestration (docker-compose support)
-- ⬜ Network management UI (custom bridges, DNS, firewall rules)
-- ⬜ Snapshot & restore for VMs
+- ⬜ Docker Compose / multi-container orchestration
+- ⬜ Network management UI (bridge / DNS / firewall)
+- ⬜ VM snapshots and restore
 - ⬜ Remote Docker host connections
-- ⬜ GPU passthrough (macOS Metal, Linux VFIO)
-- ⬜ Telemetry-free analytics dashboard (local-only usage stats)
-- ⬜ Model runtime profiles + richer multi-runtime support
+- ⬜ GPU passthrough / observability improvements
+- ⬜ Local-only usage insights (no telemetry)

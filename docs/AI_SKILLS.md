@@ -1,6 +1,6 @@
 # AI Skills Scaffold (Preview)
 
-> CrateBay v1.0.0 is **coming soon**. This document describes the current skills scaffold only.
+> CrateBay is currently on the **v0.7.0 preview** line. `v1.0.0` is reserved until the full AI Hub scope is complete and validated.
 
 ## Goal
 

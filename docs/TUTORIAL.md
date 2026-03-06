@@ -224,7 +224,7 @@ Current AI development surface (pre-v1):
 - **Sandboxes** tab includes an MVP: template-based `create/start/stop/delete/inspect`, resource limits, TTL metadata, and local audit log
 - **MCP** tab remains a scaffold for the upcoming MCP Manager MVP
 
-> Roadmap note: CrateBay is still in pre-v1 development. `v1.0.0` is targeted only after the full **Models / Sandboxes / MCP Manager** scope is completed and validated.
+> Roadmap note: CrateBay is still in pre-v1 development. `v1.0.0` remains reserved until the full **Models / Sandboxes / MCP / Assistant** scope is complete and the pre-v1 release gates all pass.
 
 ---
 
@@ -238,7 +238,7 @@ cratebay status
 
 Output:
 ```
-CrateBay v1.0.0
+CrateBay v0.7.0
 Platform: macOS aarch64 (Virtualization.framework available)
 Rosetta x86_64: available
 Docker: connected (~/.colima/default/docker.sock)

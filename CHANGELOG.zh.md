@@ -10,21 +10,20 @@
 
 ### 新增
 
-#### AI 基础设施（预览）
+#### AI Hub 预览能力
 - 新增顶层 AI Hub 页面，包含 `Overview / Models / Sandboxes / MCP / Assistant` 标签。
 - GUI 接入 Ollama 第一阶段能力（`ollama_status`、`ollama_list_models`）：运行状态检测 + 本地模型列表。
 - 新增 AI 引导脚本 `scripts/setup-ai.sh`，用于前置检查与可选的 best-effort 安装流程。
 - 新增 `tools/opensandbox/` 本地脚手架，提供模板配置和启动说明。
-
-#### 产品方向文档
-- 新增 `docs/VISION.md` 与 `docs/VISION.zh.md`，明确 AI 基础设施定位、架构方向与阶段路线。
+- 新增 `docs/VISION.md` 与 `docs/VISION.zh.md`，明确 AI Hub 方向与版本策略。
 
 ### 变更
 
-- 路线图中将 AI Infrastructure MVP 调整为进行中并细化阶段状态（`docs/ROADMAP.md`）。
-- README/教程/官网文案同步“已落地 AI Hub + Ollama 第一阶段”与后续里程碑。
+- 将当前公开预览线重置为 `v0.7.0`，把 `v1.0.0` 保留给 GA。
+- 刷新官网布局，并统一 README / Roadmap / Tutorial 的 preview 口径。
+- 更新路线图，明确 AI Hub 补完与 pre-v1 验证阶段。
 
-## [1.0.0] - 2026-03-02
+## [0.7.0] - 2026-03-02
 
 ### 新增
 
@@ -112,6 +111,6 @@
 - 跨平台设计：条件编译（`#[cfg(target_os)]`）。
 - 通过 Bollard 使用 Docker API。
 
-[未发布]: https://github.com/coder-hhx/CrateBay/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/coder-hhx/CrateBay/compare/v0.1.0...v1.0.0
+[未发布]: https://github.com/coder-hhx/CrateBay/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/coder-hhx/CrateBay/compare/v0.1.0...v0.7.0
 [0.1.0]: https://github.com/coder-hhx/CrateBay/releases/tag/v0.1.0

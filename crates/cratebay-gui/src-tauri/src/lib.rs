@@ -922,7 +922,11 @@ struct RegistryTokenResponse {
 
 fn http_client() -> Result<reqwest::Client, String> {
     reqwest::Client::builder()
-        .user_agent("CrateBay/1.0.0 (+https://github.com/coder-hhx/CrateBay)")
+        .user_agent(concat!(
+            "CrateBay/",
+            env!("CARGO_PKG_VERSION"),
+            " (+https://github.com/coder-hhx/CrateBay)"
+        ))
         .build()
         .map_err(|e| e.to_string())
 }
@@ -2534,7 +2538,11 @@ const OLLAMA_BASE_URL: &str = "http://127.0.0.1:11434";
 fn ollama_http_client() -> Result<reqwest::Client, String> {
     reqwest::Client::builder()
         .timeout(Duration::from_millis(900))
-        .user_agent("CrateBay/1.0.0 (+https://github.com/coder-hhx/CrateBay)")
+        .user_agent(concat!(
+            "CrateBay/",
+            env!("CARGO_PKG_VERSION"),
+            " (+https://github.com/coder-hhx/CrateBay)"
+        ))
         .build()
         .map_err(|e| e.to_string())
 }
@@ -4475,7 +4483,7 @@ async fn ai_chat_inner(
     request_id: &str,
 ) -> Result<AiChatResponse, String> {
     let client = reqwest::Client::builder()
-        .user_agent("CrateBay-AI/1.0.0")
+        .user_agent(concat!("CrateBay-AI/", env!("CARGO_PKG_VERSION")))
         .build()
         .map_err(|e| format!("Failed to build HTTP client: {}", e))?;
 

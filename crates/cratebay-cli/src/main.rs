@@ -446,7 +446,7 @@ async fn main() {
             }
         }
         Commands::Status => {
-            println!("CrateBay v1.0.0");
+            println!("CrateBay v{}", env!("CARGO_PKG_VERSION"));
             println!("Platform: {}", cratebay_core::platform_info());
             let hv = cratebay_core::create_hypervisor();
             println!(

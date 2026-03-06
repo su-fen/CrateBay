@@ -11,21 +11,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-#### AI Infrastructure (Preview)
+#### AI Hub Preview
 - New top-level AI Hub page with `Overview / Models / Sandboxes / MCP / Assistant` tabs.
-- Ollama integration phase 1 in GUI (`ollama_status`, `ollama_list_models`) with runtime status and local model listing.
+- Ollama phase 1 in GUI (`ollama_status`, `ollama_list_models`) with runtime status and local model listing.
 - AI bootstrap script `scripts/setup-ai.sh` for prerequisite checks and optional best-effort install flow.
 - OpenSandbox local scaffold under `tools/opensandbox/` with template config and setup notes.
-
-#### Product Direction Docs
-- Added `docs/VISION.md` and `docs/VISION.zh.md` with AI infrastructure positioning, architecture direction, and phased roadmap.
+- Public vision docs (`docs/VISION.md`, `docs/VISION.zh.md`) with the AI Hub direction and versioning policy.
 
 ### Changed
 
-- Updated roadmap milestones with explicit in-progress status for AI Infrastructure MVP (`docs/ROADMAP.md`).
-- Updated README/Tutorial/website messaging to reflect shipped AI Hub/Ollama phase 1 progress and next milestones.
+- Reset the public preview line to `v0.7.0`; reserve `v1.0.0` for GA only.
+- Refreshed website layout and aligned README / Roadmap / Tutorial wording with the preview policy.
+- Updated roadmap milestones to make AI Hub completion and pre-v1 validation explicit.
 
-## [1.0.0] - 2026-03-02
+## [0.7.0] - 2026-03-02
 
 ### Added
 
@@ -113,6 +112,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cross-platform design with conditional compilation (`#[cfg(target_os)]`).
 - Bollard crate for Docker API communication.
 
-[Unreleased]: https://github.com/coder-hhx/CrateBay/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/coder-hhx/CrateBay/compare/v0.1.0...v1.0.0
+[Unreleased]: https://github.com/coder-hhx/CrateBay/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/coder-hhx/CrateBay/compare/v0.1.0...v0.7.0
 [0.1.0]: https://github.com/coder-hhx/CrateBay/releases/tag/v0.1.0

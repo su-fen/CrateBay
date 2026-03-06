@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { APP_VERSION } from "@/lib/appVersion"
 import { cardActionOutline, cardActionSecondary } from "@/lib/styles"
 import type {
   AgentCliPreset,
@@ -1023,7 +1024,7 @@ export function Settings({ theme, setTheme, lang, setLang, t }: SettingsProps) {
                     variant="secondary"
                     className="ml-1 rounded-md px-1.5 py-0 text-[10px]"
                   >
-                    v{updateInfo?.current_version ?? "1.0.0"}
+                    v{updateInfo?.current_version ?? APP_VERSION}
                   </Badge>
                 </div>
               </div>

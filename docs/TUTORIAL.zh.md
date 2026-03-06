@@ -224,7 +224,7 @@ Docker 存储卷管理：
 - **Sandboxes** 标签已接入 MVP：支持模板化 `create/start/stop/delete/inspect`、资源限制、TTL 元数据与本地审计日志
 - **MCP** 标签当前仍为脚手架，后续进入 MCP Manager MVP
 
-> 规划说明：CrateBay 仍处于 pre-v1 开发阶段。只有在 **Models / Sandboxes / MCP Manager** 全部范围完成并验证后，才会进入 `v1.0.0` 正式发布。
+> 规划说明：CrateBay 仍处于 pre-v1 开发阶段。只有在 **Models / Sandboxes / MCP / Assistant** 全部范围完成，并通过 pre-v1 发布门槛后，才会进入 `v1.0.0` GA。
 
 ---
 
@@ -238,7 +238,7 @@ cratebay status
 
 示例输出：
 ```
-CrateBay v1.0.0
+CrateBay v0.7.0
 Platform: macOS aarch64 (Virtualization.framework available)
 Rosetta x86_64: available
 Docker: connected (~/.colima/default/docker.sock)
