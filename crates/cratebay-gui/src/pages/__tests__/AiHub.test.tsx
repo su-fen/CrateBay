@@ -13,7 +13,6 @@ import type {
   OllamaModelDto,
   OllamaStatusDto,
   OllamaStorageInfoDto,
-  OpenSandboxStatusDto,
   SandboxAuditEventDto,
   SandboxCleanupResultDto,
   SandboxInfoDto,
@@ -78,15 +77,6 @@ const baseTemplate: SandboxTemplateDto = {
   tags: ["node"],
 }
 
-const baseOpenSandboxStatus: OpenSandboxStatusDto = {
-  installed: true,
-  enabled: true,
-  configured: true,
-  reachable: true,
-  base_url: "http://127.0.0.1:8080",
-  config_path: "/Users/test/.cratebay/opensandbox.toml",
-}
-
 const baseSandboxRuntimeUsage: SandboxRuntimeUsageDto = {
   running: true,
   cpu_percent: 18.5,
@@ -126,11 +116,6 @@ const buildAiSettings = (servers: McpServerEntry[]): AiSettings => ({
     cli_command_allowlist: ["codex"],
   },
   mcp_servers: servers,
-  opensandbox: {
-    enabled: true,
-    base_url: baseOpenSandboxStatus.base_url,
-    config_path: baseOpenSandboxStatus.config_path,
-  },
 })
 
 describe("AiHub", () => {
@@ -152,7 +137,6 @@ describe("AiHub", () => {
       if (command === "sandbox_audit_list") return [] as SandboxAuditEventDto[]
       if (command === "load_ai_settings") return buildAiSettings([])
       if (command === "mcp_list_servers") return [] as McpServerStatusDto[]
-      if (command === "opensandbox_status") return baseOpenSandboxStatus
       if (command === "mcp_server_logs") return [] as string[]
       return null
     })
@@ -178,7 +162,6 @@ describe("AiHub", () => {
       if (command === "sandbox_audit_list") return [] as SandboxAuditEventDto[]
       if (command === "load_ai_settings") return buildAiSettings([])
       if (command === "mcp_list_servers") return baseMcpStatuses
-      if (command === "opensandbox_status") return baseOpenSandboxStatus
       if (command === "mcp_server_logs") return [] as string[]
       return null
     })
@@ -240,7 +223,6 @@ describe("AiHub", () => {
       if (command === "sandbox_audit_list") return [] as SandboxAuditEventDto[]
       if (command === "load_ai_settings") return buildAiSettings([])
       if (command === "mcp_list_servers") return [] as McpServerStatusDto[]
-      if (command === "opensandbox_status") return baseOpenSandboxStatus
       if (command === "mcp_server_logs") return [] as string[]
       return null
     })
@@ -309,7 +291,6 @@ describe("AiHub", () => {
       if (command === "sandbox_audit_list") return [] as SandboxAuditEventDto[]
       if (command === "load_ai_settings") return buildAiSettings(registry)
       if (command === "mcp_list_servers") return statuses
-      if (command === "opensandbox_status") return baseOpenSandboxStatus
       if (command === "mcp_server_logs") {
         const { id } = args as { id: string }
         return logsById[id] ?? []
@@ -399,7 +380,7 @@ describe("AiHub", () => {
     await waitFor(() => expect(screen.getByText(/filesystem server ready/)).toBeInTheDocument())
   })
 
-  it("shows OpenSandbox status, sandbox GPU runtime usage, and cleanup entry", async () => {
+  it("shows sandbox GPU runtime usage and cleanup entry", async () => {
     const user = userEvent.setup()
     vi.spyOn(window, "confirm").mockReturnValue(true)
 
@@ -447,7 +428,6 @@ describe("AiHub", () => {
       if (command === "sandbox_audit_list") return [] as SandboxAuditEventDto[]
       if (command === "load_ai_settings") return buildAiSettings([])
       if (command === "mcp_list_servers") return [] as McpServerStatusDto[]
-      if (command === "opensandbox_status") return baseOpenSandboxStatus
       if (command === "mcp_server_logs") return [] as string[]
       if (command === "sandbox_inspect") {
         const { id } = args as { id: string }
@@ -485,9 +465,6 @@ describe("AiHub", () => {
 
     render(<AiHub t={t} />)
     await user.click(screen.getByRole("tab", { name: t("sandboxes") }))
-
-    expect(await screen.findByText(baseOpenSandboxStatus.base_url)).toBeInTheDocument()
-    expect(screen.getByText(baseOpenSandboxStatus.config_path)).toBeInTheDocument()
 
     const sandboxRow = screen.getByText("GPU Sandbox").closest("tr")
     expect(sandboxRow).not.toBeNull()

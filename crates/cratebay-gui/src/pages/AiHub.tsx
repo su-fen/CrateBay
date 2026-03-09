@@ -25,7 +25,6 @@ import type {
   OllamaModelDto,
   OllamaStatusDto,
   OllamaStorageInfoDto,
-  OpenSandboxStatusDto,
   SandboxAuditEventDto,
   SandboxCleanupResultDto,
   SandboxCreateRequest,
@@ -96,7 +95,6 @@ export function AiHub({ t, initialTab = "sandboxes" }: AiHubProps) {
   const [mcpLoading, setMcpLoading] = useState(false)
   const [mcpError, setMcpError] = useState("")
   const [mcpActingId, setMcpActingId] = useState("")
-  const [openSandboxStatus, setOpenSandboxStatus] = useState<OpenSandboxStatusDto | null>(null)
 
   const sandboxErrorMessage = useCallback((error: unknown) => formatSandboxError(String(error), t), [t])
 
@@ -156,14 +154,12 @@ export function AiHub({ t, initialTab = "sandboxes" }: AiHubProps) {
     setMcpLoading(true)
     setMcpError("")
     try {
-      const [settings, servers, openSandbox] = await Promise.all([
+      const [settings, servers] = await Promise.all([
         invoke<AiSettings>("load_ai_settings"),
         invoke<McpServerStatusDto[]>("mcp_list_servers"),
-        invoke<OpenSandboxStatusDto>("opensandbox_status"),
       ])
       setMcpDrafts(settings.mcp_servers ?? [])
       setMcpServers(servers)
-      setOpenSandboxStatus(openSandbox)
       setMcpSelectedId((prev) =>
         prev && (settings.mcp_servers ?? []).some((item) => item.id === prev)
           ? prev
@@ -869,51 +865,6 @@ export function AiHub({ t, initialTab = "sandboxes" }: AiHubProps) {
             <CardContent className="py-4 space-y-3">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-semibold text-foreground">{t("opensandboxTitle")}</div>
-                  <div className="mt-1 text-xs text-muted-foreground">{t("opensandboxDesc")}</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="xs"
-                    className={cn(cardActionOutline)}
-                    disabled={mcpLoading}
-                    onClick={refreshMcp}
-                  >
-                    <span className={cn("mr-1", iconStroke, "[&_svg]:size-3")}>{I.refresh}</span>
-                    {mcpLoading ? t("working") : t("refresh")}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="xs"
-                    className={cn(cardActionOutline)}
-                    disabled={sandboxActingId === "cleanup"}
-                    onClick={handleCleanupExpiredSandboxes}
-                  >
-                    <span className={cn("mr-1", iconStroke, "[&_svg]:size-3")}>{I.trash}</span>
-                    {sandboxActingId === "cleanup" ? t("working") : t("sandboxCleanupExpired")}
-                  </Button>
-                </div>
-              </div>
-              {sandboxNotice && <div className="text-xs text-muted-foreground">{sandboxNotice}</div>}
-              {openSandboxStatus && (
-                <div className="grid gap-2 text-xs text-muted-foreground lg:grid-cols-2">
-                  <div>{t("installed")}: <span className="text-foreground">{openSandboxStatus.installed ? t("yes") : t("no")}</span></div>
-                  <div>{t("connected")}: <span className="text-foreground">{openSandboxStatus.enabled ? t("yes") : t("no")}</span></div>
-                  <div>{t("opensandboxConfigured")}: <span className="text-foreground">{openSandboxStatus.configured ? t("yes") : t("no")}</span></div>
-                  <div>{t("opensandboxReachable")}: <span className="text-foreground">{openSandboxStatus.reachable ? t("yes") : t("no")}</span></div>
-                  <div className="lg:col-span-2">{t("aiBaseUrl")}: <span className="font-mono text-foreground">{openSandboxStatus.base_url}</span></div>
-                  <div className="lg:col-span-2">{t("opensandboxConfigPath")}: <span className="font-mono text-foreground break-all">{openSandboxStatus.config_path}</span></div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          <Card className="py-0">
-            <CardContent className="py-4 space-y-3">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <div className={cn("text-sm font-semibold text-foreground")}>{t("aiSandboxesTitle")}</div>
                     <Badge className="rounded-md border border-brand-green/20 bg-brand-green/10 px-1.5 py-0 text-[11px] text-brand-green">
@@ -933,20 +884,34 @@ export function AiHub({ t, initialTab = "sandboxes" }: AiHubProps) {
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground">{t("aiSandboxesDesc")}</div>
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="xs"
-                  className={cn(cardActionOutline)}
-                  onClick={refreshSandboxes}
-                  disabled={sandboxLoading || sandboxCreating}
-                >
-                  <span className={cn("mr-1", iconStroke, "[&_svg]:size-3")}>{I.refresh}</span>
-                  {sandboxLoading ? t("working") : t("refresh")}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="xs"
+                    className={cn(cardActionOutline)}
+                    disabled={sandboxActingId === "cleanup" || sandboxLoading || sandboxCreating}
+                    onClick={handleCleanupExpiredSandboxes}
+                  >
+                    <span className={cn("mr-1", iconStroke, "[&_svg]:size-3")}>{I.trash}</span>
+                    {sandboxActingId === "cleanup" ? t("working") : t("sandboxCleanupExpired")}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="xs"
+                    className={cn(cardActionOutline)}
+                    onClick={refreshSandboxes}
+                    disabled={sandboxLoading || sandboxCreating}
+                  >
+                    <span className={cn("mr-1", iconStroke, "[&_svg]:size-3")}>{I.refresh}</span>
+                    {sandboxLoading ? t("working") : t("refresh")}
+                  </Button>
+                </div>
               </div>
 
               {sandboxError && <ErrorInline message={sandboxError} onDismiss={() => setSandboxError("")} />}
+              {sandboxNotice && <div className="text-xs text-muted-foreground">{sandboxNotice}</div>}
             </CardContent>
           </Card>
 
