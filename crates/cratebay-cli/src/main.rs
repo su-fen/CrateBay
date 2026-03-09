@@ -1319,8 +1319,11 @@ struct DockerHubSearchResponse {
 
 #[derive(Deserialize)]
 struct DockerHubRepo {
+    #[serde(alias = "repo_name")]
     name: String,
+    #[serde(alias = "repo_owner")]
     namespace: Option<String>,
+    #[serde(alias = "short_description")]
     description: Option<String>,
     star_count: Option<u64>,
     pull_count: Option<u64>,
@@ -1662,15 +1665,33 @@ async fn search_dockerhub(
         return Err(format!("Docker Hub search failed: HTTP {}", resp.status()));
     }
 
-    let data: DockerHubSearchResponse = resp.json().await.map_err(|e| e.to_string())?;
+    let status = resp.status();
+    let body = resp.bytes().await.map_err(|e| e.to_string())?;
+    let data: DockerHubSearchResponse = serde_json::from_slice(&body).map_err(|e| {
+        let snippet = String::from_utf8_lossy(&body)
+            .trim()
+            .chars()
+            .take(400)
+            .collect::<String>();
+        format!(
+            "Docker Hub search returned unexpected JSON (HTTP {}): {}. Body: {}",
+            status, e, snippet
+        )
+    })?;
     let mut out = Vec::new();
 
     for r in data.results.into_iter().take(limit) {
-        let ns = r.namespace.unwrap_or_else(|| "library".to_string());
-        let name = if ns == "library" {
-            r.name.clone()
+        let repo_name = r.name.trim().to_string();
+        let name = if repo_name.contains('/') {
+            repo_name
         } else {
-            format!("{}/{}", ns, r.name)
+            let ns = r.namespace.unwrap_or_default();
+            let ns = ns.trim();
+            if ns.is_empty() || ns == "library" {
+                repo_name
+            } else {
+                format!("{}/{}", ns, repo_name)
+            }
         };
 
         out.push(ImageSearchItem {
