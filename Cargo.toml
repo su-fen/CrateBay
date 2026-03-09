@@ -4,6 +4,7 @@ members = [
     "crates/cratebay-cli",
     "crates/cratebay-daemon",
     "crates/cratebay-core",
+    "crates/cratebay-mcp",
     "crates/cratebay-vz",
     "crates/cratebay-gui/src-tauri",
 ]

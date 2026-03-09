@@ -246,6 +246,7 @@ Docker 存储卷管理：
 - **Models** 标签已支持 Ollama 运行状态、本地模型列表、拉取 / 删除与存储可见性
 - **Sandboxes** 标签已支持模板生命周期、资源限制、TTL 清理、命令执行与本地审计日志
 - **MCP** 标签已支持注册表、本地进程启停、日志与客户端配置导出
+- **对外 MCP server**：`cratebay-mcp` 通过 stdio 把 CrateBay 沙箱暴露为 MCP tools（见 `docs/MCP_SERVER.zh.md`）
 - **Assistant** 已可覆盖容器 / VM / K8s / 模型 / 沙箱 / MCP 的计划与执行，并支持直接运行已启用的快捷 skills
 - **直连集成** 当前聚焦于本地 provider profiles，以及 Codex、Claude Code 等 Agent/CLI bridge 预设
 

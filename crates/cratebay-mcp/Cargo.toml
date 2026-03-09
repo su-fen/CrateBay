@@ -1,0 +1,25 @@
+[package]
+name = "cratebay-mcp"
+version = "0.8.0"
+edition = "2021"
+description = "CrateBay MCP server — expose sandboxes as tools over stdio"
+authors = ["coder-hhx <houhaixu_email@163.com>"]
+license = "Apache-2.0"
+repository = "https://github.com/coder-hhx/CrateBay"
+
+[[bin]]
+name = "cratebay-mcp"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+bollard = "0.18"
+chrono = "0.4"
+cratebay-core = { path = "../cratebay-core" }
+futures-util = "0.3"
+modelcontextprotocol-server = "0.1.5"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+

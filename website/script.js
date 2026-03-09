@@ -27,7 +27,7 @@
       summary3Label: "MCP + Tools",
       summary3Title: "Connect tools fast",
       summary3Body:
-        "Keep MCP servers and local runtimes in one control plane.",
+        "Run MCP servers and expose sandboxes as MCP tools for your AI clients.",
       sectionKicker: "Why It Hits",
       sectionTitle: "Local AI is hot. The workflow is still broken.",
       sectionBody:
@@ -40,7 +40,7 @@
         "Make local model setup fast, visual, and daily-use ready.",
       card3Title: "MCP built in",
       card3Body:
-        "Bring MCP servers and lightweight assistant flows into the same desktop environment.",
+        "Manage MCP servers, and connect AI clients to sandboxes via MCP tools.",
       card4Title: "Focus on the AI workflow",
       card4Body:
         "Keep your local AI workflow focused, predictable, and easy to manage.",
@@ -77,7 +77,7 @@
       summary3Label: "MCP + 工具",
       summary3Title: "快速连通工具链",
       summary3Body:
-        "把 MCP Server 与本地运行时统一放进一个桌面控制面。",
+        "把 MCP Server 与沙箱能力统一到一个桌面控制面，并对外提供 MCP tools。",
       sectionKicker: "为什么它有吸引力",
       sectionTitle: "本地 AI 很火，但真正顺手的工作流还不多。",
       sectionBody:
@@ -90,7 +90,7 @@
         "让本地模型部署与管理更快、更直观。",
       card3Title: "桌面内建 MCP",
       card3Body:
-        "把 MCP Server 与轻量 assistant 工作流放进同一个桌面环境里。",
+        "管理 MCP Server，并通过 MCP tools 把沙箱能力对外开放给 AI 客户端。",
       card4Title: "聚焦本地 AI 工作流",
       card4Body:
         "让你的本地 AI 工作流更聚焦、更可控、更易管理。",

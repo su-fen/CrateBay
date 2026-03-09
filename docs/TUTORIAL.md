@@ -246,6 +246,7 @@ Current AI development surface (pre-v1):
 - **Models** tab includes Ollama runtime status, local model list, pull, delete, and storage visibility
 - **Sandboxes** tab includes template lifecycle, limits, TTL cleanup, command execution, and local audit log
 - **MCP** tab now includes registry, local process start/stop, logs, and config export
+- **External MCP server**: `cratebay-mcp` exposes CrateBay sandboxes as MCP tools over stdio (see `docs/MCP_SERVER.md`)
 - **Assistant** can now plan across container / VM / K8s / model / sandbox / MCP workflows, or run enabled quick skills directly
 - **Direct integrations** now center on local provider profiles plus Agent/CLI bridge presets such as Codex and Claude Code
 
