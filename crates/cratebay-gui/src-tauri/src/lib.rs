@@ -6300,7 +6300,11 @@ async fn agent_cli_run(
             "agent_cli_run",
             "read",
             &request_id,
-            &format!("dry_run=true command={}", command_line),
+            &format!(
+                "dry_run=true command={} args_count={}",
+                resolved_command,
+                resolved_args.len()
+            ),
         );
         return Ok(AgentCliRunResult {
             ok: true,
@@ -6335,7 +6339,12 @@ async fn agent_cli_run(
                 "agent_cli_run",
                 "error",
                 &request_id,
-                &format!("command timeout={}s command={}", timeout, command_line),
+                &format!(
+                    "command timeout={}s command={} args_count={}",
+                    timeout,
+                    resolved_command,
+                    resolved_args.len()
+                ),
             );
             return Err(format!("Command timed out after {} seconds", timeout));
         }
@@ -6351,8 +6360,11 @@ async fn agent_cli_run(
         if ok { "write" } else { "error" },
         &request_id,
         &format!(
-            "command={} exit_code={} duration_ms={}",
-            command_line, exit_code, duration_ms
+            "command={} args_count={} exit_code={} duration_ms={}",
+            resolved_command,
+            resolved_args.len(),
+            exit_code,
+            duration_ms
         ),
     );
 

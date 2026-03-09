@@ -139,6 +139,7 @@ pub(crate) async fn sandbox_exec(
         .map_err(|e| sandbox_docker_error("inspect exec in", &name, &e))?;
     let exit_code = exec_inspect.exit_code;
 
+    let command_len = trimmed.len();
     sandbox_audit_log(
         "exec",
         &sandbox_short_id(&id),
@@ -149,8 +150,8 @@ pub(crate) async fn sandbox_exec(
             "warn"
         },
         &format!(
-            "command={} exit_code={}",
-            trimmed,
+            "command_len={} exit_code={}",
+            command_len,
             exit_code
                 .map(|code| code.to_string())
                 .unwrap_or_else(|| "unknown".to_string())
