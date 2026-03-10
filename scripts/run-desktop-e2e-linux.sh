@@ -10,8 +10,10 @@ if [[ "$(uname -s)" != "Linux" ]]; then
 fi
 
 export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
-if [[ -s "$NVM_DIR/nvm.sh" ]]; then
+if [[ -z "${CI:-}" && -s "$NVM_DIR/nvm.sh" ]]; then
+  set +u
   . "$NVM_DIR/nvm.sh"
+  set -u
   nvm use 24 >/dev/null 2>&1 || nvm use 22 >/dev/null 2>&1 || nvm use --lts >/dev/null 2>&1 || true
 fi
 
