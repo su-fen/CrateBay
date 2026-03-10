@@ -185,16 +185,41 @@ fn connect_docker() -> Result<Docker, String> {
 }
 
 fn runtime_setup_path() -> String {
-    let mut items = std::env::var("PATH")
-        .unwrap_or_default()
+    let raw = std::env::var("PATH").unwrap_or_default();
+    let mut items = raw
         .split(':')
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
         .map(|s| s.to_string())
         .collect::<Vec<_>>();
-    for extra in ["/opt/homebrew/bin", "/usr/local/bin"] {
+
+    // Some launchers (for example tauri-driver) can start the app with an empty PATH.
+    // Ensure basic system directories are present so spawned shells can find coreutils.
+    if items.is_empty() {
+        items = vec![
+            "/usr/local/sbin".to_string(),
+            "/usr/local/bin".to_string(),
+            "/usr/sbin".to_string(),
+            "/usr/bin".to_string(),
+            "/sbin".to_string(),
+            "/bin".to_string(),
+        ];
+    }
+
+    for extra in [
+        "/usr/local/sbin",
+        "/usr/local/bin",
+        "/usr/sbin",
+        "/usr/bin",
+        "/sbin",
+        "/bin",
+        "/opt/homebrew/bin",
+    ] {
         if !items.iter().any(|item| item == extra) {
             items.push(extra.to_string());
         }
     }
+
     items.join(":")
 }
 

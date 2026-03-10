@@ -94,14 +94,67 @@ async fn wait_for_css(client: &Client, selector: &str, timeout: Duration) -> Tes
     Ok(())
 }
 
+async fn scroll_into_view_css(client: &Client, selector: &str) {
+    let _ = client
+        .execute(
+            "const el = document.querySelector(arguments[0]); if (el) { el.scrollIntoView({block: 'center', inline: 'center'}); }",
+            vec![json!(selector)],
+        )
+        .await;
+}
+
+async fn wait_for_enabled_css(
+    client: &Client,
+    selector: &str,
+    timeout: Duration,
+) -> TestResult<()> {
+    let deadline = Instant::now() + timeout;
+    loop {
+        if let Ok(element) = client.find(Locator::Css(selector)).await {
+            if let Ok(disabled) = element.attr("disabled").await {
+                if disabled.is_none() {
+                    return Ok(());
+                }
+            }
+        }
+        if Instant::now() >= deadline {
+            return Err(format!(
+                "timed out waiting for selector to become enabled: {selector}"
+            ));
+        }
+        sleep(Duration::from_millis(200)).await;
+    }
+}
+
 async fn click_css(client: &Client, selector: &str) -> TestResult<()> {
-    client
+    scroll_into_view_css(client, selector).await;
+
+    let element = client
         .find(Locator::Css(selector))
         .await
-        .map_err(|e| format!("failed to find selector {selector}: {e}"))?
-        .click()
-        .await
-        .map_err(|e| format!("failed to click selector {selector}: {e}"))?;
+        .map_err(|e| format!("failed to find selector {selector}: {e}"))?;
+
+    if let Err(err) = element.click().await {
+        scroll_into_view_css(client, selector).await;
+        let element = client
+            .find(Locator::Css(selector))
+            .await
+            .map_err(|e| format!("failed to re-find selector {selector}: {e}"))?;
+        if let Err(err2) = element.click().await {
+            client
+                .execute(
+                    "const el = document.querySelector(arguments[0]); if (!el) { throw new Error('missing selector'); } el.click();",
+                    vec![json!(selector)],
+                )
+                .await
+                .map_err(|e| {
+                    format!(
+                        "failed to click selector {selector}: {err}; retry={err2}; js_click={e}"
+                    )
+                })?;
+        }
+    }
+
     Ok(())
 }
 
@@ -164,17 +217,19 @@ async fn wait_for_css_text(
     timeout: Duration,
 ) -> TestResult<()> {
     let deadline = Instant::now() + timeout;
+    let mut last_text = String::new();
     loop {
         if let Ok(element) = client.find(Locator::Css(selector)).await {
             if let Ok(text) = element.text().await {
                 if text.contains(needle) {
                     return Ok(());
                 }
+                last_text = text;
             }
         }
         if Instant::now() >= deadline {
             return Err(format!(
-                "timed out waiting for selector text: {selector} -> {needle}"
+                "timed out waiting for selector text: {selector} -> {needle} (last='{last_text}')"
             ));
         }
         sleep(Duration::from_millis(250)).await;
@@ -346,6 +401,7 @@ async fn desktop_shell_runs_container_lifecycle() {
         wait_for_docker_state(&container_name, true, Duration::from_secs(60)).await?;
         wait_for_css(&client, &stop_button_selector, Duration::from_secs(30)).await?;
 
+        wait_for_enabled_css(&client, &env_button_selector, Duration::from_secs(30)).await?;
         click_css(&client, &env_button_selector).await?;
         wait_for_css(
             &client,
@@ -363,6 +419,7 @@ async fn desktop_shell_runs_container_lifecycle() {
         )
         .await?;
 
+        wait_for_enabled_css(&client, &login_button_selector, Duration::from_secs(30)).await?;
         click_css(&client, &login_button_selector).await?;
         wait_for_css(
             &client,
@@ -384,14 +441,17 @@ async fn desktop_shell_runs_container_lifecycle() {
         )
         .await?;
 
+        wait_for_enabled_css(&client, &stop_button_selector, Duration::from_secs(30)).await?;
         click_css(&client, &stop_button_selector).await?;
         wait_for_docker_state(&container_name, false, Duration::from_secs(60)).await?;
         wait_for_css(&client, &start_button_selector, Duration::from_secs(30)).await?;
 
+        wait_for_enabled_css(&client, &start_button_selector, Duration::from_secs(30)).await?;
         click_css(&client, &start_button_selector).await?;
         wait_for_docker_state(&container_name, true, Duration::from_secs(60)).await?;
         wait_for_css(&client, &stop_button_selector, Duration::from_secs(30)).await?;
 
+        wait_for_enabled_css(&client, &delete_button_selector, Duration::from_secs(30)).await?;
         click_css(&client, &delete_button_selector).await?;
         wait_for_css(
             &client,
@@ -490,6 +550,7 @@ async fn desktop_shell_runs_mcp_lifecycle() {
         )
         .await?;
 
+        wait_for_enabled_css(&client, &toggle_selector, Duration::from_secs(30)).await?;
         click_css(&client, &toggle_selector).await?;
         wait_for_css_text(
             &client,
@@ -513,6 +574,7 @@ async fn desktop_shell_runs_mcp_lifecycle() {
         )
         .await?;
 
+        wait_for_enabled_css(&client, &toggle_selector, Duration::from_secs(30)).await?;
         click_css(&client, &toggle_selector).await?;
         wait_for_css_text(&client, &status_selector, "Exited", Duration::from_secs(30)).await?;
         wait_for_css_text(
