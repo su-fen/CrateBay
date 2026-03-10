@@ -623,11 +623,17 @@ async fn desktop_shell_runs_mcp_lifecycle() {
 
         wait_for_enabled_css(&client, &toggle_selector, Duration::from_secs(30)).await?;
         click_css(&client, &toggle_selector).await?;
-        wait_for_css_text(&client, &status_selector, "Exited", Duration::from_secs(30)).await?;
+        wait_for_css_text(
+            &client,
+            &status_selector,
+            "Stopped",
+            Duration::from_secs(30),
+        )
+        .await?;
         wait_for_css_text(
             &client,
             "[data-testid='mcp-selected-status']",
-            "Exited",
+            "Stopped",
             Duration::from_secs(30),
         )
         .await?;
