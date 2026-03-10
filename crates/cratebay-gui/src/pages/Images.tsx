@@ -29,7 +29,6 @@ import {
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 import { iconStroke, cardActionSecondary, cardActionOutline, cardActionGhost } from "@/lib/styles"
@@ -101,6 +100,7 @@ export function Images({
 }: ImagesProps) {
   const [showRunModal, setShowRunModal] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
+  const [importTab, setImportTab] = useState<"import" | "push">("import")
   const [activeTab, setActiveTab] = useState<"local" | "search">("local")
   const canTags = (ref: string) => ref.includes(".") || ref.includes(":") || ref.startsWith("localhost/")
 
@@ -111,6 +111,7 @@ export function Images({
   const [inspectInfo, setInspectInfo] = useState<ImageInspectInfo | null>(null)
   const [inspectLoading, setInspectLoading] = useState(false)
   const [confirmRemove, setConfirmRemove] = useState("")
+  const [refreshing, setRefreshing] = useState(false)
   const [showTagModal, setShowTagModal] = useState(false)
   const [tagSource, setTagSource] = useState("")
   const [tagRepo, setTagRepo] = useState("")
@@ -254,8 +255,12 @@ export function Images({
               <span className={cn("mr-1", iconStroke, "[&_svg]:size-4")}>{I.plus}</span>
               {t("importImage")}
             </Button>
-            <Button type="button" variant="outline" onClick={fetchLocalImages} disabled={localLoading}>
-              <span className={cn("mr-1", iconStroke, "[&_svg]:size-4")}>{I.refresh}</span>
+            <Button type="button" variant="outline" onClick={async () => {
+              setRefreshing(true)
+              await Promise.all([fetchLocalImages(), new Promise(r => setTimeout(r, 600))])
+              setRefreshing(false)
+            }} disabled={refreshing || localLoading}>
+              <span className={cn("mr-1", iconStroke, "[&_svg]:size-4", refreshing && "animate-spin")}>{I.refresh}</span>
               {t("refresh")}
             </Button>
           </div>
@@ -599,54 +604,68 @@ export function Images({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4">
-            <div className="grid gap-2">
-              <div className="text-sm font-medium">{t("imageArchivePath")}</div>
-              <div className="flex gap-2">
+          <Tabs value={importTab} onValueChange={(v) => setImportTab(v as "import" | "push")} className="w-full">
+            <TabsList variant="line" className="w-full">
+              <TabsTrigger value="import" className="flex-1">
+                <span className={cn(iconStroke, "[&_svg]:size-4")}>{I.hardDrive}</span>
+                {t("importImage")}
+              </TabsTrigger>
+              <TabsTrigger value="push" className="flex-1">
+                <span className={cn(iconStroke, "[&_svg]:size-4")}>{I.globe}</span>
+                {t("pushImage")}
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="import" className="mt-4 space-y-4">
+              <div className="grid gap-2">
+                <div className="text-sm font-medium">{t("imageArchivePath")}</div>
+                <div className="flex gap-2">
+                  <Input
+                    value={loadPath}
+                    onChange={(e) => setLoadPath(e.target.value)}
+                    placeholder="/path/to/image.tar"
+                  />
+                  <Button type="button" variant="outline" onClick={browseFile}>
+                    <span className={cn(iconStroke, "[&_svg]:size-3.5")}>{I.fileText}</span>
+                    {t("browse")}
+                  </Button>
+                </div>
+              </div>
+              <div className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground leading-relaxed">
+                {t("importHint")}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="push" className="mt-4 space-y-4">
+              <div className="grid gap-2">
+                <div className="text-sm font-medium">{t("imageRef")}</div>
                 <Input
-                  value={loadPath}
-                  onChange={(e) => setLoadPath(e.target.value)}
-                  placeholder="/path/to/image.tar"
+                  value={pushRef}
+                  onChange={(e) => setPushRef(e.target.value)}
+                  placeholder="ghcr.io/org/image:tag"
                 />
-                <Button type="button" variant="outline" onClick={browseFile}>
-                  {t("browse")}
-                </Button>
               </div>
-              <div className="flex items-center gap-2">
-                <Button type="button" disabled={loadLoading || !loadPath.trim()} onClick={onLoad}>
-                  {loadLoading ? t("working") : t("load")}
-                </Button>
-                <div className="text-xs text-muted-foreground">{t("importHint")}</div>
+              <div className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground leading-relaxed">
+                {t("pushHint")}
               </div>
-            </div>
-
-            <Separator />
-
-            <div className="grid gap-2">
-              <div className="text-sm font-medium">{t("imageRef")}</div>
-              <Input
-                value={pushRef}
-                onChange={(e) => setPushRef(e.target.value)}
-                placeholder="ghcr.io/org/image:tag"
-              />
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={pushLoading || !pushRef.trim()}
-                  onClick={onPush}
-                >
-                  {pushLoading ? t("working") : t("push")}
-                </Button>
-                <div className="text-xs text-muted-foreground">{t("pushHint")}</div>
-              </div>
-            </div>
-          </div>
+            </TabsContent>
+          </Tabs>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setShowImportModal(false)}>
               {t("close")}
             </Button>
+            {importTab === "import" ? (
+              <Button type="button" disabled={loadLoading || !loadPath.trim()} onClick={onLoad}>
+                {loadLoading && <Spinner className="mr-1.5 size-3" />}
+                {loadLoading ? t("working") : t("load")}
+              </Button>
+            ) : (
+              <Button type="button" disabled={pushLoading || !pushRef.trim()} onClick={onPush}>
+                {pushLoading && <Spinner className="mr-1.5 size-3" />}
+                {pushLoading ? t("working") : t("push")}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

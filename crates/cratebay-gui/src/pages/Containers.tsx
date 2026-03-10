@@ -117,6 +117,9 @@ export function Containers({
   // Container stats state
   const [containerStats, setContainerStats] = useState<Record<string, ContainerStats>>({})
 
+  // Refresh animation state
+  const [refreshing, setRefreshing] = useState(false)
+
   // Confirm remove state
   const [confirmRemove, setConfirmRemove] = useState("")
   const [containerToRemoveName, setContainerToRemoveName] = useState("")
@@ -646,8 +649,12 @@ export function Containers({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-end gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={onFetch}>
-          <span className={cn(iconStroke, "[&_svg]:size-4")}>{I.refresh}</span>
+        <Button type="button" variant="outline" size="sm" disabled={refreshing} onClick={() => {
+          setRefreshing(true)
+          onFetch()
+          setTimeout(() => setRefreshing(false), 600)
+        }}>
+          <span className={cn(iconStroke, "[&_svg]:size-4", refreshing && "animate-spin")}>{I.refresh}</span>
           {t("refresh")}
         </Button>
         <Button type="button" onClick={openRunModal} data-testid="containers-run">

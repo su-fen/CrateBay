@@ -76,6 +76,7 @@ export function Volumes({
 
   const [confirmDelete, setConfirmDelete] = useState("")
   const [search, setSearch] = useState("")
+  const [refreshing, setRefreshing] = useState(false)
 
   const filtered = useMemo(() => {
     if (!search.trim()) return volumes
@@ -181,8 +182,12 @@ export function Volumes({
           />
         </div>
         <div className="flex-1" />
-        <Button type="button" variant="outline" onClick={onFetch}>
-          <span className={cn("mr-1", iconStroke, "[&_svg]:size-4")}>
+        <Button type="button" variant="outline" disabled={refreshing} onClick={() => {
+          setRefreshing(true)
+          onFetch()
+          setTimeout(() => setRefreshing(false), 600)
+        }}>
+          <span className={cn("mr-1", iconStroke, "[&_svg]:size-4", refreshing && "animate-spin")}>
             {I.refresh}
           </span>
           {t("refresh")}
