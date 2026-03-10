@@ -159,6 +159,53 @@ async fn click_css(client: &Client, selector: &str) -> TestResult<()> {
 }
 
 async fn clear_and_type_css(client: &Client, selector: &str, value: &str) -> TestResult<()> {
+    scroll_into_view_css(client, selector).await;
+
+    let js_result = client
+        .execute(
+            r#"
+const selector = arguments[0];
+const value = arguments[1];
+const el = document.querySelector(selector);
+if (!el) {
+  throw new Error(`missing selector: ${selector}`);
+}
+el.scrollIntoView({ block: 'center', inline: 'nearest' });
+el.focus();
+
+const setNativeValue = (element, nextValue) => {
+  const proto = element instanceof HTMLTextAreaElement
+    ? window.HTMLTextAreaElement.prototype
+    : element instanceof HTMLInputElement
+      ? window.HTMLInputElement.prototype
+      : null;
+  if (!proto) {
+    element.value = nextValue;
+    return;
+  }
+  const desc = Object.getOwnPropertyDescriptor(proto, 'value');
+  if (desc && desc.set) {
+    desc.set.call(element, nextValue);
+  } else {
+    element.value = nextValue;
+  }
+};
+
+setNativeValue(el, value);
+el.dispatchEvent(new Event('input', { bubbles: true }));
+el.dispatchEvent(new Event('change', { bubbles: true }));
+return el.value;
+"#,
+            vec![json!(selector), json!(value)],
+        )
+        .await;
+
+    if let Ok(result) = js_result {
+        if result.as_str() == Some(value) {
+            return Ok(());
+        }
+    }
+
     let input = client
         .find(Locator::Css(selector))
         .await
