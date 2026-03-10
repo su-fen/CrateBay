@@ -16,7 +16,7 @@ use serde_json::json;
 use std::collections::HashMap;
 use std::fs::OpenOptions;
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::Command;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
@@ -260,21 +260,18 @@ fn sandbox_audit_log(
     }
 }
 
+#[cfg(unix)]
 fn detect_docker_socket() -> Option<String> {
-    #[cfg(unix)]
-    {
-        let home = std::env::var("HOME").unwrap_or_default();
-        let candidates = [
-            format!("{}/.colima/default/docker.sock", home),
-            format!("{}/.orbstack/run/docker.sock", home),
-            "/var/run/docker.sock".to_string(),
-            format!("{}/.docker/run/docker.sock", home),
-        ];
-        if let Some(sock) = candidates.into_iter().find(|p| Path::new(p).exists()) {
-            return Some(sock);
-        }
-    }
-    None
+    let home = std::env::var("HOME").unwrap_or_default();
+    let candidates = [
+        format!("{}/.colima/default/docker.sock", home),
+        format!("{}/.orbstack/run/docker.sock", home),
+        "/var/run/docker.sock".to_string(),
+        format!("{}/.docker/run/docker.sock", home),
+    ];
+    candidates
+        .into_iter()
+        .find(|p| std::path::Path::new(p).exists())
 }
 
 fn connect_docker() -> Result<Docker> {
