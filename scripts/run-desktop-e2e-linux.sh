@@ -68,7 +68,7 @@ npm ci
 npm run build
 popd >/dev/null
 
-cargo build -p cratebay-gui
+cargo build -p cratebay-gui --features custom-protocol
 
 app_path="$repo_root/target/debug/cratebay-gui"
 if [[ ! -x "$app_path" ]]; then
