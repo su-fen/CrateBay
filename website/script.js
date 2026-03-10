@@ -48,8 +48,6 @@
       statusTitle: "Coming soon",
       statusBody:
         "For builders who want a better local AI workflow.",
-      statusNote:
-        "Preview builds are evolving quickly. Follow the GitHub repo for updates and release notes.",
       footer: "CrateBay · <span data-year></span>",
     },
     zh: {
@@ -98,8 +96,6 @@
       statusTitle: "即将推出",
       statusBody:
         "如果你想要更好的本地 AI 工作流，就关注 CrateBay。",
-      statusNote:
-        "预览版本迭代很快；更新与发布说明请关注 GitHub 仓库。",
       footer: "CrateBay · <span data-year></span>",
     },
   }
