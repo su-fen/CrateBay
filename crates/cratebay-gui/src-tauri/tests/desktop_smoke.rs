@@ -149,7 +149,9 @@ async fn wait_for_absent_css(client: &Client, selector: &str, timeout: Duration)
             return Ok(());
         }
         if Instant::now() >= deadline {
-            return Err(format!("timed out waiting for selector to disappear: {selector}"));
+            return Err(format!(
+                "timed out waiting for selector to disappear: {selector}"
+            ));
         }
         sleep(Duration::from_millis(250)).await;
     }
@@ -219,7 +221,12 @@ async fn desktop_shell_renders_and_navigates() {
     let client = connect_client().await;
 
     let result: TestResult<()> = async {
-        wait_for_css(&client, "[data-testid='nav-dashboard']", Duration::from_secs(30)).await?;
+        wait_for_css(
+            &client,
+            "[data-testid='nav-dashboard']",
+            Duration::from_secs(30),
+        )
+        .await?;
 
         click_css(&client, "[data-testid='nav-ai']").await?;
         wait_for_css(&client, "[role='tab']", Duration::from_secs(15)).await?;
@@ -284,13 +291,27 @@ async fn desktop_shell_runs_container_lifecycle() {
     let client = connect_client().await;
 
     let result: TestResult<()> = async {
-        wait_for_css(&client, "[data-testid='nav-dashboard']", Duration::from_secs(30)).await?;
+        wait_for_css(
+            &client,
+            "[data-testid='nav-dashboard']",
+            Duration::from_secs(30),
+        )
+        .await?;
         click_css(&client, "[data-testid='nav-containers']").await?;
-        wait_for_css(&client, "[data-testid='containers-run']", Duration::from_secs(15)).await?;
+        wait_for_css(
+            &client,
+            "[data-testid='containers-run']",
+            Duration::from_secs(15),
+        )
+        .await?;
 
         click_css(&client, "[data-testid='containers-run']").await?;
-        wait_for_css(&client, "[data-testid='containers-dialog-run']", Duration::from_secs(15))
-            .await?;
+        wait_for_css(
+            &client,
+            "[data-testid='containers-dialog-run']",
+            Duration::from_secs(15),
+        )
+        .await?;
 
         clear_and_type_css(
             &client,
@@ -306,8 +327,12 @@ async fn desktop_shell_runs_container_lifecycle() {
         .await?;
 
         click_css(&client, "[data-testid='containers-run-add-env']").await?;
-        wait_for_css(&client, "[data-testid='containers-run-env-key-0']", Duration::from_secs(10))
-            .await?;
+        wait_for_css(
+            &client,
+            "[data-testid='containers-run-env-key-0']",
+            Duration::from_secs(10),
+        )
+        .await?;
         clear_and_type_css(&client, "[data-testid='containers-run-env-key-0']", env_key).await?;
         clear_and_type_css(
             &client,
@@ -322,16 +347,29 @@ async fn desktop_shell_runs_container_lifecycle() {
         wait_for_css(&client, &stop_button_selector, Duration::from_secs(30)).await?;
 
         click_css(&client, &env_button_selector).await?;
-        wait_for_css(&client, "[data-testid='containers-dialog-env']", Duration::from_secs(20))
-            .await?;
+        wait_for_css(
+            &client,
+            "[data-testid='containers-dialog-env']",
+            Duration::from_secs(20),
+        )
+        .await?;
         wait_for_page_text(&client, env_key, Duration::from_secs(20)).await?;
         wait_for_page_text(&client, &env_value, Duration::from_secs(20)).await?;
         click_css(&client, "[data-testid='containers-env-close']").await?;
-        wait_for_absent_css(&client, "[data-testid='containers-dialog-env']", Duration::from_secs(10))
-            .await?;
+        wait_for_absent_css(
+            &client,
+            "[data-testid='containers-dialog-env']",
+            Duration::from_secs(10),
+        )
+        .await?;
 
         click_css(&client, &login_button_selector).await?;
-        wait_for_css(&client, "[data-testid='app-modal-text']", Duration::from_secs(20)).await?;
+        wait_for_css(
+            &client,
+            "[data-testid='app-modal-text']",
+            Duration::from_secs(20),
+        )
+        .await?;
         wait_for_page_text(
             &client,
             &format!("docker exec -it {container_name} /bin/sh"),
@@ -339,8 +377,12 @@ async fn desktop_shell_runs_container_lifecycle() {
         )
         .await?;
         click_css(&client, "[data-testid='app-modal-close']").await?;
-        wait_for_absent_css(&client, "[data-testid='app-modal-text']", Duration::from_secs(10))
-            .await?;
+        wait_for_absent_css(
+            &client,
+            "[data-testid='app-modal-text']",
+            Duration::from_secs(10),
+        )
+        .await?;
 
         click_css(&client, &stop_button_selector).await?;
         wait_for_docker_state(&container_name, false, Duration::from_secs(60)).await?;
@@ -386,13 +428,28 @@ async fn desktop_shell_runs_mcp_lifecycle() {
     let client = connect_client().await;
 
     let result: TestResult<()> = async {
-        wait_for_css(&client, "[data-testid='nav-dashboard']", Duration::from_secs(30)).await?;
+        wait_for_css(
+            &client,
+            "[data-testid='nav-dashboard']",
+            Duration::from_secs(30),
+        )
+        .await?;
         click_css(&client, "[data-testid='nav-ai']").await?;
-        wait_for_css(&client, "[data-testid='aihub-tab-mcp']", Duration::from_secs(20)).await?;
+        wait_for_css(
+            &client,
+            "[data-testid='aihub-tab-mcp']",
+            Duration::from_secs(20),
+        )
+        .await?;
         click_css(&client, "[data-testid='aihub-tab-mcp']").await?;
 
         click_css(&client, "[data-testid='mcp-add-server']").await?;
-        wait_for_css(&client, "[data-testid='mcp-input-id']", Duration::from_secs(15)).await?;
+        wait_for_css(
+            &client,
+            "[data-testid='mcp-input-id']",
+            Duration::from_secs(15),
+        )
+        .await?;
         let mcp_id = client
             .find(Locator::Css("[data-testid='mcp-input-id']"))
             .await
@@ -416,14 +473,31 @@ async fn desktop_shell_runs_mcp_lifecycle() {
         )
         .await?;
         clear_and_type_css(&client, "[data-testid='mcp-input-working-dir']", &workdir).await?;
-        clear_and_type_css(&client, "[data-testid='mcp-input-notes']", "desktop runtime smoke").await?;
+        clear_and_type_css(
+            &client,
+            "[data-testid='mcp-input-notes']",
+            "desktop runtime smoke",
+        )
+        .await?;
 
         click_css(&client, "[data-testid='mcp-save-registry']").await?;
         wait_for_css(&client, &row_selector, Duration::from_secs(30)).await?;
-        wait_for_css_text(&client, &status_selector, "Stopped", Duration::from_secs(20)).await?;
+        wait_for_css_text(
+            &client,
+            &status_selector,
+            "Stopped",
+            Duration::from_secs(20),
+        )
+        .await?;
 
         click_css(&client, &toggle_selector).await?;
-        wait_for_css_text(&client, &status_selector, "Running", Duration::from_secs(30)).await?;
+        wait_for_css_text(
+            &client,
+            &status_selector,
+            "Running",
+            Duration::from_secs(30),
+        )
+        .await?;
         wait_for_css_text(
             &client,
             "[data-testid='mcp-selected-status']",
