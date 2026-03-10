@@ -83,7 +83,7 @@ sleep 3
 
 CRATEBAY_DESKTOP_E2E_APP="$app_path" \
 TAURI_DRIVER_URL="http://127.0.0.1:4444" \
-cargo test -p cratebay-gui --test desktop_smoke -- --ignored --nocapture --test-threads=1 2>&1 | tee "$test_log"
+cargo test -p cratebay-gui --features custom-protocol --test desktop_smoke -- --ignored --nocapture --test-threads=1 2>&1 | tee "$test_log"
 
 docker ps -a > "$artifact_dir/docker-ps.txt"
 find "$artifact_dir" -maxdepth 2 -type f | sort > "$artifact_dir/artifacts.txt"
