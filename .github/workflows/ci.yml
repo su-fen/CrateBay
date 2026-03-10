@@ -308,6 +308,7 @@ jobs:
             libappindicator3-dev \
             librsvg2-dev \
             patchelf \
+            xauth \
             xvfb \
             webkit2gtk-driver
       - name: Cargo cache
@@ -319,7 +320,20 @@ jobs:
         run: cargo install tauri-driver --locked --version 2.0.5
 
       - name: Run desktop smoke
-        run: xvfb-run -a ./scripts/run-desktop-e2e-linux.sh
+        run: |
+          mkdir -p dist/desktop-smoke
+          set +e
+          xvfb-run -a -e /tmp/xvfb-run.log ./scripts/run-desktop-e2e-linux.sh
+          status=$?
+          set -e
+
+          if [[ -f /tmp/xvfb-run.log ]]; then
+            cp /tmp/xvfb-run.log dist/desktop-smoke/xvfb-run.log || true
+            echo "== Xvfb log (tail) =="
+            tail -n 200 /tmp/xvfb-run.log || true
+          fi
+
+          exit $status
 
       - name: Upload desktop smoke artifacts
         if: always()
