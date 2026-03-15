@@ -19,8 +19,8 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
-use tonic::transport::Channel;
 use tokio_util::codec::{BytesCodec, FramedRead};
+use tonic::transport::Channel;
 
 use cratebay_core::proto;
 use cratebay_core::proto::vm_service_client::VmServiceClient;
@@ -1186,9 +1186,7 @@ async fn handle_runtime(cmd: RuntimeCommands) {
 
                 if socket_path.exists() {
                     match Docker::connect_with_socket(
-                        socket_path
-                            .to_str()
-                            .unwrap_or_default(),
+                        socket_path.to_str().unwrap_or_default(),
                         120,
                         bollard::API_DEFAULT_VERSION,
                     ) {
@@ -1226,9 +1224,7 @@ async fn handle_runtime(cmd: RuntimeCommands) {
                 println!("DOCKER_HOST: {}", socket_url);
 
                 match Docker::connect_with_socket(
-                    socket_path
-                        .to_str()
-                        .unwrap_or_default(),
+                    socket_path.to_str().unwrap_or_default(),
                     120,
                     bollard::API_DEFAULT_VERSION,
                 ) {
@@ -1913,8 +1909,7 @@ async fn handle_image(cmd: ImageCommands) -> Result<(), String> {
                 ..Default::default()
             });
 
-            let mut stream =
-                docker.push_image(&repo, Some(PushImageOptions { tag }), creds);
+            let mut stream = docker.push_image(&repo, Some(PushImageOptions { tag }), creds);
             let mut out = String::new();
             while let Some(progress) = stream.try_next().await.map_err(|e| e.to_string())? {
                 if let Some(status) = progress.status {

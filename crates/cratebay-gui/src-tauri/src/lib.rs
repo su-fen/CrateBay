@@ -29,8 +29,8 @@ use tauri::async_runtime::JoinHandle;
 use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::{Emitter, Manager, RunEvent, State, WindowEvent};
-use tonic::transport::Channel;
 use tokio_util::codec::{BytesCodec, FramedRead};
+use tonic::transport::Channel;
 use tracing::{error, info, warn};
 
 use cratebay_core::proto;
@@ -183,9 +183,8 @@ fn connect_docker() -> Result<Docker, String> {
         if let Ok(host) = cratebay_core::runtime::ensure_runtime_wsl_running() {
             // Persist for subsequent calls within this GUI process.
             std::env::set_var("DOCKER_HOST", &host);
-            return Docker::connect_with_http(&host, 120, bollard::API_DEFAULT_VERSION).map_err(
-                |e| format!("Failed to connect to CrateBay Runtime at {}: {}", host, e),
-            );
+            return Docker::connect_with_http(&host, 120, bollard::API_DEFAULT_VERSION)
+                .map_err(|e| format!("Failed to connect to CrateBay Runtime at {}: {}", host, e));
         }
         Err(
             "No Docker named pipe found. Set DOCKER_HOST or start a Docker-compatible runtime."
@@ -309,8 +308,7 @@ fn docker_runtime_quick_setup_macos() -> Result<String, String> {
                     if tokio::time::Instant::now() >= deadline {
                         return Err(format!(
                             "Docker runtime is not responding yet (vm: {}). Last error: {}",
-                            vm_id,
-                            e
+                            vm_id, e
                         ));
                     }
                     tokio::time::sleep(Duration::from_millis(500)).await;
@@ -365,7 +363,8 @@ fn docker_runtime_quick_setup_windows() -> Result<String, String> {
 
 #[cfg(not(target_os = "macos"))]
 fn docker_runtime_quick_setup_generic() -> Result<String, String> {
-    connect_docker().map(|_| "Docker runtime is reachable. Containers and Volumes are ready.".into())
+    connect_docker()
+        .map(|_| "Docker runtime is reachable. Containers and Volumes are ready.".into())
 }
 
 fn docker_host_for_cli() -> Option<String> {
@@ -7687,8 +7686,8 @@ exec "$target" "$@"
             "echo CRATEBAY_SANDBOX_OK".to_string(),
             None,
         )
-            .await
-            .expect("exec sandbox command");
+        .await
+        .expect("exec sandbox command");
         assert!(exec.ok);
         assert_eq!(exec.exit_code, Some(0));
         assert!(exec.stdout.contains("CRATEBAY_SANDBOX_OK"));

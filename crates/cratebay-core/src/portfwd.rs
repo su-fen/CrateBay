@@ -198,7 +198,10 @@ mod tests {
         let listener = match TcpListener::bind("127.0.0.1:0").await {
             Ok(l) => l,
             Err(e) => {
-                eprintln!("SKIP: cannot bind to localhost for port-forward tests ({})", e);
+                eprintln!(
+                    "SKIP: cannot bind to localhost for port-forward tests ({})",
+                    e
+                );
                 return None;
             }
         };
@@ -631,7 +634,10 @@ mod tests {
         let echo_listener = match TcpListener::bind("127.0.0.1:0").await {
             Ok(l) => l,
             Err(e) => {
-                eprintln!("SKIP: cannot bind to localhost for port-forward tests ({})", e);
+                eprintln!(
+                    "SKIP: cannot bind to localhost for port-forward tests ({})",
+                    e
+                );
                 return;
             }
         };

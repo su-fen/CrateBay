@@ -7,8 +7,8 @@
 #![allow(dead_code)]
 
 use std::ffi::{CStr, CString};
-use std::os::raw::c_char;
 use std::os::fd::{FromRawFd, OwnedFd};
+use std::os::raw::c_char;
 use std::ptr;
 
 // ---------------------------------------------------------------------------
@@ -56,11 +56,7 @@ extern "C" {
         out_error: *mut *mut c_char,
     ) -> i32;
 
-    pub fn vz_vsock_connect(
-        handle: VZVMHandle,
-        port: u32,
-        out_error: *mut *mut c_char,
-    ) -> i32;
+    pub fn vz_vsock_connect(handle: VZVMHandle, port: u32, out_error: *mut *mut c_char) -> i32;
 
     pub fn vz_create_and_start_vm(
         config: *const VZVMConfig,
@@ -197,9 +193,9 @@ impl VmHandle {
         let mut err: *mut c_char = ptr::null_mut();
         let fd = unsafe { vz_vsock_connect(self.raw, port, &mut err) };
         if fd < 0 {
-            return Err(take_error(err).unwrap_or_else(|| {
-                format!("vsock connect to port {} failed", port)
-            }));
+            return Err(
+                take_error(err).unwrap_or_else(|| format!("vsock connect to port {} failed", port))
+            );
         }
 
         if let Some(msg) = take_error(err) {

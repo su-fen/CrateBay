@@ -66,10 +66,8 @@ fn macos_build() {
     let clang_module_cache_dir = out_dir.join("clang-module-cache");
     std::fs::create_dir_all(&clang_module_cache_dir)
         .expect("Failed to create clang module cache dir");
-    let clang_module_cache_arg = format!(
-        "-fmodules-cache-path={}",
-        clang_module_cache_dir.display()
-    );
+    let clang_module_cache_arg =
+        format!("-fmodules-cache-path={}", clang_module_cache_dir.display());
 
     // Import the C header via a bridging header mechanism:
     // Swift can import C declarations directly using -import-objc-header.

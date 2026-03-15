@@ -39,4 +39,3 @@ fn try_clonefile(src: &Path, dest: &Path) -> std::io::Result<()> {
         Err(std::io::Error::last_os_error())
     }
 }
-

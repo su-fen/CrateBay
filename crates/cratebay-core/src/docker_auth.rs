@@ -67,9 +67,11 @@ fn docker_config_path() -> Option<PathBuf> {
         return Some(Path::new(&profile).join(".docker").join("config.json"));
     }
     if let (Ok(drive), Ok(path)) = (std::env::var("HOMEDRIVE"), std::env::var("HOMEPATH")) {
-        return Some(PathBuf::from(format!("{}{}", drive, path))
-            .join(".docker")
-            .join("config.json"));
+        return Some(
+            PathBuf::from(format!("{}{}", drive, path))
+                .join(".docker")
+                .join("config.json"),
+        );
     }
 
     None
@@ -120,7 +122,8 @@ fn decode_docker_auth(auth_b64: &str) -> Result<(String, String), String> {
     let decoded = STANDARD
         .decode(auth_b64.trim())
         .map_err(|e| format!("Invalid base64 auth: {}", e))?;
-    let decoded = String::from_utf8(decoded).map_err(|e| format!("Invalid auth encoding: {}", e))?;
+    let decoded =
+        String::from_utf8(decoded).map_err(|e| format!("Invalid auth encoding: {}", e))?;
     let (user, pass) = decoded
         .split_once(':')
         .ok_or_else(|| "Invalid auth payload (expected username:password)".to_string())?;
@@ -162,9 +165,8 @@ fn run_credential_helper(helper: &str, server: &str) -> Result<RegistryAuth, Str
         ));
     }
 
-    let resp = serde_json::from_slice::<DockerCredentialHelperGetResponse>(&out.stdout).map_err(
-        |e| format!("Failed to parse {} output as JSON: {}", program, e),
-    )?;
+    let resp = serde_json::from_slice::<DockerCredentialHelperGetResponse>(&out.stdout)
+        .map_err(|e| format!("Failed to parse {} output as JSON: {}", program, e))?;
 
     let username = resp.username.trim().to_string();
     let secret = resp.secret.trim().to_string();
@@ -180,7 +182,10 @@ fn run_credential_helper(helper: &str, server: &str) -> Result<RegistryAuth, Str
     })
 }
 
-fn resolve_from_config(config: &DockerConfigFile, reference: &str) -> Result<Option<RegistryAuth>, String> {
+fn resolve_from_config(
+    config: &DockerConfigFile,
+    reference: &str,
+) -> Result<Option<RegistryAuth>, String> {
     let registry_host = registry_host_from_image_reference(reference);
     let auths = config.auths.as_ref();
 
@@ -188,7 +193,11 @@ fn resolve_from_config(config: &DockerConfigFile, reference: &str) -> Result<Opt
     if let Some(auths) = auths {
         if let Some(key) = find_registry_key(auths.keys(), registry_host.as_deref()) {
             let entry = auths.get(key).cloned().unwrap_or_default();
-            if let Some(token) = entry.identity_token.clone().filter(|v| !v.trim().is_empty()) {
+            if let Some(token) = entry
+                .identity_token
+                .clone()
+                .filter(|v| !v.trim().is_empty())
+            {
                 return Ok(Some(RegistryAuth {
                     server_address: key.to_string(),
                     username: None,
@@ -291,7 +300,10 @@ mod tests {
             "index.docker.io"
         );
         assert_eq!(normalize_registry_key("ghcr.io"), "ghcr.io");
-        assert_eq!(normalize_registry_key("http://localhost:5000/"), "localhost:5000");
+        assert_eq!(
+            normalize_registry_key("http://localhost:5000/"),
+            "localhost:5000"
+        );
     }
 
     #[test]

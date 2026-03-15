@@ -10,9 +10,9 @@ pub fn lock_or_recover<T>(mutex: &std::sync::Mutex<T>) -> std::sync::MutexGuard<
     }
 }
 
+pub mod docker_auth;
 pub mod fsutil;
 pub mod hypervisor;
-pub mod docker_auth;
 pub mod images;
 pub mod k3s;
 pub mod logging;

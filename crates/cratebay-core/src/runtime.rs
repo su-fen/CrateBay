@@ -101,7 +101,10 @@ pub fn runtime_image_ready() -> bool {
 }
 
 fn runtime_images_dir_from_root(root: &Path) -> Option<PathBuf> {
-    if root.file_name().is_some_and(|n| n == DEFAULT_RUNTIME_ASSETS_SUBDIR) {
+    if root
+        .file_name()
+        .is_some_and(|n| n == DEFAULT_RUNTIME_ASSETS_SUBDIR)
+    {
         if root.is_dir() {
             return Some(root.to_path_buf());
         }
@@ -411,7 +414,11 @@ fn wsl_distro_exists(name: &str) -> Result<bool, HypervisorError> {
 
 #[cfg(target_os = "windows")]
 fn runtime_wsl_assets_dir_from_root(root: &Path) -> Option<PathBuf> {
-    if root.file_name().is_some_and(|n| n == DEFAULT_WSL_ASSETS_SUBDIR) && root.is_dir() {
+    if root
+        .file_name()
+        .is_some_and(|n| n == DEFAULT_WSL_ASSETS_SUBDIR)
+        && root.is_dir()
+    {
         return Some(root.to_path_buf());
     }
     let dir = root.join(DEFAULT_WSL_ASSETS_SUBDIR);

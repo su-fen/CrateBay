@@ -28,7 +28,8 @@ fn run() -> Result<(), String> {
     );
 
     loop {
-        let conn_fd = unsafe { libc::accept(listener_fd, std::ptr::null_mut(), std::ptr::null_mut()) };
+        let conn_fd =
+            unsafe { libc::accept(listener_fd, std::ptr::null_mut(), std::ptr::null_mut()) };
         if conn_fd < 0 {
             return Err(format!(
                 "accept failed: {}",
@@ -84,7 +85,9 @@ impl Config {
         while let Some(arg) = it.next() {
             match arg.as_str() {
                 "--port" => {
-                    let raw = it.next().ok_or_else(|| "--port requires a value".to_string())?;
+                    let raw = it
+                        .next()
+                        .ok_or_else(|| "--port requires a value".to_string())?;
                     port = raw
                         .parse::<u32>()
                         .map_err(|_| "Invalid --port".to_string())?;
@@ -105,7 +108,10 @@ impl Config {
             }
         }
 
-        Ok(Self { port, docker_socket })
+        Ok(Self {
+            port,
+            docker_socket,
+        })
     }
 
     fn usage() -> &'static str {
